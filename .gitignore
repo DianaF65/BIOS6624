@@ -52,7 +52,6 @@ rsconnect/
 *.rda
 *.rdata
 *.csv
-*.txt
 *.dat
 *.xls*
 *.sas7bdat
