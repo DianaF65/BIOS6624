@@ -22,3 +22,16 @@ maintained during the collection period in a large plastic bottle with an electr
 monitoring cap. Subjects were asked to collect saliva samples at waking, 30 min later,
 before lunch and 600 min after waking.  The time of waking and the time before lunch 
 were allowed to vary by the subjects’ schedules.
+
+Questions for the PI
+
+- Which interval of time would you define as an agreement between the sampling
+times from the subject’s and electronic monitoring cap? A span of 5 minutes? 
+
+- Are you interested in the changes over the course of one day or changes over 
+the span of the three days? 
+
+- For the third question, would you be interested in population-level or 
+subject-level changes? 
+
+
