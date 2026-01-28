@@ -1,5 +1,49 @@
 ---
-title: "Project0_Report"
-output: html_document
+output:
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+mainfont: Arial
+fontsize: 11pt
+documentclass: article
+geometry: margin=0.9in
 ---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(MASS)
+library(emmeans)
+library(multcomp)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+opts_chunk$set(tidy = F)
+```
+
+```{r, echo = F}
+# Read in the data
+proj0_dat <- read.csv("RawData/Project0_Clean_v2.csv",
+                      header = TRUE,
+                      check.names = FALSE)
+```
+
+# Introduction
+
+
+
+
 

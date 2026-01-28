@@ -1,0 +1,198 @@
+---
+output:
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+mainfont: Arial
+fontsize: 11pt
+documentclass: article
+geometry: margin=0.9in
+---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(MASS)
+library(emmeans)
+library(multcomp)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+opts_chunk$set(tidy = F)
+```
+
+```{r, echo = F}
+# Read in the data
+proj0_dat <- read.csv("../RawData/Project0_Clean_v2.csv",
+                      header = TRUE,
+                      check.names = FALSE)
+```
+
+# Missingness
+
+Below we ummarize and visuaize missingness in the dataset. 
+
+The number and percentage of missing values for each variable: 
+
+```{r, echo = F}
+# Cumulative sum of missingness for each variable
+naniar::miss_var_summary(proj0_dat)
+```
+
+Investigating the NAs in MEMs: Sample Interval Decimal Time, it appears that a majority of the NAs correspond to the first time point of Collect Sample = 1. We will replace these with 0.. 
+
+```{r, echo = F}
+proj0_dat %>% 
+  group_by(SubjectID) %>% 
+  reframe(SubjectID, 
+          `Collection Sample`,
+          `MEMs: Sample interval Decimal Time (mins)`)
+```
+
+when you when you
+
+```{r, echo = F}
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(proj0_dat)
+```
+
+Visualizing the missingness: 
+
+
+```{r, echo = F}
+vis_dat(proj0_dat)
+```
+\newpage
+
+# Descriptive Statistics
+
+A summary of the data - including ranges and data types: 
+
+```{r, echo = F}
+summary(proj0_dat)
+```
+
+## Question 1
+
+## Question 2
+
+## Question 3
+
+### DHEA
+
+A summary of DHEA: 
+
+```{r, echo = F}
+summary(proj0_dat$`DHEA (nmol/L)`)
+```
+How many values equal 5.205?
+
+```{r, echo = F}
+proj0_dat %>% 
+  filter(`DHEA (nmol/L)` == 5.205) %>% 
+  reframe(SubjectID, `Collection Sample`, 
+          DAYNUMB,`DHEA (nmol/L)`)
+```
+There appears to be one subject that has 4 values of 5.205 for DHEA (nmol/L).
+
+Visualizing DHEA over time: 
+
+```{r, echo = F, message = F, warning=F}
+ggplot(proj0_dat, aes(x = `Collection Sample`,
+                      y = `DHEA (nmol/L)`,
+                      color = factor(SubjectID))) +
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~DAYNUMB)
+  # theme(legend.position = "none")
+```
+
+Visualizing a random subset of 5 patients: 
+
+```{r, echo = F}
+# Random sample of 5 subjects
+```
+
+A plot of the mean trajectories: 
+
+```{r, echo = F}
+# Add a column of the mean trajectory...
+proj0_dat %>% 
+  filter(!is.na(`DHEA (nmol/L)`)) %>% 
+  group_by(SubjectID) %>% 
+  summarise(mean_DHEA = mean(`DHEA (nmol/L)`, na.rm = T),
+            .groups = "drop") + 
+  
+# Plot  
+ggplot(proj0_dat,
+    aes(x = `Collection Sample`, 
+             y = `DHEA (nmol/L)`,
+             color = factor(SubjectID))) + 
+  geom_point() + 
+  geom_line() + 
+  facet_wrap(~DAYNUMB)
+```
+
+
+### Cortisol
+
+A summary of Cortisol: 
+
+```{r, echo = F}
+summary(proj0_dat$`Cortisol (nmol/L)`)
+```
+
+How many measurements are above 26?
+
+```{r, echo = F}
+proj0_dat %>% 
+  filter(`Cortisol (nmol/L)` >= 26) %>% 
+  reframe(SubjectID, `Collection Sample`, 
+          DAYNUMB,`Cortisol (nmol/L)`)
+```
+
+
+How many values equal exceed 80?
+
+```{r, echo = F}
+proj0_dat %>% 
+  filter(`Cortisol (nmol/L)` >= 80) %>% 
+  reframe(SubjectID, `Collection Sample`, 
+          DAYNUMB,`Cortisol (nmol/L)`)
+```
+There appears to be one subject that has a value greater than 80. We wll remove this observation for this subject as this is most likely a lab error. 
+
+Visualizing Cortisol over time: 
+
+```{r, echo = F, message = F, warning=F}
+ggplot(proj0_dat, aes(x = `Collection Sample`,
+                      y = `Cortisol (nmol/L)`,
+                      color = factor(SubjectID))) +
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~DAYNUMB)
+  # theme(legend.position = "none")
+```
+
+Visualizing a random subset of 5 patients: 
+
+```{r, echo = F}
+# Random sample of 5 subjects
+```
+
+

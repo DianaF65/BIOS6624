@@ -59,4 +59,9 @@ proj0_dat %>%
   summarise(`MEMs: Clock Time`, `Booket: Clock Time`)
 # Look into how to visualize time data
 
+### Visualize the data
+# idk how to visualize this data
+
+
+
 
