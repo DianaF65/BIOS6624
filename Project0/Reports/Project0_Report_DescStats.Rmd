@@ -33,6 +33,8 @@ library(gt)
 library(ggeffects)
 library(UpSetR)
 library(visdat)
+library(lubridate)
+library(see)
 opts_chunk$set(tidy = F)
 ```
 
@@ -87,7 +89,330 @@ A summary of the data - including ranges and data types:
 summary(proj0_dat)
 ```
 
+```{r, echo = F}
+## Make a subset of the data with the relevant cols for Q1 - Q3
+
+# Vector of the cols of interest
+cols <- c("SubjectID",
+          "Collection Date", "DAYNUMB",
+          "Collection Sample",
+          "Booket: Clock Time", "MEMs: Clock Time",
+          "Sleep Diary reported wake time",
+          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+
+# Subset the original data frame
+wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+
+```
+
+
+```{r, echo = F}
+# Convert the Booklet Time to minutes
+wake_data$Booklet_Minutes <-
+  # Convert to date objects and convert to minutes
+  hour(hm(wake_data$`Booket: Clock Time`)) * 60 +
+  minute(hm(wake_data$`Booket: Clock Time`))
+
+# Move this to after Booklet: Clock Time
+wake_data <- wake_data %>% 
+  relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
+
+# Convert the MEM Time to minutes
+wake_data$MEM_C <-
+  # Convert to date objects and convert to minutes
+  hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
+  minute(hm(wake_data$`MEMs: Clock Time`))
+
+# Move this to after MEMs: Clock Time
+wake_data <- wake_data %>% 
+  relocate(MEM_C, .after = `MEMs: Clock Time`)
+
+```
+
+
+## Booklet Times
+
+The range of Booklet Times: 
+
+```{r, echo = F}
+summary(wake_data$Booklet_Minutes)
+```
+There are 35 NAs.
+
+
+There are 35 NAs
+
+```{r, echo = F}
+# A plot of the distribution of the outcome
+ggplot(na.omit(wake_data), aes(x = Booklet_Minutes,)) +
+         geom_histogram(bins = 10, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() + 
+  facet_grid(~ DAYNUMB)
+``` 
+
+A log transformation: 
+
+```{r, echo = F}
+# A plot of the distribution of the outcome
+ggplot(na.omit(wake_data), aes(x = log(Booklet_Minutes))) +
+         geom_histogram(bins = 10, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() + 
+  facet_grid(~ DAYNUMB)
+```
+
+
+## MEM Times
+
+A summary of the MEM times
+
+```{r, echo = F}
+# Summary of the MEM times
+summary(wake_data$MEM_C)
+```
+
+We do see that There are 61 NAs.
+
+```{r, echo = F}
+ggplot(na.omit(wake_data), aes(x = MEM_C,)) +
+         geom_histogram(bins = 10, fill = "seagreen3",
+                        col = "black") + 
+  theme_lucid() + 
+  facet_grid(~ DAYNUMB)
+```
+Visualizing the outcome by day: 
+
+```{r, echo = F}
+ggplot(na.omit(wake_data), aes(x = log(MEM_C))) +
+         geom_histogram(bins = 10, fill = "seagreen3",
+                        col = "black") + 
+  theme_lucid() + 
+  facet_grid(~ DAYNUMB)
+# Log or square root transformation does not appear to change much
+```
+
+
+The Booklet and MEM distributions appear to agree for the most part. 
+
+```{r, echo = F}
+# Create a subset of the data frame that only has Wake times
+# AKA Collection Sample == 1
+wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
+```
+
+
 ## Question 1
+
+What is the agreement between the subject's recording of sampling times compared to the times recorded by an electronic monitoring cap?
+
+For this question, we are only interested in the minutes since Waking Up.
+
+```{r, echo = F, warning = F, message = F}
+################################################################################
+###                               Question 1                                 ### 
+################################################################################
+
+# Visualize the Wake Times from Booklet data
+ggplot(wakes, aes(x = DAYNUMB,
+                  y = Booklet_Minutes,
+                  group = SubjectID,
+                  color = factor(SubjectID))) +
+  geom_line() + 
+  theme_lucid() + 
+  labs(title = "Wake Up Times Across Days - Booklet",
+       x = "Day", y = "Booklet Time (Minutes)") + 
+  scale_x_continuous(breaks = seq(1, 3, by = 1))
+
+```
+
+
+
+```{r, echo = F, message = F, warning = F}
+# Visualize the Wake Times from MEMs data
+ggplot(wakes, aes(x = DAYNUMB,
+                  y = MEM_C,
+                  group = factor(SubjectID),
+                  color = factor(SubjectID))) +
+  geom_line() + 
+  theme_lucid() + 
+  labs(title = "Wake Up Times Across Days - MEMs",
+       x = "Day", y = "MEM Time (Minutes)") + 
+  scale_x_continuous(breaks = seq(1, 3, by = 1))
+```
+
+These appear to be very similar but we can see some instances where the MEM failed to record the time. 
+
+```{r, echo = F}
+### Model
+# Center MEM time for interpretation relative to Mean MEM time
+wakes$MEM_C <- wakes$MEM_C - mean(wakes$MEM_Minutes, na.rm = TRUE)
+
+# LMM with random intercept for subject - Day added
+model_day <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
+                random = ~ 1 | SubjectID,
+                na.action = na.omit,
+                method = "ML",
+                data = wakes)
+
+# No day variable in the model
+model_noday <- lme(Booklet_Minutes ~ MEM_C, 
+                random = ~ 1 | SubjectID,
+                na.action = na.omit,
+                method = "ML",
+                data = wakes)
+
+# Random intercept and slope
+
+
+# AIC
+# > AIC(model_q1, model_noday)
+#             df      AIC
+# model_q1     6 495.4461
+# model_noday  4 496.3718
+# Day slightly better
+
+# ANOVA
+# > anova(model_q1, model_noday)
+#             Model df      AIC      BIC    logLik   Test  L.Ratio p-value
+# model_q1        1  6 495.4461 509.1061 -241.7230                        
+# model_noday     2  4 496.3718 505.4785 -244.1859 1 vs 2 4.925757  0.085
+# Day does not significanlty improve model fit
+
+# summary(model_q1)
+
+# Obtain 95% CI
+# intervals(model_q1)
+# (0.9694074, 1.007572)
+```
+
+### Diagnostics
+
+```{r,  echo = F, fig.cap="Model Diagnostics", fig.show='hold', out.width="70%", fig.align='center'}
+# Residual plot formodel
+plot(model_noday, abline = 0)
+# 
+# QQ plot
+qqnorm(resid(model_noday), main = NULL)
+qqline(resid(model_noday))
+# Adding DAYNUMB improved residual diagnostics
+```
+
+
+```{r,  echo = F, fig.cap="Model Diagnostics", fig.show='hold', out.width="70%", fig.align='center'}
+# Residual plot formodel
+plot(model_day, abline = 0)
+# 
+# QQ plot
+qqnorm(resid(model_day), main = NULL)
+qqline(resid(model_day))
+# Adding DAYNUMB improved residual diagnostics
+```
+For the standardized residual plot, there does not appear to be a violation of heteroscedasticity. 
+
+In the qqplot, we do see some slight deviations in the tails, but not anything concerning. 
+
+Residuals another way: 
+
+```{r, echo = F}
+# Obtain data used to fit model
+model_data <- getData(model_q1)
+
+# Obtain residuals of model
+model_data$resids <- resid(model_q1)
+# Obtain fitted values
+model_data$fitted <- fitted(model_q1)
+```
+
+```{r, echo = F}
+# Residual histogram
+ggplot(model_data, aes(x = resids)) +
+  geom_histogram(bins = 25,
+                 fill = "cadetblue2",
+                 color = "black") +
+  theme_lucid()
+
+```
+The residual hist looks symmetric enough given the small sample size. 
+
+```{r, echo = F}
+ggplot(model_data, aes(x = fitted, y = resids)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_classic()
+
+```
+These look evenly scattered.
+
+```{r, echo = F}
+# LMM with random intercept for subject - Day added
+model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
+                random = ~ 1 | SubjectID,
+                na.action = na.omit,
+                method = "REML",
+                data = wakes)
+
+summary(model_q1)
+```
+
+Intercept: The average wake up time recorded by the MEM was ~829 minutes on the first day. 
+
+Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
+In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. Changes in MEM time are mirrored almost exactly by changes in Booklet time.  
+
+Assessing bias: 
+
+```{r, echo = F}
+fixef(model_q1)["(Intercept)"] -
+mean(wakes$MEM_Minutes, na.rm = TRUE)
+
+```
+We have bias of around 2.21, indicating that there is small bias. The mean wake up time of MEM is 417.58 whereas the intercept representing the average MEM wake up time was 415.36.
+
+```{r, echo = F}
+# Look at the variance covariance mat
+VarCorr(model_q1)
+
+```
+
+The variability is split between the between subject variability (random intercept) and the within-subject variability (residual). 
+
+Intercept (between subject heterogeneity): After accounting for MEM time and day, subjects differ in their mean Booklet wake time with a sd of about 6.6 minutes. 
+
+Residual variance (within subject heterogeneity): Day to day fluctuations within a subject. Given a subject, a day, and a MEM time, individual Booklet observations vary around the subject-specific mean with a sd of about 5 minutes. 
+
+Scatterplot: 
+
+```{r, echo = F}
+ggplot(na.omit(wakes), aes(x = MEM_Minutes, y = Booklet_Minutes,
+                           color = factor(DAYNUMB))) + 
+  geom_point() + 
+  theme_lucid() + 
+  geom_abline(intercept = 0, slope = 1, linetype = "solid") +
+  labs(color = "Day") +
+  labs(title = "Relationship Between Booklet and MEM Wake Up Times",
+       x = "MEM Wake Up Time (Minutes)",
+       y = "Booklet Wake Up Time (Minutes)")
+```
+
+```{r, echo = F}
+ggplot(na.omit(wakes), aes(x = MEM_Minutes, y = Booklet_Minutes,
+                           color = factor(DAYNUMB))) + 
+  geom_point() + 
+  theme_lucid() + 
+  labs(color = "Day") + 
+  facet_grid(~ DAYNUMB) +
+  labs(title = "Relationship Between Booklet and MEM Wake Up Times",
+       subtitle = "Separated By Day",
+       x = "MEM Wake Up Time (Minutes)",
+       y = "Booklet Wake Up Time (Minutes)")
+```
+
+We can see that there appears to be a strong linear association. There are not any noticeable differences across days or obvious non-linear patterns.
+The scatterplot shows a strong linear association between subject recorded time and electronic recording cap wake up time. 
+Since each subject has one measure across days, we tested this association with a linear mixed effects model with a random intercept for subject and including fixed day effects. The estimated slope was approximately 1 and highly significant indicating that the two measurements follow each other very closely wihin day.
+
+
 
 ## Question 2
 
