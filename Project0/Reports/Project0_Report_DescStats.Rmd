@@ -35,6 +35,7 @@ library(UpSetR)
 library(visdat)
 library(lubridate)
 library(see)
+library(data.table)
 opts_chunk$set(tidy = F)
 ```
 
@@ -89,6 +90,7 @@ A summary of the data - including ranges and data types:
 summary(proj0_dat)
 ```
 
+
 ```{r, echo = F}
 ## Make a subset of the data with the relevant cols for Q1 - Q3
 
@@ -103,10 +105,7 @@ cols <- c("SubjectID",
 # Subset the original data frame
 wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
 
-```
 
-
-```{r, echo = F}
 # Convert the Booklet Time to minutes
 wake_data$Booklet_Minutes <-
   # Convert to date objects and convert to minutes
@@ -413,7 +412,7 @@ The scatterplot shows a strong linear association between subject recorded time 
 Since each subject has one measure across days, we tested this association with a linear mixed effects model with a random intercept for subject and including fixed day effects. The estimated slope was approximately 1 and highly significant indicating that the two measurements follow each other very closely wihin day.
 
 
-## Question 2
+# Question 2
 
 Are subject's adhering accurately to the +30 min (Collection Sample 2) and +10-hour (600min) (Collection Sample 4) sampling times required by a study protocol?
 
@@ -426,97 +425,217 @@ Adequate adherence - Percent of samples taken within 15 minutes of scheduled tim
 ###                               Question 2                                 ### 
 ################################################################################
 
+## Make a subset of the data with the relevant cols for Q1 - Q3
+
+# Vector of the cols of interest
+cols <- c("SubjectID",
+          "Collection Date", "DAYNUMB",
+          "Collection Sample",
+          "Booket: Clock Time", "MEMs: Clock Time",
+          "Sleep Diary reported wake time",
+          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+
+# Subset the original data frame
+wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+
+# Convert the Sleep diary Wake time to minutes
+wake_data$`Sleep Diary Wake Minutes` <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`Sleep Diary reported wake time`)) * 60 +
+  lubridate::minute(hm(wake_data$`Sleep Diary reported wake time`))
+
+# Move this to after Collection Sample
+wake_data <- wake_data %>% 
+  relocate(`Sleep Diary Wake Minutes`, 
+           .after = `Sleep Diary reported wake time`)
+
+# Convert the Booklet Time to minutes
+wake_data$Booklet_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`Booket: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`Booket: Clock Time`))
+
+# Move this to after Booklet: Clock Time
+wake_data <- wake_data %>% 
+  relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
+
+# Convert the MEM Time to minutes
+wake_data$MEM_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
+
+# Move this to after MEMs: Clock Time
+wake_data <- wake_data %>% 
+  relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
+```
+
+First we investigate this question with the booklet times. 
+
+```{r, echo = F}
 ###### With Booklet Times
 
 ##### Good adherence - within 7.5 minutes
 
-### 30 minute Collection Sample 2
-# Filter wake data to Collection Sample 2
-sample2 <- wake_data[wake_data$`Collection Sample` == 2, ]
-
 ## Good adherence - within 7.5 minutes of scheduled time
-library(data.table)
 
-# Df with Wake time and 30 min later times
+# Df with Wake time, 30 min post wake, and 600 min post wake
 wake_check <- wake_data %>%
   # filter(`Collection Sample` %in% c(1, 2)) %>%
   group_by(SubjectID, DAYNUMB) %>%
   reframe(
-    wake_time = Booklet_Minutes[`Collection Sample` == 1],
+    # Wake time
+    wake_time = `Sleep Diary Wake Minutes`[`Collection Sample` == 1],
+    # The 30 minute time
     S2_time = Booklet_Minutes[`Collection Sample` == 2],
+    # The 600 miniute time
     S4_time = Booklet_Minutes[`Collection Sample` == 4])
 
  
 # Define adherence
 wake_check <- wake_check %>%
   mutate(
-    # Subjects should be recording 30 min after waking
-    target_time = wake_time + 30,
+    # 30 min after waking target time
+    target_30time = wake_time + 30,
+    # 600 min after waking target time
+    target_600time = wake_time + 600,
     # Difference between 30 min later and the recorded time
-    diff_min    = S2_time - target_time,
-    # Define good adherence - within 7.5 minutes
-    good_adherent = abs(diff_min) <= 7.5,
-    # Define adequate adherence - within 15 minutes
-    adequate_adherent = abs(diff_min) <= 15
+    diff_min30  = S2_time - target_30time,
+    # Difference between 600 min later and the recorded time
+    diff_min600 = S4_time - target_600time,
+    # For 30 min: Define good adherence - within 7.5 minutes
+    good_adherent30 = abs(diff_min30) <= 7.5,
+    # For 600 min: Define good adherence
+    good_adherent600 = abs(diff_min600) <= 7.5,
+    # For 30 min: Define adequate adherence - within 15 minutes
+    adequate_ad30 = abs(diff_min30) <= 15,
+    # For 600 min: Define adequate adherence
+    adequate_ad600 = abs(diff_min600) <= 15
+  ) %>% 
+  relocate(c(target_30time, diff_min30,
+             good_adherent30, adequate_ad30), 
+           .after = S2_time) %>% 
+  relocate(c(target_600time, diff_min600,
+             good_adherent600, adequate_ad600), 
+           .after = S4_time)
+```
+
+## Booklet Minutes
+
+### Good Adherence 
+
+Adherence by subject: 
+
+```{r, echo = F}
+wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_good_adherent = sum(good_adherent30),
+    # What is the proportion
+    prop_good_adherent = mean(good_adherent30),
+    .groups = "drop"
+  )
+```
+
+Adherence overall: 
+
+```{r, echo = F}
+# Adherence overall
+wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent30, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
   )
 
 ```
 
-### Good Adherence 
+
+```{r, echo = F}
+# How many subjects adhered all 3 days
+sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+
+# Proportion and Percentage of subjects
+# 14/31 = 0.45 or 45%
+
+```
+
+
+### Adequate Adherence
+
 
 ```{r, echo = F}
 
 # What is the proportion of adherence to 30 min later
-mean(wake_check$adherent, na.rm = TRUE)
+mean(wake_check$adequate_ad30, na.rm = TRUE)
 ```
 
 Adherence by subject: 
 
 ```{r, echo = F}
-subject_good_adherence <- wake_check %>%
+wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
-    days_good_adherent = sum(good_adherent),
+    days_ad_adherent = sum(adequate_ad30),
     # What is the proportion
-    prop_good_adherent = mean(good_adherent),
+    prop_ad_adherent = mean(adequate_ad30),
     .groups = "drop"
   )
 
-subject_good_adherence
+```
+
+
+Adherence overall: 
+
+```{r, echo = F}
+# Adherence overall
+wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
 
 ```
 
 ```{r, echo = F}
 # How many subjects adhered all 3 days
-sum(subject_good_adherence$prop_good_adherent == 1, na.rm = T)
+sum(subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
 
 # Proportion and Percentage of subjects
-# 13/31 = 0.42 or 42%
+# 20/31 = 0.65 or 65%
 
 ```
 
+### Visualization
+
 ```{r, echo = F}
 # Visualize
-ggplot(na.omit(wake_check), aes(x = diff_min)) +
+ggplot(na.omit(wake_check), aes(x = diff_min30)) +
   geom_histogram(binwidth = 2,
                  col = "black",
                  fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), linetype = "dashed",
              col = "red") +
-  theme_lucid() +
-  labs(
-    x = "Minutes from target (+30)",
-    y = "Count"
-  ) + 
+  geom_vline(xintercept = c(-15, 15), linetype = "dashed",
+             col = "hotpink") +
+  theme_lucid() + 
   scale_x_continuous(breaks = seq(0, 50, by = 10)) + 
   scale_y_continuous(breaks = seq(0, 60, by = 10),
                      limits = c(0, 60)) + 
-  labs(title = "Distribution of 30 Minutes Post Wake Up Time")
+  labs(title = "Distribution of 30 Minutes Post Wake Up Time",
+       subtitle = "Red - Good Adherence and Pink - Adequate Adherence",
+       x = "Minutes from target (+30)",
+       y = "Count") 
 
 ```
 
-### Adequate Adherence
+
 
 
 
