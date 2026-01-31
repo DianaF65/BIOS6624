@@ -109,8 +109,8 @@ wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
 # Convert the Booklet Time to minutes
 wake_data$Booklet_Minutes <-
   # Convert to date objects and convert to minutes
-  hour(hm(wake_data$`Booket: Clock Time`)) * 60 +
-  minute(hm(wake_data$`Booket: Clock Time`))
+  lubridate::hour(hm(wake_data$`Booket: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`Booket: Clock Time`))
 
 # Move this to after Booklet: Clock Time
 wake_data <- wake_data %>% 
@@ -119,8 +119,8 @@ wake_data <- wake_data %>%
 # Convert the MEM Time to minutes
 wake_data$MEM_C <-
   # Convert to date objects and convert to minutes
-  hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
-  minute(hm(wake_data$`MEMs: Clock Time`))
+  lubridate::hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
 
 # Move this to after MEMs: Clock Time
 wake_data <- wake_data %>% 
@@ -436,37 +436,37 @@ cols <- c("SubjectID",
           "Cortisol (nmol/L)", "DHEA (nmol/L)")
 
 # Subset the original data frame
-wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+wake_data_q2 <- proj0_dat[, colnames(proj0_dat) %in% cols ]
 
 # Convert the Sleep diary Wake time to minutes
-wake_data$`Sleep Diary Wake Minutes` <-
+wake_data_q2$`Sleep Diary Wake Minutes` <-
   # Convert to date objects and convert to minutes
-  lubridate::hour(hm(wake_data$`Sleep Diary reported wake time`)) * 60 +
-  lubridate::minute(hm(wake_data$`Sleep Diary reported wake time`))
+  lubridate::hour(hm(wake_data_q2$`Sleep Diary reported wake time`)) * 60 +
+  lubridate::minute(hm(wake_data_q2$`Sleep Diary reported wake time`))
 
 # Move this to after Collection Sample
-wake_data <- wake_data %>% 
+wake_data_q2 <- wake_data_q2 %>% 
   relocate(`Sleep Diary Wake Minutes`, 
            .after = `Sleep Diary reported wake time`)
 
 # Convert the Booklet Time to minutes
-wake_data$Booklet_Minutes <-
+wake_data_q2$Booklet_Minutes <-
   # Convert to date objects and convert to minutes
-  lubridate::hour(hm(wake_data$`Booket: Clock Time`)) * 60 +
-  lubridate::minute(hm(wake_data$`Booket: Clock Time`))
+  lubridate::hour(hm(wake_data_q2$`Booket: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data_q2$`Booket: Clock Time`))
 
 # Move this to after Booklet: Clock Time
-wake_data <- wake_data %>% 
+wake_data_q2 <- wake_data_q2 %>% 
   relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
 
 # Convert the MEM Time to minutes
-wake_data$MEM_Minutes <-
+wake_data_q2$MEM_Minutes <-
   # Convert to date objects and convert to minutes
-  lubridate::hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
-  lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
+  lubridate::hour(hm(wake_data_q2$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data_q2$`MEMs: Clock Time`))
 
 # Move this to after MEMs: Clock Time
-wake_data <- wake_data %>% 
+wake_data_q2 <- wake_data_q2 %>% 
   relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
 ```
 
@@ -480,7 +480,7 @@ First we investigate this question with the booklet times.
 ## Good adherence - within 7.5 minutes of scheduled time
 
 # Df with Wake time, 30 min post wake, and 600 min post wake
-wake_check <- wake_data %>%
+wake_check <- wake_data_q2 %>%
   # filter(`Collection Sample` %in% c(1, 2)) %>%
   group_by(SubjectID, DAYNUMB) %>%
   reframe(
@@ -489,7 +489,7 @@ wake_check <- wake_data %>%
     # The 30 minute time with Booklet
     Book_30time = Booklet_Minutes[`Collection Sample` == 2],
     # The 600 miniute time with booklet
-    Book_600_time = Booklet_Minutes[`Collection Sample` == 4],
+    Book_600time = Booklet_Minutes[`Collection Sample` == 4],
     # The 30 minute time with MEM
     MEM_30time = MEM_Minutes[`Collection Sample` == 2],
     # The 600 minute time with MEM
@@ -497,8 +497,8 @@ wake_check <- wake_data %>%
     )
 
  
-# Define adherence
-wake_check <- wake_check %>%
+# Define adherence for BOOK
+book_wake_check <- wake_check %>%
   mutate(
     # 30 min after waking target time
     target_30time = wake_time + 30,
@@ -523,16 +523,105 @@ wake_check <- wake_check %>%
   relocate(c(target_600time, diff_min600,
              good_adherent600, adequate_ad600), 
            .after = Book_600time)
+
+# Define adherence for MEM
+MEM_wake_check <- wake_check %>%
+  mutate(
+    # 30 min after waking target time
+    target_30time = wake_time + 30,
+    # 600 min after waking target time
+    target_600time = wake_time + 600,
+    # Difference between 30 min later and the recorded time
+    diff_min30  = MEM_30time - target_30time,
+    # Difference between 600 min later and the recorded time
+    diff_min600 = MEM_600time - target_600time,
+    # For 30 min: Define good adherence - within 7.5 minutes
+    good_adherent30 = abs(diff_min30) <= 7.5,
+    # For 600 min: Define good adherence
+    good_adherent600 = abs(diff_min600) <= 7.5,
+    # For 30 min: Define adequate adherence - within 15 minutes
+    adequate_ad30 = abs(diff_min30) <= 15,
+    # For 600 min: Define adequate adherence
+    adequate_ad600 = abs(diff_min600) <= 15
+  ) %>% 
+  relocate(c(target_30time, diff_min30,
+             good_adherent30, adequate_ad30), 
+           .after = MEM_30time) %>% 
+  relocate(c(target_600time, diff_min600,
+             good_adherent600, adequate_ad600), 
+           .after = MEM_600time)
+
 ```
 
-## 30 Min Post Wake Time - Booklet Minutes
+## Differences between MEM and Book Time
+
+```{r, echo = F}
+# Book time
+ggplot(na.omit(book_wake_check), aes(x = Book_30time)) + 
+  geom_histogram(bins = 40, col = "black", fill = "pink") + 
+  theme_lucid()
+
+# MEM time
+ggplot(na.omit(MEM_wake_check), aes(x = MEM_30time)) + 
+  geom_histogram(bins = 40, col = "black", fill = "hotpink") + 
+  theme_lucid()
+
+```
+
+30 Min with Book: 
+
+```{r, echo = F}
+# Summary of Book 30 min time
+summary(book_wake_check$Book_30time)
+```
+30 Min with MEMs: 
+
+```{r, echo = F}
+# Summary of MEM 30 min time
+summary(MEM_wake_check$MEM_30time)
+```
+
+
+```{r, echo = F}
+# Book time
+ggplot(na.omit(book_wake_check), aes(x = Book_600time)) + 
+  geom_histogram(bins = 40, col = "black", fill = "pink") + 
+  theme_lucid()
+
+# MEM time
+ggplot(na.omit(MEM_wake_check), aes(x = MEM_600time)) + 
+  geom_histogram(bins = 40, col = "black", fill = "hotpink") + 
+  theme_lucid()
+
+```
+
+
+
+600 Min with Book: 
+
+```{r, echo = F}
+# Summary of Book 30 min time
+summary(book_wake_check$Book_600time)
+```
+
+600 Min with MEM: 
+
+```{r, echo = F}
+# Summary of MEM 30 min time
+summary(MEM_wake_check$MEM_600time)
+```
+
+
+## 30 Min Post Wake Time
 
 ### Good Adherence 
+
+Booklet: 
 
 Adherence by subject: 
 
 ```{r, echo = F}
-subject_good_30adherence <- wake_check %>%
+subject_good_30adherence <- book_wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
@@ -551,11 +640,36 @@ sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
 
 ```
 
+MEM: 
+
+```{r, echo = F}
+MEM_subject_good_30adherence <- MEM_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_good_adherent = sum(good_adherent30),
+    # What is the proportion
+    prop_good_adherent = mean(good_adherent30),
+    .groups = "drop"
+  )
+MEM_subject_good_30adherence
+
+# How many subjects adhered all 3 days
+sum(MEM_subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+
+# Proportion and Percentage of subjects
+# 6/31 
+
+```
+
+
 Adherence overall: 
+
+Booklet
 
 ```{r, echo = F}
 # Adherence overall
-wake_check %>%
+book_wake_check %>%
   # group_by(SubjectID) %>%
   summarise(
     # What is the proportion
@@ -566,21 +680,28 @@ wake_check %>%
 
 ```
 
+MEM
+
+
+```{r, echo = F}
+# Adherence overall
+MEM_wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent30, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+```
 
 
 ### Adequate Adherence
 
+Adherence by subject with Booket: 
 
 ```{r, echo = F}
-
-# What is the proportion of adherence to 30 min later
-mean(wake_check$adequate_ad30, na.rm = TRUE)
-```
-
-Adherence by subject: 
-
-```{r, echo = F}
-subject_ad_30adherence <- wake_check %>%
+subject_ad_30adherence <- book_wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
@@ -599,12 +720,35 @@ sum(subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
 # 20/31 = 0.65 or 65%
 ```
 
+Adherence by subject with MEM: 
 
-Adherence overall: 
+```{r, echo = F}
+MEM_subject_ad_30adherence <- MEM_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_ad_adherent = sum(adequate_ad30),
+    # What is the proportion
+    prop_ad_adherent = mean(adequate_ad30),
+    .groups = "drop"
+  )
+
+MEM_subject_ad_30adherence
+
+# How many subjects adhered all 3 days
+sum(MEM_subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
+
+# Proportion and Percentage of subjects
+# 20/31 = 0.65 or 65%
+```
+
+
+
+Adherence overall with Booklet: 
 
 ```{r, echo = F}
 # Adherence overall
-wake_check %>%
+book_wake_check %>%
   summarise(
     # What is the proportion
     prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
@@ -615,11 +759,27 @@ wake_check %>%
 ```
 
 
+Adherence overall with MEM: 
+
+```{r, echo = F}
+# Adherence overall
+MEM_wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
+
+```
+
 ### Visualization
+
+### Booklet
 
 ```{r, echo = F}
 # Visualize
-ggplot(na.omit(wake_check), aes(x = diff_min30)) +
+ggplot(na.omit(book_wake_check), aes(x = diff_min30)) +
   geom_histogram(binwidth = 2, col = "black", fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
              linetype = "dashed") +
@@ -638,23 +798,54 @@ ggplot(na.omit(wake_check), aes(x = diff_min30)) +
 
 ```{r, echo = F}
 # What is the range of diff times
-summary(wake_check$diff_min30)
+summary(book_wake_check$diff_min30)
 ```
 
 ```{r, echo = F}
 # How many observations were greater than 5
-sum(wake_check$diff_min30 >= 5, na.rm = TRUE)
+sum(book_wake_check$diff_min30 >= 5, na.rm = TRUE)
+```
+
+#### MEM
+
+```{r, echo = F}
+# Visualize
+ggplot(na.omit(MEM_wake_check), aes(x = diff_min30)) +
+  geom_histogram(binwidth = 2, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_x_continuous(breaks = seq(-10, 180, by = 20)) + 
+  scale_y_continuous(breaks = seq(0, 10, by = 1), limits = c(0, 10)) + 
+  labs(title = "Distribution of 30 Minutes Post Wake Up Time",
+       subtitle = "Red - Good Adherence and Pink - Adequate Adherence",
+       x = "Minutes from target (+30)",
+       y = "Count") 
+
+
+```
+
+```{r, echo = F}
+# What is the range of diff times
+summary(MEM_wake_check$diff_min30)
+```
+
+```{r, echo = F}
+# How many observations were greater than 5
+sum(MEM_wake_check$diff_min30 >= 5, na.rm = TRUE)
 ```
 
 
-## 600 Min Post Wake Time - Booklet Minutes
+## 600 Min Post Wake Time 
 
 ### Good Adherence 
 
-Adherence by subject: 
+Adherence by subject with Booklet: 
 
 ```{r, echo = F}
-subject_good_600adherence <- wake_check %>%
+subject_good_600adherence <- book_wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
@@ -670,11 +861,45 @@ sum(subject_good_600adherence$prop_good_adherent == 1, na.rm = T)
 
 ```
 
-Adherence overall: 
+Adherence by subject with MEM: 
+
+```{r, echo = F}
+MEM_subject_good_600adherence <- MEM_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_good_adherent = sum(good_adherent600),
+    # What is the proportion
+    prop_good_adherent = mean(good_adherent600),
+    .groups = "drop"
+  )
+MEM_subject_good_600adherence
+
+# How many subjects adhered all 3 days
+sum(MEM_subject_good_600adherence$prop_good_adherent == 1, na.rm = T)
+
+```
+
+Adherence overall with booklet: 
 
 ```{r, echo = F}
 # Adherence overall
-wake_check %>%
+book_wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent600, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+
+```
+
+Adherence overall with MEMs: 
+
+```{r, echo = F}
+# Adherence overall
+MEM_wake_check %>%
   # group_by(SubjectID) %>%
   summarise(
     # What is the proportion
@@ -689,10 +914,10 @@ wake_check %>%
 ### Adequate Adherence
 
 
-Adherence by subject: 
+Adherence by subject with Booklet: 
 
 ```{r, echo = F}
-subject_ad_600adherence <- wake_check %>%
+subject_ad_600adherence <- book_wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
@@ -708,12 +933,31 @@ sum(subject_ad_600adherence$prop_ad_adherent == 1, na.rm = T)
 
 ```
 
+Adherence by subject with MEM: 
 
-Adherence overall: 
+```{r, echo = F}
+MEM_subject_ad_600adherence <- MEM_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_ad_adherent = sum(adequate_ad600),
+    # What is the proportion
+    prop_ad_adherent = mean(adequate_ad600),
+    .groups = "drop"
+  )
+MEM_subject_ad_600adherence
+
+# How many subjects adhered all 3 days
+sum(MEM_subject_ad_600adherence$prop_ad_adherent == 1, na.rm = T)
+
+```
+
+
+Adherence overall with booklet: 
 
 ```{r, echo = F}
 # Adherence overall
-wake_check %>%
+book_wake_check %>%
   summarise(
     # What is the proportion
     prop_adeq_adherent = round(mean(adequate_ad600, na.rm = TRUE), 4),
@@ -723,11 +967,29 @@ wake_check %>%
 
 ```
 
+
+Adherence overall with MEM: 
+
+```{r, echo = F}
+# Adherence overall
+MEM_wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad600, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
+
+```
+
+
 ### Visualization
+
+#### Booklet
 
 ```{r, echo = F}
 # Visualize
-ggplot(na.omit(wake_check), aes(x = diff_min600)) +
+ggplot(na.omit(book_wake_check), aes(x = diff_min600)) +
   geom_histogram(binwidth = 10, col = "black", fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
              linetype = "dashed") +
@@ -746,12 +1008,43 @@ ggplot(na.omit(wake_check), aes(x = diff_min600)) +
 
 ```{r, echo = F}
 # What is the range of diff times
-summary(wake_check$diff_min600)
+summary(book_wake_check$diff_min600)
 ```
 
 ```{r, echo = F}
 # How many observations were greater than 44
-sum(wake_check$diff_min600 >= 45, na.rm = TRUE)
+sum(book_wake_check$diff_min600 >= 45, na.rm = TRUE)
+```
+
+#### MEM
+
+```{r, echo = F}
+# Visualize
+ggplot(na.omit(MEM_wake_check), aes(x = diff_min600)) +
+  geom_histogram(binwidth = 10, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_x_continuous(breaks = seq(-50, 360, by = 50)) + 
+  # scale_y_continuous(breaks = seq(0, 600, by = 10), limits = c(0, 600)) + 
+  labs(title = "Distribution of 600 Minutes Post Wake Up Time",
+       subtitle = "Red - Good Adherence and Pink - Adequate Adherence",
+       x = "Minutes from target (+600)",
+       y = "Count") 
+
+
+```
+
+```{r, echo = F}
+# What is the range of diff times
+summary(MEM_wake_check$diff_min600)
+```
+
+```{r, echo = F}
+# How many observations were greater than 44
+sum(MEM_wake_check$diff_min600 >= 45, na.rm = TRUE)
 ```
 
 
