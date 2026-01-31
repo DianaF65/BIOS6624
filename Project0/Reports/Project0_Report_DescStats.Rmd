@@ -486,10 +486,15 @@ wake_check <- wake_data %>%
   reframe(
     # Wake time
     wake_time = `Sleep Diary Wake Minutes`[`Collection Sample` == 1],
-    # The 30 minute time
-    S2_time = Booklet_Minutes[`Collection Sample` == 2],
-    # The 600 miniute time
-    S4_time = Booklet_Minutes[`Collection Sample` == 4])
+    # The 30 minute time with Booklet
+    Book_30time = Booklet_Minutes[`Collection Sample` == 2],
+    # The 600 miniute time with booklet
+    Book_600_time = Booklet_Minutes[`Collection Sample` == 4],
+    # The 30 minute time with MEM
+    MEM_30time = MEM_Minutes[`Collection Sample` == 2],
+    # The 600 minute time with MEM
+    MEM_600time = MEM_Minutes[`Collection Sample` == 4]
+    )
 
  
 # Define adherence
@@ -500,9 +505,9 @@ wake_check <- wake_check %>%
     # 600 min after waking target time
     target_600time = wake_time + 600,
     # Difference between 30 min later and the recorded time
-    diff_min30  = S2_time - target_30time,
+    diff_min30  = Book_30time - target_30time,
     # Difference between 600 min later and the recorded time
-    diff_min600 = S4_time - target_600time,
+    diff_min600 = Book_600time - target_600time,
     # For 30 min: Define good adherence - within 7.5 minutes
     good_adherent30 = abs(diff_min30) <= 7.5,
     # For 600 min: Define good adherence
@@ -514,20 +519,20 @@ wake_check <- wake_check %>%
   ) %>% 
   relocate(c(target_30time, diff_min30,
              good_adherent30, adequate_ad30), 
-           .after = S2_time) %>% 
+           .after = Book_30time) %>% 
   relocate(c(target_600time, diff_min600,
              good_adherent600, adequate_ad600), 
-           .after = S4_time)
+           .after = Book_600time)
 ```
 
-## Booklet Minutes
+## 30 Min Post Wake Time - Booklet Minutes
 
 ### Good Adherence 
 
 Adherence by subject: 
 
 ```{r, echo = F}
-wake_check %>%
+subject_good_30adherence <- wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
@@ -536,6 +541,14 @@ wake_check %>%
     prop_good_adherent = mean(good_adherent30),
     .groups = "drop"
   )
+subject_good_30adherence
+
+# How many subjects adhered all 3 days
+sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+
+# Proportion and Percentage of subjects
+# 14/31 = 0.45 or 45%
+
 ```
 
 Adherence overall: 
@@ -554,15 +567,6 @@ wake_check %>%
 ```
 
 
-```{r, echo = F}
-# How many subjects adhered all 3 days
-sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
-
-# Proportion and Percentage of subjects
-# 14/31 = 0.45 or 45%
-
-```
-
 
 ### Adequate Adherence
 
@@ -576,7 +580,7 @@ mean(wake_check$adequate_ad30, na.rm = TRUE)
 Adherence by subject: 
 
 ```{r, echo = F}
-wake_check %>%
+subject_ad_30adherence <- wake_check %>%
   group_by(SubjectID) %>%
   summarise(
     # How many days out of 3 were they adherent?
@@ -586,6 +590,13 @@ wake_check %>%
     .groups = "drop"
   )
 
+subject_ad_30adherence
+
+# How many subjects adhered all 3 days
+sum(subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
+
+# Proportion and Percentage of subjects
+# 20/31 = 0.65 or 65%
 ```
 
 
@@ -603,12 +614,112 @@ wake_check %>%
 
 ```
 
-```{r, echo = F}
-# How many subjects adhered all 3 days
-sum(subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
 
-# Proportion and Percentage of subjects
-# 20/31 = 0.65 or 65%
+### Visualization
+
+```{r, echo = F}
+# Visualize
+ggplot(na.omit(wake_check), aes(x = diff_min30)) +
+  geom_histogram(binwidth = 2, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_x_continuous(breaks = seq(0, 50, by = 10)) + 
+  scale_y_continuous(breaks = seq(0, 60, by = 10), limits = c(0, 60)) + 
+  labs(title = "Distribution of 30 Minutes Post Wake Up Time",
+       subtitle = "Red - Good Adherence and Pink - Adequate Adherence",
+       x = "Minutes from target (+30)",
+       y = "Count") 
+
+
+```
+
+```{r, echo = F}
+# What is the range of diff times
+summary(wake_check$diff_min30)
+```
+
+```{r, echo = F}
+# How many observations were greater than 5
+sum(wake_check$diff_min30 >= 5, na.rm = TRUE)
+```
+
+
+## 600 Min Post Wake Time - Booklet Minutes
+
+### Good Adherence 
+
+Adherence by subject: 
+
+```{r, echo = F}
+subject_good_600adherence <- wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_good_adherent = sum(good_adherent600),
+    # What is the proportion
+    prop_good_adherent = mean(good_adherent600),
+    .groups = "drop"
+  )
+subject_good_600adherence
+
+# How many subjects adhered all 3 days
+sum(subject_good_600adherence$prop_good_adherent == 1, na.rm = T)
+
+```
+
+Adherence overall: 
+
+```{r, echo = F}
+# Adherence overall
+wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent600, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+
+```
+
+
+### Adequate Adherence
+
+
+Adherence by subject: 
+
+```{r, echo = F}
+subject_ad_600adherence <- wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_ad_adherent = sum(adequate_ad600),
+    # What is the proportion
+    prop_ad_adherent = mean(adequate_ad600),
+    .groups = "drop"
+  )
+subject_ad_600adherence
+
+# How many subjects adhered all 3 days
+sum(subject_ad_600adherence$prop_ad_adherent == 1, na.rm = T)
+
+```
+
+
+Adherence overall: 
+
+```{r, echo = F}
+# Adherence overall
+wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad600, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
 
 ```
 
@@ -616,26 +727,32 @@ sum(subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
 
 ```{r, echo = F}
 # Visualize
-ggplot(na.omit(wake_check), aes(x = diff_min30)) +
-  geom_histogram(binwidth = 2,
-                 col = "black",
-                 fill = "turquoise") +
-  geom_vline(xintercept = c(-7.5, 7.5), linetype = "dashed",
-             col = "red") +
-  geom_vline(xintercept = c(-15, 15), linetype = "dashed",
-             col = "hotpink") +
+ggplot(na.omit(wake_check), aes(x = diff_min600)) +
+  geom_histogram(binwidth = 10, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
   theme_lucid() + 
-  scale_x_continuous(breaks = seq(0, 50, by = 10)) + 
-  scale_y_continuous(breaks = seq(0, 60, by = 10),
-                     limits = c(0, 60)) + 
-  labs(title = "Distribution of 30 Minutes Post Wake Up Time",
+  scale_x_continuous(breaks = seq(-50, 360, by = 50)) + 
+  # scale_y_continuous(breaks = seq(0, 600, by = 10), limits = c(0, 600)) + 
+  labs(title = "Distribution of 600 Minutes Post Wake Up Time",
        subtitle = "Red - Good Adherence and Pink - Adequate Adherence",
-       x = "Minutes from target (+30)",
+       x = "Minutes from target (+600)",
        y = "Count") 
+
 
 ```
 
+```{r, echo = F}
+# What is the range of diff times
+summary(wake_check$diff_min600)
+```
 
+```{r, echo = F}
+# How many observations were greater than 44
+sum(wake_check$diff_min600 >= 45, na.rm = TRUE)
+```
 
 
 
