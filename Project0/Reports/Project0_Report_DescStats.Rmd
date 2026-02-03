@@ -575,12 +575,12 @@ MEM_wake_check <- wake_check %>%
 
 ```{r, echo = F}
 # Book time
-ggplot(na.omit(book_wake_check), aes(x = Book_30time)) + 
+ggplot(book_wake_check, aes(x = Book_30time)) + 
   geom_histogram(bins = 40, col = "black", fill = "pink") + 
   theme_lucid()
 
 # MEM time
-ggplot(na.omit(MEM_wake_check), aes(x = MEM_30time)) + 
+ggplot(MEM_wake_check, aes(x = MEM_30time)) + 
   geom_histogram(bins = 40, col = "black", fill = "hotpink") + 
   theme_lucid()
 
@@ -602,12 +602,12 @@ summary(MEM_wake_check$MEM_30time)
 
 ```{r, echo = F}
 # Book time
-ggplot(na.omit(book_wake_check), aes(x = Book_600time)) + 
+ggplot(book_wake_check, aes(x = Book_600time)) + 
   geom_histogram(bins = 40, col = "black", fill = "pink") + 
   theme_lucid()
 
 # MEM time
-ggplot(na.omit(MEM_wake_check), aes(x = MEM_600time)) + 
+ggplot(MEM_wake_check, aes(x = MEM_600time)) + 
   geom_histogram(bins = 40, col = "black", fill = "hotpink") + 
   theme_lucid()
 
@@ -651,7 +651,7 @@ subject_good_30adherence <- book_wake_check %>%
 subject_good_30adherence
 
 # How many subjects adhered all 3 days
-sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+# sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
 
 # Proportion and Percentage of subjects
 # 14/31 = 0.45 or 45%
@@ -673,7 +673,7 @@ MEM_subject_good_30adherence <- MEM_wake_check %>%
 MEM_subject_good_30adherence
 
 # How many subjects adhered all 3 days
-sum(MEM_subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+# sum(MEM_subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
 
 # Proportion and Percentage of subjects
 # 6/31 

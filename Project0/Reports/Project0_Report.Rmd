@@ -40,6 +40,8 @@ library(lubridate)
 library(see)
 library(data.table)
 library(sjPlot)
+library(modelsummary)
+library(broom.mixed)
 opts_chunk$set(tidy = F)
 ```
 
@@ -181,9 +183,15 @@ For the variables we employed in our analyses, we assessed and visualized distri
 \textbf{1:} To address research question 1, we employed a longitudinal linear mixed effects model with Booklet time in Minutes for the outcome, MEM in Minutes and the day number (1-3) as covariates We included a random intercept for subject that allowed us to take variability between subjects into account in our model. 
 Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality. We additionally assessed bias by.... COME BACK TO THIS
 
-\textbf{2: }
+\textbf{2: } To determine whether subjects were adhering accurately to the +30 minute and +600 minute sampling times required by study protocol, intervals of time were defined to determine the number and percentage of patients that had good or adequate adherence.
+Good adherence was defined by a collection of the saliva sample within a 7.5 minute window interval of the +30 minute and +600 minute times whereas adequate adherence if samples were within a 15 minute window. 
+To calculate the percentage and proportion of individuals that had good adherence and adequate adherence, the difference between the "correct" sampling time and the observed time was calculated and this difference was used to assess whether observed times were within the good or adequate adherence windows. 
 
-\textbf{2: }
+We visualized and summarized the distribution of the MEM and Booklet times to guide us in our decision to proceed with either MEM or Booklet times for our calculations.
+We observed that MEM times had a considerable amount of missingness and determined that reporting both would give a better overall sense of adherence.
+We summarized adherence by subjects as well as adherence for the whole study population.
+
+\textbf{2: } 
 
 
 # Results
@@ -192,7 +200,8 @@ From the missingness investigation, we determined the MEMs had the highest amoun
 Booklet had the second highest amount of missing with 55 missing values or 14.8%.
 Cortisol and DHEA measurements had 5 missing values or 1.34% missingness.
 
-The graphic below allows us to visually see the quantity of missingness in the MEM times compared to the other variables in the dataset: 
+The graphic below allowed us to visually see the quantity of missingness in the MEM times compared to the other variables in the data set, we followed certain thresholds for good and adequate adherence.
+
 
 ## Hypothesis 1
 
@@ -207,10 +216,20 @@ model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB),
                 data = wakes)
 
 
-# Display model summary with tab_model
-# Do not show random effects, ICC
-tab_model(model_q1, show.re.var = FALSE, show.icc = FALSE,
-          show.intercept = FALSE)
+# Display model summary with kable
+# Extract t and p-values from model for data frame
+summary_df1 <- as.data.frame(summary(model_q1)$tTable)
+
+# kable
+kable(
+  summary_df1,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 5,
+  caption = "Model Summary"
+) |>
+  kable_styling(latex_options = c("striped"))
+
 
 ```
 
@@ -227,6 +246,9 @@ intervals(model_q1)
 
 Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
 In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. Changes in MEM time are mirrored almost exactly by changes in Booklet time and our initial hypothesis is correct. 
+
+## Hypothesis 2
+
 
 
 
