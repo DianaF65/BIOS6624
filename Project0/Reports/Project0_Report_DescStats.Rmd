@@ -1101,6 +1101,17 @@ wake_data_q3$MEM_Minutes <-
 wake_data_q3 <- wake_data_q3 %>% 
   relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
 
+# Create a Minutes SINCE WAKE variable
+wake_data_q3 <- wake_data_q3 %>%
+  mutate(
+    clock_min = lubridate::hour(hm(`Booket: Clock Time`)) * 60 +
+                lubridate::minute(hm(`Booket: Clock Time`))) %>%
+  group_by(SubjectID, DAYNUMB) %>%
+  mutate(wake_min = clock_min[`Collection Sample` == 1][1],
+         minutes_since_wake = clock_min - wake_min) %>%
+  ungroup() %>% 
+  relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
+
 
 ### Modify data for Person 3029
 wake_data_q3 <- wake_data_q3 %>% 
@@ -1177,8 +1188,6 @@ ggplot(wake_data_q3, aes(x = log(`DHEA (nmol/L)`))) +
   theme_lucid() 
 ```
 
-
-
 ### DHEA Model
 
 ```{r, echo = F}
@@ -1191,30 +1200,73 @@ wake_data_q3$log_DHEA <- log(wake_data_q3$`DHEA (nmol/L)`)
 wake_data_q3 <- wake_data_q3 %>%
   mutate(
     # Slope from waking to 30 miutes
-    time_pre30  = pmin(Booklet_Minutes, 30),
+    time_pre30  = pmin(minutes_since_wake, 30),
     # Slope from after 30 minutes
-    time_post30 = pmax(Booklet_Minutes - 30,
+    time_post30 = pmax(minutes_since_wake - 30,
                        0)
   )
 
 # Center Sleep Diary wake minutes
 wake_data_q3 <- wake_data_q3 %>% 
   mutate(Sleep_Centered = `Sleep Diary Wake Minutes` - 
-           mean(`Sleep Diary Wake Minutes`, na.rm = TRUE)) %>% 
+           mean(`Sleep Diary Wake Minutes`, na.rm = TRUE),
+         Book_MinC = Booklet_Minutes - mean(Booklet_Minutes, 
+                                            na.rm = TRUE)) %>% 
   relocate(Sleep_Centered, .after = `Sleep Diary Wake Minutes`)
 # Mean wake up time is - 409.4545 minutes
 
 
 ##### Model
-model_q3 <- lmer(log_DHEA ~ Booklet_Minutes + time_post30
+model_q3 <- lmer(log_DHEA ~ time_pre30 + time_post30
                  + (1 | SubjectID),
-                 REML = FALSE,
-                 na.action = na.omit,
+                 REML = TRUE,
                  data = wake_data_q3)
 
 summary(model_q3)
 confint(model_q3)
 ```
+
+Interpretations: 
+Intercept: At 0 minutes or wake time, DHEA levels are approximately around 1.8 nmol/L (95% CI: (-0.042, 0.42)). 
+
+Time Pre30: For the time period of wake to 30 minutes, there is a decrease of approximately 1.62 (95% CI: (-0.022, -0.01)) units of DHEA for each additional minute since waking. This is statistically significant with p < 0.001.
+
+Time Post30: From 30 minutes to 600 minutes, there is a decrease of around 1.54 (95% CI: (-0.002, -0.001)) units of DHEA for each additional minute. 
+
+#### Model Diagnostics
+
+```{r, echo = F}
+# Obtain data used to fit model
+model_dataq3 <- model_q3@frame
+
+# Obtain residuals of model
+model_dataq3$resids <- resid(model_q3)
+
+# Obtain fitted values
+model_dataq3$fitted <- fitted(model_q3)
+```
+
+```{r, echo = F}
+# Residual histogram
+ggplot(model_dataq3, aes(x = resids)) +
+  geom_histogram(bins = 25,
+                 fill = "cadetblue2",
+                 color = "black") +
+  theme_lucid()
+
+```
+The residual hist looks symmetric although we do see it has a slight left skew.  
+
+```{r, echo = F}
+ggplot(model_dataq3, aes(x = fitted, y = resids)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_classic()
+
+```
+These look evenly scattered but we do see an interesting linear pattern along the bottom left. 
+
+These diagnostics are sufficient for our purposes and we will not continue with adjusting the model. 
 
 
 ### Cortisol Exploration
@@ -1235,7 +1287,7 @@ wake_data_q3 %>%
 
 # Exclude the observation with 89 cortisol
 ah <- wake_data_q3 %>%
-  filter(!`Cortisol (nmol/L)` == 89.55714)
+  filter(!dplyr::near(`Cortisol (nmol/L)`, 89.55714))
   
 ```
 
