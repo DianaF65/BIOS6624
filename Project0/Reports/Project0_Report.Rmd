@@ -5,9 +5,12 @@ output:
     number_sections: false
     latex_engine: xelatex
 mainfont: Arial
-fontsize: 11pt
+fontsize: 12pt
 documentclass: article
-geometry: margin=0.9in
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
 ---
 
 ```{r, echo = F, warning=F, message = F}
@@ -36,14 +39,36 @@ opts_chunk$set(tidy = F)
 
 ```{r, echo = F}
 # Read in the data
-proj0_dat <- read.csv("RawData/Project0_Clean_v2.csv",
+proj0_dat <- read.csv("../RawData/Project0_Clean_v2.csv",
                       header = TRUE,
                       check.names = FALSE)
 ```
 
 # Introduction
 
+Research suggests that there is a relationship between hormonal patterns across the span of a day and conditions including sleep disorders and depression.
+In this study, the focus is on the hormones, DHEA and Cortisol, which play a role in regulating stress. 
+Cortisol is an important steroid hormone that significantly affects metabolism which in turn affects the central nervous system. 
+DHEA is 
+
+In this study, researchers followed the cortisol and DHEA patterns over the course of a day for a totstudal y period of three days to measure the the patterns of the two hormones in a natural environment.  
+Researchers utilized two methods to collect saliva samples; a Saliva Procurement and Integrated Testing (SPIT) booklet and an automatic Electronic Monitoring Cap. Saliva samples were collected at waking, 30 minutes after waking, before lunch, and 600 minutes after waking. Subjects did not have to adhere to a specific wake up time for 31 healthy control subjects. 
+
+This report addresses the following hypotheses of interest: 
+
+\textbf{Hypothesis 1: } 
+There was satisfactory agreement between the subject's recording of sampling times compared to the recording times by the electronic monitoring cap. More specifically, there is a one-to-one relationship between the subject's recorded times and the booklet times. 
+
+\textbf{Hypothesis 2: } 
+Subjects adhered appropriately to the study protocol of the +30 minute and +600 minute sampling times. 
+
+\textbf{Hypothesis 3: DHEA and Cortisol levels show an initial increase from waking to 30 minutes followed by a gradual decline from 30 minutes and on. } 
 
 
+# Methods
+
+# Results
+
+# Discussion
 
 
