@@ -126,6 +126,10 @@ wake_data$MEM_C <-
 wake_data <- wake_data %>% 
   relocate(MEM_C, .after = `MEMs: Clock Time`)
 
+# Create a subset of the data frame that only has Wake times
+# AKA Collection Sample == 1
+wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
+
 ```
 
 
@@ -194,12 +198,6 @@ ggplot(na.omit(wake_data), aes(x = log(MEM_C))) +
 
 The Booklet and MEM distributions appear to agree for the most part. 
 
-```{r, echo = F}
-# Create a subset of the data frame that only has Wake times
-# AKA Collection Sample == 1
-wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
-```
-
 
 ## Question 1
 
@@ -245,7 +243,7 @@ These appear to be very similar but we can see some instances where the MEM fail
 ```{r, echo = F}
 ### Model
 # Center MEM time for interpretation relative to Mean MEM time
-wakes$MEM_C <- wakes$MEM_C - mean(wakes$MEM_Minutes, na.rm = TRUE)
+# wakes$MEM_C <- wakes$MEM_Minutes - mean(wakes$MEM_Minutes, na.rm = TRUE)
 
 # LMM with random intercept for subject - Day added
 model_day <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
@@ -352,6 +350,7 @@ model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB),
                 data = wakes)
 
 summary(model_q1)
+intervals(model_q1)
 ```
 
 Intercept: The average wake up time recorded by the MEM was ~829 minutes on the first day. 
@@ -1225,13 +1224,120 @@ model_q3 <- lmer(log_DHEA ~ time_pre30 + time_post30
 summary(model_q3)
 confint(model_q3)
 ```
+```{r, echo = F}
+#### Back transform betas 
+# Pre 30
+a <- -0.01622 * 30 
+a_orig <- (exp(a) - 1) * 100 # -38.52871
+
+# Confidence interval
+a1 <- (exp(-0.042 * 30) - 1) * 100 # -71.6346
+a2 <- (exp(-0.01 * 30) - 1) * 100 # -25.92
+
+# Post 30
+b <- -0.001544 * 600
+b_org <- (exp(b) - 1) * 100 # -37.07332
+b1 <- (exp(-0.002 * 600) - 1) * 100 
+b2 <- (exp(-0.001 * 600) - 1) * 100 
+
+```
+
 
 Interpretations: 
-Intercept: At 0 minutes or wake time, DHEA levels are approximately around 1.8 nmol/L (95% CI: (-0.042, 0.42)). 
 
-Time Pre30: For the time period of wake to 30 minutes, there is a decrease of approximately 1.62 (95% CI: (-0.022, -0.01)) units of DHEA for each additional minute since waking. This is statistically significant with p < 0.001.
+Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 39% decrease in DHEA (95% CI: (-71.63%, -25.92%)).
+This is statistically significant with p < 0.001.
+DHEA shows a statistically significant decrease, not the expected increase, from waking to 30 minutes after waking. 
 
-Time Post30: From 30 minutes to 600 minutes, there is a decrease of around 1.54 (95% CI: (-0.002, -0.001)) units of DHEA for each additional minute. 
+
+Time Post30: From 30 minutes to 600 minutes, there is approimately a 60.4% decrease in DHEA levels (95% CI: (-45.12%, -69.88%)). This is statistically significant with p-val < 0.001. 
+As expected, DHEA showed a statistically significant decline over 10 hours. 
+
+Using a piecewise linear mixed-effects model with a knot at 30 minutes post-waking, DHEA concentrations showed a significant early decline - approximately 39% decrease over the first 30 minutes. 
+After 30 minutes, DHEA declined more gradually across the day, corresponding to an additional ~60% decrease over 10 hours.
+
+### Model Plots
+
+```{r, echo = F, warning = F, message = F}
+ggplot(wake_data_q3,
+       aes(x = minutes_since_wake, 
+           y = log_DHEA,
+           group = interaction(SubjectID, DAYNUMB))) +
+  geom_line(alpha = 0.25) +
+  geom_point(alpha = 0.25, size = 1) +
+  geom_smooth(aes(group = 1), method = "loess", se = TRUE) +
+  geom_vline(xintercept = 30, linetype = 2) +
+  labs(x = "Minutes since waking", y = "log(DHEA)",
+       title = "log(DHEA) trajectories by subject-day with overall trend")
+
+```
+
+
+```{r, echo = F, warning = F, message = F}
+t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
+
+pred_grid <- tibble(
+  minutes_since_wake = seq(0, as.numeric(t_max), by = 5)
+) %>%
+  mutate(
+    time_pre30  = pmin(minutes_since_wake, 30),
+    time_post30 = pmax(minutes_since_wake - 30, 0)
+  )
+
+# Get fixed effects predictions
+pred_grid$fit <- predict(model_q3, newdata = pred_grid, re.form = NA)
+
+# Add a 95% CI
+X <- model.matrix(~ time_pre30 + time_post30, data = pred_grid)
+V <- vcov(model_q3)
+se_fit <- sqrt(diag(X %*% V %*% t(X)))
+
+pred_grid <- pred_grid %>%
+  mutate(
+    lwr = fit - 1.96 * se_fit,
+    upr = fit + 1.96 * se_fit
+  )
+
+# Plot
+ggplot() +
+  geom_point(data = wake_data_q3,
+             aes(x = minutes_since_wake, y = log_DHEA),
+             alpha = 0.25, size = 1) +
+  geom_ribbon(data = pred_grid,
+              aes(x = minutes_since_wake, 
+                  ymin = lwr,
+                  ymax = upr),
+              alpha = 0.2,
+              fill = "blue") +
+  geom_line(data = pred_grid,
+            aes(x = minutes_since_wake, y = fit),
+            linewidth = 1,
+            col = "blue") +
+  geom_vline(xintercept = 30, linetype = 2,
+             col = "red") +
+  labs(x = "Minutes since waking", y = "log(DHEA)",
+       title = "Piecewise linear mixed model fit (fixed effects only)",
+       subtitle = "Knot at 30 minutes") + 
+  theme_lucid()
+
+
+```
+
+```{r, echo = F}
+pred_grid <- pred_grid %>%
+  mutate(segment = ifelse(minutes_since_wake <= 30, "0–30 min", ">30 min"))
+
+ggplot(pred_grid, aes(x = minutes_since_wake, y = fit)) +
+  geom_line(aes(linetype = segment), linewidth = 1) +
+  geom_vline(xintercept = 30, linetype = 2) +
+  labs(x = "Minutes since waking", y = "Predicted log(DHEA)",
+       title = "Estimated slopes before and after 30 minutes",
+       linetype = "Segment")
+
+```
+
+
+
 
 #### Model Diagnostics
 
