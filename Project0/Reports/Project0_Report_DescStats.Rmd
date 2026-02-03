@@ -1100,6 +1100,18 @@ wake_data_q3$MEM_Minutes <-
 # Move this to after MEMs: Clock Time
 wake_data_q3 <- wake_data_q3 %>% 
   relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
+
+
+### Modify data for Person 3029
+wake_data_q3 <- wake_data_q3 %>% 
+  mutate(DAYNUMB = case_when(
+    SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
+    SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
+    SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
+    TRUE ~ DAYNUMB
+  )) %>% 
+  ungroup()
+
 ```
 
 
@@ -1126,7 +1138,7 @@ There appears to be one subject that has 4 values of 5.205 for DHEA (nmol/L).
 
 ```{r, echo = F}
 # Remove these observations
-wake_data_13 <- wake_data_q3 %>%
+wake_data_q3 <- wake_data_q3 %>%
   filter(
     is.na(`DHEA (nmol/L)`) |
     !(dplyr::near(`DHEA (nmol/L)`, 5.205) | SubjectID == "3037"))
@@ -1151,7 +1163,7 @@ Visualize the outcome:
 
 ```{r, echo = F}
 # A plot of the distribution of the outcome
-ggplot(na.omit(wake_data_q3), aes(x = `DHEA (nmol/L)`)) +
+ggplot(wake_data_q3, aes(x = `DHEA (nmol/L)`)) +
          geom_histogram(bins = 20, fill = "palevioletred2",
                         col = "black") + 
   theme_lucid() 
@@ -1159,67 +1171,58 @@ ggplot(na.omit(wake_data_q3), aes(x = `DHEA (nmol/L)`)) +
 
 ```{r, echo = F}
 # A plot of the distribution of the outcome
-ggplot(na.omit(wake_data_q3), aes(x = log(`DHEA (nmol/L)`))) +
+ggplot(wake_data_q3, aes(x = log(`DHEA (nmol/L)`))) +
          geom_histogram(bins = 20, fill = "palevioletred2",
                         col = "black") + 
   theme_lucid() 
 ```
 
-
-
-```{r, echo = F}
-# A plot of the distribution of the outcome
-ggplot(na.omit(proj0_dat.), aes(x = (`DHEA (nmol/L)`))) +
-         geom_histogram(bins = 20, fill = "palevioletred2",
-                        col = "black") + 
-  theme_lucid() 
-  # facet_grid(~ DAYNUMB)
-```
 
 
 ### DHEA Model
 
 ```{r, echo = F}
+#### Fit the LMM
 
-# Add a col for logged DHEAW
+# Create a logged DHEA variable
 wake_data_q3$log_DHEA <- log(wake_data_q3$`DHEA (nmol/L)`)
 
-# Fit the LMM
-model_q3 <- lmer(log_DHEA ~ `Sleep Diary reported wake time`
-                 + min30
+# Knot at 30 minutes - Collection Sample 2
+wake_data_q3 <- wake_data_q3 %>%
+  mutate(
+    # Slope from waking to 30 miutes
+    time_pre30  = pmin(Booklet_Minutes, 30),
+    # Slope from after 30 minutes
+    time_post30 = pmax(Booklet_Minutes - 30,
+                       0)
+  )
+
+# Center Sleep Diary wake minutes
+wake_data_q3 <- wake_data_q3 %>% 
+  mutate(Sleep_Centered = `Sleep Diary Wake Minutes` - 
+           mean(`Sleep Diary Wake Minutes`, na.rm = TRUE)) %>% 
+  relocate(Sleep_Centered, .after = `Sleep Diary Wake Minutes`)
+# Mean wake up time is - 409.4545 minutes
+
+
+##### Model
+model_q3 <- lmer(log_DHEA ~ Booklet_Minutes + time_post30
                  + (1 | SubjectID),
                  REML = FALSE,
                  na.action = na.omit,
                  data = wake_data_q3)
 
 summary(model_q3)
+confint(model_q3)
 ```
 
 
 ### Cortisol Exploration
 
-
-
-```{r, echo = F}
-######### Modeling
-
-# Knot at 30 minutes - Collection Sample 2
-wake_data_q3 <- wake_data_q3 %>% 
-  mutate(min30 = as.numeric(ifelse(`Collection Sample` > 2, 
-                                   `Collection Sample` - 2, 
-                                   0))) %>% 
-  relocate(min30, .after = `Collection Sample`)
-
-```
-
-
-
-### Cortisol
-
 A summary of Cortisol: 
 
 ```{r, echo = F}
-summary(proj0_dat$`Cortisol (nmol/L)`)
+summary(wake_data_q3$`Cortisol (nmol/L)`)
 ```
 
 How many measurements are above 80?
@@ -1231,8 +1234,8 @@ wake_data_q3 %>%
           DAYNUMB,`Cortisol (nmol/L)`)
 
 # Exclude the observation with 89 cortisol
-wake_data_q3 <- wake_data_q3 %>% 
-  filter(!`Cortisol (nmol/L)` >= 80)
+ah <- wake_data_q3 %>%
+  filter(!`Cortisol (nmol/L)` == 89.55714)
   
 ```
 
@@ -1250,3 +1253,13 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
   facet_wrap(~DAYNUMB)
   # theme(legend.position = "none")
 ```
+
+
+### Cortisol Model
+
+```{r, echo = F}
+######### Modeling
+
+
+```
+
