@@ -1051,27 +1051,94 @@ sum(MEM_wake_check$diff_min600 >= 45, na.rm = TRUE)
 
 ## Question 3
 
-### DHEA
+```{r, echo = F}
+################################################################################
+###                               Question 3                                 ### 
+################################################################################
+
+##### Create data frame for question 3
+## Make a subset of the data with the relevant cols for Q3
+
+# Vector of the cols of interest
+cols <- c("SubjectID",
+          "Collection Date", "DAYNUMB",
+          "Collection Sample",
+          "Booket: Clock Time", "MEMs: Clock Time",
+          "Sleep Diary reported wake time",
+          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+
+# Subset the original data frame
+wake_data_q3 <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+
+# Convert the Sleep diary Wake time to minutes
+wake_data_q3$`Sleep Diary Wake Minutes` <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data_q3$`Sleep Diary reported wake time`)) * 60 +
+  lubridate::minute(hm(wake_data_q3$`Sleep Diary reported wake time`))
+
+# Move this to after Collection Sample
+wake_data_q3 <- wake_data_q3 %>% 
+  relocate(`Sleep Diary Wake Minutes`, 
+           .after = `Sleep Diary reported wake time`)
+
+# Convert the Booklet Time to minutes
+wake_data_q3$Booklet_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data_q3$`Booket: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data_q3$`Booket: Clock Time`))
+
+# Move this to after Booklet: Clock Time
+wake_data_q3 <- wake_data_q3 %>% 
+  relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
+
+# Convert the MEM Time to minutes
+wake_data_q3$MEM_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data_q3$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data_q3$`MEMs: Clock Time`))
+
+# Move this to after MEMs: Clock Time
+wake_data_q3 <- wake_data_q3 %>% 
+  relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
+```
+
+
+### DHEA Exploration
 
 A summary of DHEA: 
 
 ```{r, echo = F}
-summary(proj0_dat$`DHEA (nmol/L)`)
+summary(wake_data_q3$`DHEA (nmol/L)`)
 ```
 How many values equal 5.205?
 
 ```{r, echo = F}
-proj0_dat %>% 
-  filter(`DHEA (nmol/L)` == 5.205) %>% 
-  reframe(SubjectID, `Collection Sample`, 
-          DAYNUMB,`DHEA (nmol/L)`)
+# Display subjects that have 5.205 DHEA levels
+wake_data_q3 %>%
+  filter((dplyr::near(`DHEA (nmol/L)`, 5.205) | SubjectID == "3037")) %>% 
+  reframe(SubjectID, `DHEA (nmol/L)`)
+
+# There are 2 obs besides 3037 that have DHEA of 5.205
+# There are 12 obs for 3037
+
 ```
 There appears to be one subject that has 4 values of 5.205 for DHEA (nmol/L).
+
+```{r, echo = F}
+# Remove these observations
+wake_data_13 <- wake_data_q3 %>%
+  filter(
+    is.na(`DHEA (nmol/L)`) |
+    !(dplyr::near(`DHEA (nmol/L)`, 5.205) | SubjectID == "3037"))
+
+# 14 observations removed - 358 observations left
+```
+
 
 Visualizing DHEA over time: 
 
 ```{r, echo = F, message = F, warning=F}
-ggplot(proj0_dat, aes(x = `Collection Sample`,
+ggplot(wake_data_q3, aes(x = `Collection Sample`,
                       y = `DHEA (nmol/L)`,
                       color = factor(SubjectID))) +
   geom_point() + 
@@ -1080,31 +1147,71 @@ ggplot(proj0_dat, aes(x = `Collection Sample`,
   # theme(legend.position = "none")
 ```
 
-Visualizing a random subset of 5 patients: 
+Visualize the outcome:
 
 ```{r, echo = F}
-# Random sample of 5 subjects
+# A plot of the distribution of the outcome
+ggplot(na.omit(wake_data_q3), aes(x = `DHEA (nmol/L)`)) +
+         geom_histogram(bins = 20, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() 
 ```
-
-A plot of the mean trajectories: 
 
 ```{r, echo = F}
-# Add a column of the mean trajectory...
-proj0_dat %>% 
-  filter(!is.na(`DHEA (nmol/L)`)) %>% 
-  group_by(SubjectID) %>% 
-  summarise(mean_DHEA = mean(`DHEA (nmol/L)`, na.rm = T),
-            .groups = "drop") + 
-  
-# Plot  
-ggplot(proj0_dat,
-    aes(x = `Collection Sample`, 
-             y = `DHEA (nmol/L)`,
-             color = factor(SubjectID))) + 
-  geom_point() + 
-  geom_line() + 
-  facet_wrap(~DAYNUMB)
+# A plot of the distribution of the outcome
+ggplot(na.omit(wake_data_q3), aes(x = log(`DHEA (nmol/L)`))) +
+         geom_histogram(bins = 20, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() 
 ```
+
+
+
+```{r, echo = F}
+# A plot of the distribution of the outcome
+ggplot(na.omit(proj0_dat.), aes(x = (`DHEA (nmol/L)`))) +
+         geom_histogram(bins = 20, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() 
+  # facet_grid(~ DAYNUMB)
+```
+
+
+### DHEA Model
+
+```{r, echo = F}
+
+# Add a col for logged DHEAW
+wake_data_q3$log_DHEA <- log(wake_data_q3$`DHEA (nmol/L)`)
+
+# Fit the LMM
+model_q3 <- lmer(log_DHEA ~ `Sleep Diary reported wake time`
+                 + min30
+                 + (1 | SubjectID),
+                 REML = FALSE,
+                 na.action = na.omit,
+                 data = wake_data_q3)
+
+summary(model_q3)
+```
+
+
+### Cortisol Exploration
+
+
+
+```{r, echo = F}
+######### Modeling
+
+# Knot at 30 minutes - Collection Sample 2
+wake_data_q3 <- wake_data_q3 %>% 
+  mutate(min30 = as.numeric(ifelse(`Collection Sample` > 2, 
+                                   `Collection Sample` - 2, 
+                                   0))) %>% 
+  relocate(min30, .after = `Collection Sample`)
+
+```
+
 
 
 ### Cortisol
@@ -1115,30 +1222,27 @@ A summary of Cortisol:
 summary(proj0_dat$`Cortisol (nmol/L)`)
 ```
 
-How many measurements are above 26?
+How many measurements are above 80?
 
 ```{r, echo = F}
-proj0_dat %>% 
+wake_data_q3 %>% 
   filter(`Cortisol (nmol/L)` >= 26) %>% 
   reframe(SubjectID, `Collection Sample`, 
           DAYNUMB,`Cortisol (nmol/L)`)
+
+# Exclude the observation with 89 cortisol
+wake_data_q3 <- wake_data_q3 %>% 
+  filter(!`Cortisol (nmol/L)` >= 80)
+  
 ```
 
 
-How many values equal exceed 80?
-
-```{r, echo = F}
-proj0_dat %>% 
-  filter(`Cortisol (nmol/L)` >= 80) %>% 
-  reframe(SubjectID, `Collection Sample`, 
-          DAYNUMB,`Cortisol (nmol/L)`)
-```
 There appears to be one subject that has a value greater than 80. We wll remove this observation for this subject as this is most likely a lab error. 
 
 Visualizing Cortisol over time: 
 
 ```{r, echo = F, message = F, warning=F}
-ggplot(proj0_dat, aes(x = `Collection Sample`,
+ggplot(wake_data_q3, aes(x = `Collection Sample`,
                       y = `Cortisol (nmol/L)`,
                       color = factor(SubjectID))) +
   geom_point() + 
@@ -1146,11 +1250,3 @@ ggplot(proj0_dat, aes(x = `Collection Sample`,
   facet_wrap(~DAYNUMB)
   # theme(legend.position = "none")
 ```
-
-Visualizing a random subset of 5 patients: 
-
-```{r, echo = F}
-# Random sample of 5 subjects
-```
-
-
