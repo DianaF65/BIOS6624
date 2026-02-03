@@ -67,7 +67,7 @@ proj0_dat %>%
           `MEMs: Sample interval Decimal Time (mins)`)
 ```
 
-when you when you
+
 
 ```{r, echo = F}
 # How many variables 0 - 5 missing values
@@ -78,7 +78,26 @@ Visualizing the missingness:
 
 
 ```{r, echo = F}
-vis_dat(proj0_dat)
+# Remove variables for this plot
+plot_dat <- proj0_dat
+# Remove variables we do not use in analysis, etc.
+vars <- c("Booklet: Sample interval", 
+          "Booklet: Sample interval Decimal Time (mins)",
+          "MEMs: Sample interval",
+          "MEMs: Sample interval Decimal Time (mins)",
+          "DHEA (pg/dl)",
+          "Cortisol (ug/dl)")
+ 
+plot_dat <- plot_dat[ , !(names(plot_dat) %in% vars)]
+
+
+colnames(plot_dat) <- c("SubjectID", "Collection_Date",
+                        "Collection_Sample",
+                        "Booklet Time", "MEMs Time",
+                        "Wake Time", "Booklet Sample Interval",
+                        "Booklet")
+
+vis_dat(plot_dat)
 ```
 \newpage
 
@@ -362,7 +381,7 @@ Assessing bias:
 
 ```{r, echo = F}
 fixef(model_q1)["(Intercept)"] -
-mean(wakes$MEM_Minutes, na.rm = TRUE)
+mean(wakes$MEM_C, na.rm = TRUE)
 
 ```
 We have bias of around 2.21, indicating that there is small bias. The mean wake up time of MEM is 417.58 whereas the intercept representing the average MEM wake up time was 415.36.
@@ -382,7 +401,7 @@ Residual variance (within subject heterogeneity): Day to day fluctuations within
 Scatterplot: 
 
 ```{r, echo = F}
-ggplot(na.omit(wakes), aes(x = MEM_Minutes, y = Booklet_Minutes,
+ggplot(wakes, aes(x = MEM_Minutes, y = Booklet_Minutes,
                            color = factor(DAYNUMB))) + 
   geom_point() + 
   theme_lucid() + 

@@ -34,15 +34,110 @@ library(nlme)
 library(gtsummary)
 library(gt)
 library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(sjPlot)
 opts_chunk$set(tidy = F)
 ```
 
-```{r, echo = F}
+```{r, echo = F, warning = F, message = F}
 # Read in the data
 proj0_dat <- read.csv("../RawData/Project0_Clean_v2.csv",
                       header = TRUE,
                       check.names = FALSE)
+
+
 ```
+
+
+```{r, echo = F, warning = F, message = F}
+########### Question 1 Data
+
+## Make a subset of the data with the relevant cols for Q1 - Q3
+
+# Vector of the cols of interest
+cols <- c("SubjectID",
+          "Collection Date", "DAYNUMB",
+          "Collection Sample",
+          "Booket: Clock Time", "MEMs: Clock Time",
+          "Sleep Diary reported wake time",
+          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+
+# Subset the original data frame
+wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+ 
+# Convert the Sleep diary Wake time to minutes
+wake_data$`Sleep Diary Wake Minutes` <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`Sleep Diary reported wake time`)) * 60 +
+  lubridate::minute(hm(wake_data$`Sleep Diary reported wake time`))
+
+# Move this to after Collection Sample
+wake_data <- wake_data %>% 
+  relocate(`Sleep Diary Wake Minutes`, 
+           .after = `Sleep Diary reported wake time`)
+
+# Convert the Booklet Time to minutes
+wake_data$Booklet_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`Booket: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`Booket: Clock Time`))
+
+# Move this to after Booklet: Clock Time
+wake_data <- wake_data %>% 
+  relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
+
+# Convert the MEM Time to minutes
+wake_data$MEM_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
+
+# Move this to after MEMs: Clock Time
+wake_data <- wake_data %>% 
+  relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
+
+# Center MEM time
+wake_data$MEM_C <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
+
+# Move this to after MEMs: Clock Time
+wake_data <- wake_data %>% 
+  relocate(MEM_C, .after = `MEMs: Clock Time`)
+
+# Create a Minutes SINCE WAKE variable
+wake_data <- wake_data %>%
+  mutate(
+    clock_min = lubridate::hour(hm(`Booket: Clock Time`)) * 60 +
+                lubridate::minute(hm(`Booket: Clock Time`))) %>%
+  group_by(SubjectID, DAYNUMB) %>%
+  mutate(wake_min = clock_min[`Collection Sample` == 1][1],
+         minutes_since_wake = clock_min - wake_min) %>%
+  ungroup() %>% 
+  relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
+
+
+### Modify data for Person 3029
+wake_data <- wake_data %>% 
+  mutate(DAYNUMB = case_when(
+    SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
+    SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
+    SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
+    TRUE ~ DAYNUMB
+  )) %>% 
+  ungroup()
+
+# Create a subset of the data frame that only has Wake times
+# AKA Collection Sample == 1
+wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
+
+```
+
 
 # Introduction
 
@@ -64,10 +159,76 @@ Subjects adhered appropriately to the study protocol of the +30 minute and +600 
 
 \textbf{Hypothesis 3: DHEA and Cortisol levels show an initial increase from waking to 30 minutes followed by a gradual decline from 30 minutes and on. } 
 
+We will further refer to the electronic monitoring cap as MEM time and the the SPIT Booklet as Booklet time for the remainder of the report.
 
 # Methods
 
+## Preliminary Data Analysis
+
+As missingness can present serious issues for the data analysis if not explored and addressed, we investigated missingness through calculating the number and percentage of missing values for each variable in the dataset. We further visualized missingness for each variable.  
+
+Below is a Table1 of the primary variables of interest for the analysis:
+
+For the variables we employed in our analyses, we assessed and visualized distributions to determine if there were any outliers or considerations that needed to be taken for data analysis. 
+
+## Data Cleaning
+
+
+
+
+## Data Analysis
+
+\textbf{1:} To address research question 1, we employed a longitudinal linear mixed effects model with Booklet time in Minutes for the outcome, MEM in Minutes and the day number (1-3) as covariates We included a random intercept for subject that allowed us to take variability between subjects into account in our model. 
+Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality. We additionally assessed bias by.... COME BACK TO THIS
+
+\textbf{2: }
+
+\textbf{2: }
+
+
 # Results
+
+From the missingness investigation, we determined the MEMs had the highest amount of missing: 177 missing values which is equivalent to 47.6%. 
+Booklet had the second highest amount of missing with 55 missing values or 14.8%.
+Cortisol and DHEA measurements had 5 missing values or 1.34% missingness.
+
+The graphic below allows us to visually see the quantity of missingness in the MEM times compared to the other variables in the dataset: 
+
+## Hypothesis 1
+
+Below is a table of the estimates, 95% Confidence Intervals and P-values for the model: 
+
+```{r, echo = F}
+# LMM with random intercept for subject - Day added
+model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
+                random = ~ 1 | SubjectID,
+                na.action = na.omit,
+                method = "REML",
+                data = wakes)
+
+
+# Display model summary with tab_model
+# Do not show random effects, ICC
+tab_model(model_q1, show.re.var = FALSE, show.icc = FALSE,
+          show.intercept = FALSE)
+
+```
+
+```{r, echo = F, eval = F}
+intervals(model_q1)
+
+#  Fixed effects:
+#                       lower       est.      upper
+# (Intercept)      -5.0891734  3.6513329 12.3918392
+# MEM_C             0.9667782  0.9859424  1.0051067
+# factor(DAYNUMB)2 -6.6349646 -3.4589031 -0.2828415
+# factor(DAYNUMB)3 -5.0521491 -1.8810020  1.2901450
+```
+
+Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
+In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. Changes in MEM time are mirrored almost exactly by changes in Booklet time and our initial hypothesis is correct. 
+
+
 
 # Discussion
 
