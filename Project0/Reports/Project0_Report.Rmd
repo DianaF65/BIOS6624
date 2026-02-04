@@ -4,6 +4,7 @@ output:
     toc: false
     number_sections: false
     latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
 mainfont: Arial
 fontsize: 12pt
 documentclass: article
@@ -11,10 +12,14 @@ geometry: margin=1in
 header-includes:
   - \usepackage{setspace}
   - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{subcaption}
 ---
 
 ```{r, echo = F, warning=F, message = F}
 knitr::opts_chunk$set(echo = TRUE)
+
 
 library(readr)
 library(knitr)
@@ -39,9 +44,8 @@ library(visdat)
 library(lubridate)
 library(see)
 library(data.table)
-library(sjPlot)
-library(modelsummary)
-library(broom.mixed)
+library(gridExtra)
+library(kableExtra)
 opts_chunk$set(tidy = F)
 ```
 
@@ -51,12 +55,21 @@ proj0_dat <- read.csv("../RawData/Project0_Clean_v2.csv",
                       header = TRUE,
                       check.names = FALSE)
 
+### Modify data for Person 3029
+proj0_dat <- proj0_dat %>% 
+  mutate(DAYNUMB = case_when(
+    SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
+    SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
+    SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
+    TRUE ~ DAYNUMB
+  )) %>% 
+  ungroup()
 
 ```
 
 
 ```{r, echo = F, warning = F, message = F}
-########### Question 1 Data
+############################## Question 1 Data #################################
 
 ## Make a subset of the data with the relevant cols for Q1 - Q3
 
@@ -208,6 +221,11 @@ The graphic below allowed us to visually see the quantity of missingness in the 
 Below is a table of the estimates, 95% Confidence Intervals and P-values for the model: 
 
 ```{r, echo = F}
+
+```
+
+
+```{r, echo = F}
 # LMM with random intercept for subject - Day added
 model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
                 random = ~ 1 | SubjectID,
@@ -249,9 +267,480 @@ In other words, the subject's recorded wake up time and the MEM's recorded wake 
 
 ## Hypothesis 2
 
+```{r, echo = F}
+################################################################################
+###                               Question 2                                 ### 
+################################################################################
+
+
+# Df with Wake time, 30 min post wake, and 600 min post wake
+wake_check <- wake_data %>%
+  # filter(`Collection Sample` %in% c(1, 2)) %>%
+  group_by(SubjectID, DAYNUMB) %>%
+  reframe(
+    # Wake time
+    wake_time = `Sleep Diary Wake Minutes`[`Collection Sample` == 1],
+    # The 30 minute time with Booklet
+    Book_30time = Booklet_Minutes[`Collection Sample` == 2],
+    # The 600 miniute time with booklet
+    Book_600time = Booklet_Minutes[`Collection Sample` == 4],
+    # The 30 minute time with MEM
+    MEM_30time = MEM_Minutes[`Collection Sample` == 2],
+    # The 600 minute time with MEM
+    MEM_600time = MEM_Minutes[`Collection Sample` == 4]
+    )
+
+ 
+# Define adherence for BOOK
+book_wake_check <- wake_check %>%
+  mutate(
+    # 30 min after waking target time
+    target_30time = wake_time + 30,
+    # 600 min after waking target time
+    target_600time = wake_time + 600,
+    # Difference between 30 min later and the recorded time
+    diff_min30  = Book_30time - target_30time,
+    # Difference between 600 min later and the recorded time
+    diff_min600 = Book_600time - target_600time,
+    # For 30 min: Define good adherence - within 7.5 minutes
+    good_adherent30 = abs(diff_min30) <= 7.5,
+    # For 600 min: Define good adherence
+    good_adherent600 = abs(diff_min600) <= 7.5,
+    # For 30 min: Define adequate adherence - within 15 minutes
+    adequate_ad30 = abs(diff_min30) <= 15,
+    # For 600 min: Define adequate adherence
+    adequate_ad600 = abs(diff_min600) <= 15
+  ) %>% 
+  relocate(c(target_30time, diff_min30,
+             good_adherent30, adequate_ad30), 
+           .after = Book_30time) %>% 
+  relocate(c(target_600time, diff_min600,
+             good_adherent600, adequate_ad600), 
+           .after = Book_600time)
+
+# Define adherence for MEM
+MEM_wake_check <- wake_check %>%
+  mutate(
+    # 30 min after waking target time
+    target_30time = wake_time + 30,
+    # 600 min after waking target time
+    target_600time = wake_time + 600,
+    # Difference between 30 min later and the recorded time
+    diff_min30  = MEM_30time - target_30time,
+    # Difference between 600 min later and the recorded time
+    diff_min600 = MEM_600time - target_600time,
+    # For 30 min: Define good adherence - within 7.5 minutes
+    good_adherent30 = abs(diff_min30) <= 7.5,
+    # For 600 min: Define good adherence
+    good_adherent600 = abs(diff_min600) <= 7.5,
+    # For 30 min: Define adequate adherence - within 15 minutes
+    adequate_ad30 = abs(diff_min30) <= 15,
+    # For 600 min: Define adequate adherence
+    adequate_ad600 = abs(diff_min600) <= 15
+  ) %>% 
+  relocate(c(target_30time, diff_min30,
+             good_adherent30, adequate_ad30), 
+           .after = MEM_30time) %>% 
+  relocate(c(target_600time, diff_min600,
+             good_adherent600, adequate_ad600), 
+           .after = MEM_600time)
+
+```
+
+```{r, echo = F}
+################################## Good Adherence ##############################
+
+############################## Adherence by Subject ############################
+
+################################### +30 Minutes ################################
+
+######## Booklet
+subject_good_30adherence <- book_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_good_adherent = sum(good_adherent30),
+    # What is the proportion
+    prop_good_adherent = mean(good_adherent30),
+    .groups = "drop"
+  )
+# subject_good_30adherence
+
+# How many subjects adhered all 3 days
+# sum(subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+# Proportion and Percentage of subjects
+# 14/31 = 0.45 or 45%
+
+######## MEM
+MEM_subject_good_30adherence <- MEM_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_good_adherent = sum(good_adherent30),
+    # What is the proportion
+    prop_good_adherent = mean(good_adherent30),
+    .groups = "drop"
+  )
+# MEM_subject_good_30adherence
+
+# How many subjects adhered all 3 days
+# sum(MEM_subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
+# Proportion and Percentage of subjects
+# 6/31 
+
+
+
+
+################################# Adequate Adherence ###########################
+
+############################## Adherence by Subject ############################
+
+################################### +30 Minutes ################################
+
+###### Book
+
+subject_ad_30adherence <- book_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_ad_adherent = sum(adequate_ad30),
+    # What is the proportion
+    prop_ad_adherent = mean(adequate_ad30),
+    .groups = "drop"
+  )
+
+# subject_ad_30adherence
+
+# How many subjects adhered all 3 days
+# sum(subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
+# Proportion and Percentage of subjects
+# 20/31 = 0.65 or 65%
+
+###### MEM
+MEM_subject_ad_30adherence <- MEM_wake_check %>%
+  group_by(SubjectID) %>%
+  summarise(
+    # How many days out of 3 were they adherent?
+    days_ad_adherent = sum(adequate_ad30),
+    # What is the proportion
+    prop_ad_adherent = mean(adequate_ad30),
+    .groups = "drop"
+  )
+
+# MEM_subject_ad_30adherence
+
+# How many subjects adhered all 3 days
+# sum(MEM_subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
+# Proportion and Percentage of subjects
+# 10/31 = 0.32 or 32%
+
+
+################################### +60 Minutes ################################
+
+
+
+```
+
+Below we summarize the percentage of subjects that adhered to the study sampling times. Percentages for the +30 Minute sampling time is in Table 2 and percentages for the +600 Minute sampling time is in Table 3, for both MEM and Booklet times. 
+
+```{r, echo = F}
+################################## Good Adherence ##############################
+
+################################ Adherence Overall #############################
+
+################################### +30 Minutes ################################
+
+######### Book
+# Adherence overall
+good_book <- book_wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent30, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+# good_book
+# A tibble: 1 × 2
+#   prop_good_adherent per_good_adherence
+#                <dbl>              <dbl>
+# 1              0.782               78.2
+
+
+######### MEM
+# Adherence overall
+good_MEM <- MEM_wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent30, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+# good_MEM
+# A tibble: 1 × 2
+#   prop_good_adherent per_good_adherence
+#                <dbl>              <dbl>
+# 1              0.529               52.9
+
+################################# Adequate Adherence ###########################
+
+################################ Adherence Overall #############################
+
+################################### +30 Minutes ################################
+
+######## Book
+
+# Adherence overall
+adequate_book <- book_wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
+# adequate_book
+#   prop_adeq_adherent per_adeq_adherence
+#                <dbl>              <dbl>
+# 1              0.897               89.7
+
+######## MEM
+# Adherence overall
+adequate_MEM <- MEM_wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
+# adequate_MEM
+#   prop_adeq_adherent per_adeq_adherence
+#                <dbl>              <dbl>
+# 1              0.714               71.4
+
+###### Create Data frame to display with this
+# Combine all the proportions into a table to display nicely
+props <- data.frame(Good = c(good_book$per_good_adherence, 
+                             good_MEM$per_good_adherence),
+                    Adequate = c(adequate_book$per_adeq_adherence,
+                                 adequate_MEM$per_adeq_adherence))
+
+# Add rownames
+rownames(props) <- c("Booklet", "MEM")
+
+```
+
+
+```{r, echo = F}
+################################## Good Adherence ##############################
+
+################################ Adherence Overall #############################
+
+#################################### +600 Minutes ##############################
+
+##### Book
+# Adherence overall
+good_book600 <- book_wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent600, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+#   prop_good_adherent per_good_adherence
+#                <dbl>              <dbl>
+# 1              0.462               46.2
+
+##### MEM
+# Adherence overall
+good_MEM600 <- MEM_wake_check %>%
+  # group_by(SubjectID) %>%
+  summarise(
+    # What is the proportion
+    prop_good_adherent = round(mean(good_adherent600, na.rm = TRUE), 4),
+    # Percentage
+    per_good_adherence = (prop_good_adherent * 100)
+  )
+#   prop_good_adherent per_good_adherence
+#                <dbl>              <dbl>
+# 1              0.325               32.5
+
+############################### Adequate Adherence #############################
+
+################################ Adherence Overall #############################
+
+#################################### +600 Minutes ##############################
+
+# Adherence overall
+adequate_book600 <- book_wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad600, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
+#   prop_adeq_adherent per_adeq_adherence
+#                <dbl>              <dbl>
+# 1              0.562               56.2
+
+# Adherence overall
+adequate_MEM600 <- MEM_wake_check %>%
+  summarise(
+    # What is the proportion
+    prop_adeq_adherent = round(mean(adequate_ad600, na.rm = TRUE), 4),
+    # Percentage
+    per_adeq_adherence = (prop_adeq_adherent * 100)
+  )
+
+#   prop_adeq_adherent per_adeq_adherence
+#                <dbl>              <dbl>
+# 1              0.398               39.8
+  
+###### Create Data frame to display with this
+# Combine all the proportions into a table to display nicely
+props600 <- data.frame(Good = c(good_book600$per_good_adherence, 
+                             good_MEM600$per_good_adherence),
+                    Adequate = c(adequate_book600$per_adeq_adherence,
+                                 adequate_MEM600$per_adeq_adherence))
+
+# Add rownames
+rownames(props600) <- c("Booklet", "MEM")
+  
+
+```
+
+
+```{r results='asis', echo=FALSE}
+# Combine information in a more cohesive way
+
+props30_long <- props %>%
+  as.data.frame() %>%
+  rownames_to_column("Method") %>%
+  mutate(Window = "+30 minutes")
+
+props60_long <- props600 %>%
+  as.data.frame() %>%
+  rownames_to_column("Method") %>%
+  mutate(Window = "+60 minutes")
+
+final_props <- bind_rows(props30_long, props60_long) %>%
+  relocate(Window, Method)
+
+kable(
+  final_props,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 2,
+  caption = "Percentages for Good and Adequate Adherence by Collection Window"
+) |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  collapse_rows(columns = 1, latex_hline = "major")
+
+
+```
+
+
+Overall, more subjects are meeting the adequate adherence thresholds compared to the good adherence thresholds for both the +30 minute and +600 minute sampling times. In addition, the MEM percentages are lower for both sampling times and for both good and adequaate thresholds.
+
+
+Below we visualize the minutes from the +30 minute sampling time (left column) and the +600 minute sampling time (right column). 
+Times for Booklet are in the top row and time for MEM are in the bottom row. 
+The red dashed lines indicate the $\pm$ 7.5 window for good adherence while the pink dashed lines are the $\pm$ 15 minute window for adequate adherence. 
+
+
+```{r, echo = F, warning = F, message=F, fig.align='center', fig.cap="Adherence for +30 and +600 Sampling Times", fig.pos="H"}
+
+#################################### Visualize #################################
+
+# Visualize the distribution of minutes from the sampling times
+
+# Book +30 min
+p1 <- ggplot(book_wake_check, aes(x = diff_min30)) +
+  geom_histogram(binwidth = 3, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_y_continuous(breaks = seq(0, 40, by = 10)) + 
+  labs(title = "Minutes from +30 Minute Sampling Time",
+       subtitle = "Booklet",
+       x = "Minutes from target (+30)",
+       y = "Count") 
+
+# MEM + 30 min
+p2 <- ggplot(MEM_wake_check, aes(x = diff_min30)) +
+  geom_histogram(binwidth = 10, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_y_continuous(breaks = seq(0, 40, by = 10),
+                     limits = c(0, 40)) +
+  labs(title = "Minutes from +30 Minute Sampling Time",
+       subtitle = "MEM",
+       x = "Minutes from target (+30)",
+       y = "Count") 
+
+# MEM +30 Min
+p3 <- ggplot(book_wake_check, aes(x = diff_min600)) +
+  geom_histogram(binwidth = 20, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_x_continuous(breaks = seq(-50, 360, by = 50)) + 
+  scale_y_continuous(breaks = seq(0, 40, by = 10),
+                     limits = c(0, 40)) +
+  labs(title = "Minutes from +600 Sampling Time",
+       subtitle = "Booklet",
+       x = "Minutes from target (+600)",
+       y = "Count") 
+
+# MEM +600 min
+p4 <- ggplot(MEM_wake_check, aes(x = diff_min600)) +
+  geom_histogram(binwidth = 20, col = "black", fill = "turquoise") +
+  geom_vline(xintercept = c(-7.5, 7.5), col = "red",
+             linetype = "dashed") +
+  geom_vline(xintercept = c(-15, 15), color = "hotpink",
+             linetype = "dashed") +
+  theme_lucid() + 
+  scale_x_continuous(breaks = seq(-50, 360, by = 50)) + 
+  scale_y_continuous(breaks = seq(0, 40, by = 10),
+                     limits = c(0, 40)) +
+  labs(title = "Minutes from +600 Minute Sampling Time",
+       subtitle = "MEM",
+       x = "Minutes from target (+600)",
+       y = "Count") 
+
+
+# Arrange 
+grid.arrange(p1, p3, p2, p4, nrow = 2)
+
+```
+
+## Hypothesis 3
 
 
 
 # Discussion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 

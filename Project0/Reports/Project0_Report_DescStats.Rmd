@@ -658,6 +658,8 @@ subject_good_30adherence
 
 ```
 
+
+
 MEM: 
 
 ```{r, echo = F}
@@ -687,7 +689,7 @@ Booklet
 
 ```{r, echo = F}
 # Adherence overall
-book_wake_check %>%
+good_book <- book_wake_check %>%
   # group_by(SubjectID) %>%
   summarise(
     # What is the proportion
@@ -695,6 +697,7 @@ book_wake_check %>%
     # Percentage
     per_good_adherence = (prop_good_adherent * 100)
   )
+good_book
 
 ```
 
@@ -703,7 +706,7 @@ MEM
 
 ```{r, echo = F}
 # Adherence overall
-MEM_wake_check %>%
+good_MEM <- MEM_wake_check %>%
   # group_by(SubjectID) %>%
   summarise(
     # What is the proportion
@@ -711,6 +714,7 @@ MEM_wake_check %>%
     # Percentage
     per_good_adherence = (prop_good_adherent * 100)
   )
+good_MEM
 ```
 
 
@@ -766,13 +770,14 @@ Adherence overall with Booklet:
 
 ```{r, echo = F}
 # Adherence overall
-book_wake_check %>%
+adequate_book <- book_wake_check %>%
   summarise(
     # What is the proportion
     prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
     # Percentage
     per_adeq_adherence = (prop_adeq_adherent * 100)
   )
+adequate_book
 
 ```
 
@@ -781,15 +786,40 @@ Adherence overall with MEM:
 
 ```{r, echo = F}
 # Adherence overall
-MEM_wake_check %>%
+adequate_MEM <- MEM_wake_check %>%
   summarise(
     # What is the proportion
     prop_adeq_adherent = round(mean(adequate_ad30, na.rm = TRUE), 4),
     # Percentage
     per_adeq_adherence = (prop_adeq_adherent * 100)
   )
+adequate_MEM
 
 ```
+```{r, echo = F}
+# Combine all the proportions into a table to display nicely
+props <- data.frame(Good = c(good_book$prop_good_adherent, 
+                             good_MEM$prop_good_adherent),
+                    Adequate = c(adequate_book$prop_adeq_adherent,
+                                 good_MEM$prop_good_adherent))
+
+# Add rownames
+rownames(props) <- c("Booklet", "MEM")
+  
+# Display with Kable
+# Display with Kable
+kable(
+  props,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 5,
+  caption = "Statistics for Good and Adequate Adherence"
+) |>
+  kable_styling(latex_options = c("striped"))
+  
+```
+
+
 
 ### Visualization
 
@@ -1088,6 +1118,16 @@ cols <- c("SubjectID",
 # Subset the original data frame
 wake_data_q3 <- proj0_dat[, colnames(proj0_dat) %in% cols ]
 
+### Modify data for Person 3029
+wake_data_q3 <- wake_data_q3 %>% 
+  mutate(DAYNUMB = case_when(
+    SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
+    SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
+    SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
+    TRUE ~ DAYNUMB
+  )) %>% 
+  ungroup()
+
 # Convert the Sleep diary Wake time to minutes
 wake_data_q3$`Sleep Diary Wake Minutes` <-
   # Convert to date objects and convert to minutes
@@ -1121,25 +1161,13 @@ wake_data_q3 <- wake_data_q3 %>%
 
 # Create a Minutes SINCE WAKE variable
 wake_data_q3 <- wake_data_q3 %>%
-  mutate(
-    clock_min = lubridate::hour(hm(`Booket: Clock Time`)) * 60 +
-                lubridate::minute(hm(`Booket: Clock Time`))) %>%
   group_by(SubjectID, DAYNUMB) %>%
-  mutate(wake_min = clock_min[`Collection Sample` == 1][1],
-         minutes_since_wake = clock_min - wake_min) %>%
+  mutate(wake_min = Booklet_Minutes[`Collection Sample` == 1][1],
+         minutes_since_wake = Booklet_Minutes - wake_min) %>%
   ungroup() %>% 
   relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
 
 
-### Modify data for Person 3029
-wake_data_q3 <- wake_data_q3 %>% 
-  mutate(DAYNUMB = case_when(
-    SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
-    SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
-    SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
-    TRUE ~ DAYNUMB
-  )) %>% 
-  ungroup()
 
 ```
 
@@ -1184,8 +1212,8 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
                       color = factor(SubjectID))) +
   geom_point() + 
   geom_line() +
-  facet_wrap(~DAYNUMB)
-  # theme(legend.position = "none")
+  facet_wrap(~DAYNUMB) + 
+  theme_lucid()
 ```
 
 Visualize the outcome:
@@ -1242,34 +1270,35 @@ model_q3 <- lmer(log_DHEA ~ time_pre30 + time_post30
 
 summary(model_q3)
 confint(model_q3)
+
 ```
+
 ```{r, echo = F}
 #### Back transform betas 
 # Pre 30
-a <- -0.01622 * 30 
+a <- -0.01724 * 30 
 a_orig <- (exp(a) - 1) * 100 # -38.52871
 
 # Confidence interval
-a1 <- (exp(-0.042 * 30) - 1) * 100 # -71.6346
-a2 <- (exp(-0.01 * 30) - 1) * 100 # -25.92
+a1 <- (exp(-0.02313 * 30) - 1) * 100 # -71.6346
+a2 <- (exp(-0.0113 * 30) - 1) * 100 # -25.92
 
 # Post 30
-b <- -0.001544 * 600
+b <- -0.00153 * 600
 b_org <- (exp(b) - 1) * 100 # -37.07332
-b1 <- (exp(-0.002 * 600) - 1) * 100 
-b2 <- (exp(-0.001 * 600) - 1) * 100 
+b1 <- (exp(-0.00183* 600) - 1) * 100 
+b2 <- (exp(-0.00122* 600) - 1) * 100 
 
 ```
 
 
 Interpretations: 
 
-Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 39% decrease in DHEA (95% CI: (-71.63%, -25.92%)).
+Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 40% decrease in DHEA (95% CI: (-50.04%, -28.75%)).
 This is statistically significant with p < 0.001.
 DHEA shows a statistically significant decrease, not the expected increase, from waking to 30 minutes after waking. 
 
-
-Time Post30: From 30 minutes to 600 minutes, there is approimately a 60.4% decrease in DHEA levels (95% CI: (-45.12%, -69.88%)). This is statistically significant with p-val < 0.001. 
+Time Post30: From 30 minutes to 600 minutes, there is approimately a 60% decrease in DHEA levels (95% CI: (-66.65%, -51.91%)). This is statistically significant with p-val < 0.001. 
 As expected, DHEA showed a statistically significant decline over 10 hours. 
 
 Using a piecewise linear mixed-effects model with a knot at 30 minutes post-waking, DHEA concentrations showed a significant early decline - approximately 39% decrease over the first 30 minutes. 
@@ -1277,27 +1306,12 @@ After 30 minutes, DHEA declined more gradually across the day, corresponding to 
 
 ### Model Plots
 
-```{r, echo = F, warning = F, message = F}
-ggplot(wake_data_q3,
-       aes(x = minutes_since_wake, 
-           y = log_DHEA,
-           group = interaction(SubjectID, DAYNUMB))) +
-  geom_line(alpha = 0.25) +
-  geom_point(alpha = 0.25, size = 1) +
-  geom_smooth(aes(group = 1), method = "loess", se = TRUE) +
-  geom_vline(xintercept = 30, linetype = 2) +
-  labs(x = "Minutes since waking", y = "log(DHEA)",
-       title = "log(DHEA) trajectories by subject-day with overall trend")
-
-```
-
 
 ```{r, echo = F, warning = F, message = F}
 t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
 
 pred_grid <- tibble(
-  minutes_since_wake = seq(0, as.numeric(t_max), by = 5)
-) %>%
+  minutes_since_wake = seq(0, as.numeric(t_max), by = 5)) %>%
   mutate(
     time_pre30  = pmin(minutes_since_wake, 30),
     time_post30 = pmax(minutes_since_wake - 30, 0)
@@ -1341,20 +1355,6 @@ ggplot() +
 
 
 ```
-
-```{r, echo = F}
-pred_grid <- pred_grid %>%
-  mutate(segment = ifelse(minutes_since_wake <= 30, "0–30 min", ">30 min"))
-
-ggplot(pred_grid, aes(x = minutes_since_wake, y = fit)) +
-  geom_line(aes(linetype = segment), linewidth = 1) +
-  geom_vline(xintercept = 30, linetype = 2) +
-  labs(x = "Minutes since waking", y = "Predicted log(DHEA)",
-       title = "Estimated slopes before and after 30 minutes",
-       linetype = "Segment")
-
-```
-
 
 
 
@@ -1411,7 +1411,7 @@ wake_data_q3 %>%
           DAYNUMB,`Cortisol (nmol/L)`)
 
 # Exclude the observation with 89 cortisol
-ah <- wake_data_q3 %>%
+wake_data_q3 <- wake_data_q3 %>%
   filter(!dplyr::near(`Cortisol (nmol/L)`, 89.55714))
   
 ```
@@ -1427,8 +1427,8 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
                       color = factor(SubjectID))) +
   geom_point() + 
   geom_line() +
-  facet_wrap(~DAYNUMB)
-  # theme(legend.position = "none")
+  facet_wrap(~DAYNUMB) + 
+  theme_lucid()
 ```
 
 
@@ -1436,7 +1436,103 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
 
 ```{r, echo = F}
 ######### Modeling
+##### Model
+model_cortisol <- lmer(`Cortisol (nmol/L)` ~ time_pre30 + time_post30
+                 + (1 | SubjectID),
+                 REML = TRUE,
+                 data = wake_data_q3)
+
+summary(model_cortisol)
+confint(model_cortisol)
+
+```
+
+```{r, echo = F}
+#### Back transform betas 
+# Pre 30
+c <- 0.014546 * 30 
+c_orig <- (exp(c) - 1) * 100 # -
+
+# Confidence interval
+c1 <- (exp(-0.0307 * 30) - 1) * 100 # 
+c2 <- (exp(0.0599 * 30) - 1) * 100 # 
+
+# Post 30
+d <- -0.009 * 600
+d_org <- (exp(d) - 1) * 100 # -37.07332
+d1 <- (exp(-0.0109* 600) - 1) * 100 
+d2 <- (exp(-0.006* 600) - 1) * 100 
 
 
 ```
+
+Interpretations: 
+
+Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 54% increase in Cortisol (95% CI: (-60.19%, 503.15%)).
+This is not statistically significant with p = 0.53.
+Although there is an increase from waking to 30 minutes after waking, it is not a statistically significant increase.  
+
+Time Post30: From 30 minutes to 600 minutes, there is approimately a 99% decrease in DHEA levels (95% CI: (-99.86%, -97.27%)). This is statistically significant with p-val < 0.001. 
+As expected, Cortisol showed a statistically significant decline over 10 hours. 
+
+Cortisol follows the expected pattern of an increase from waking to 30 minutes followed by a decline from 30 minutes and on. 
+
+
+```{r, echo = F, warning = F, message = F}
+t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
+
+pred_grid <- tibble(
+  minutes_since_wake = seq(0, as.numeric(t_max), by = 5)) %>%
+  mutate(
+    time_pre30  = pmin(minutes_since_wake, 30),
+    time_post30 = pmax(minutes_since_wake - 30, 0))
+
+# Get fixed effects predictions
+pred_grid$fit_cort <- predict(model_cortisol, 
+                              newdata = pred_grid,
+                              re.form = NA)
+
+# Add a 95% CI
+X_cortisol <- model.matrix(~ time_pre30 + time_post30, 
+                           data = pred_grid)
+V_cortisol <- vcov(model_cortisol)
+
+se_fit_cort <- sqrt(diag(X_cortisol %*% V_cortisol %*% t(X_cortisol)))
+
+pred_grid <- pred_grid %>%
+  mutate(
+    lwr_cort = fit_cort - 1.96 * se_fit_cort,
+    upr_cort = fit_cort + 1.96 * se_fit_cort
+  )
+
+# Plot
+ggplot() +
+  geom_point(data = wake_data_q3,
+             aes(x = minutes_since_wake, 
+                 y = `Cortisol (nmol/L)`),
+             alpha = 0.25, size = 1) +
+  geom_ribbon(data = pred_grid,
+              aes(x = minutes_since_wake, 
+                  ymin = lwr_cort,
+                  ymax = upr_cort),
+              alpha = 0.2,
+              fill = "blue") +
+  geom_line(data = pred_grid,
+            aes(x = minutes_since_wake, 
+                y = fit_cort),
+            linewidth = 1,
+            col = "blue") +
+  geom_vline(xintercept = 30, linetype = 2,
+             col = "red") +
+  labs(x = "Minutes since waking", y = "Cortisol",
+       title = "Piecewise linear mixed model fit (fixed effects only)",
+       subtitle = "Knot at 30 minutes") + 
+  theme_lucid()
+
+
+```
+
+
+
+
 
