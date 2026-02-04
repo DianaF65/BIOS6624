@@ -135,6 +135,16 @@ wake_data$Booklet_Minutes <-
 wake_data <- wake_data %>% 
   relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
 
+# Convert MEM time to minutes
+wake_data$MEM_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
+
+# Move this to after Booklet: Clock Time
+wake_data <- wake_data %>% 
+  relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
+
 # Convert the MEM Time to minutes
 wake_data$MEM_C <-
   # Convert to date objects and convert to minutes
@@ -147,7 +157,7 @@ wake_data <- wake_data %>%
 
 # Create a subset of the data frame that only has Wake times
 # AKA Collection Sample == 1
-wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
+# wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
 
 ```
 
@@ -230,7 +240,7 @@ For this question, we are only interested in the minutes since Waking Up.
 ################################################################################
 
 # Visualize the Wake Times from Booklet data
-ggplot(wakes, aes(x = DAYNUMB,
+ggplot(wakedata, aes(x = DAYNUMB,
                   y = Booklet_Minutes,
                   group = SubjectID,
                   color = factor(SubjectID))) +
@@ -246,7 +256,7 @@ ggplot(wakes, aes(x = DAYNUMB,
 
 ```{r, echo = F, message = F, warning = F}
 # Visualize the Wake Times from MEMs data
-ggplot(wakes, aes(x = DAYNUMB,
+ggplot(wake_data, aes(x = DAYNUMB,
                   y = MEM_C,
                   group = factor(SubjectID),
                   color = factor(SubjectID))) +
@@ -269,14 +279,14 @@ model_day <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB),
                 random = ~ 1 | SubjectID,
                 na.action = na.omit,
                 method = "ML",
-                data = wakes)
+                data = wake_data)
 
 # No day variable in the model
 model_noday <- lme(Booklet_Minutes ~ MEM_C, 
                 random = ~ 1 | SubjectID,
                 na.action = na.omit,
                 method = "ML",
-                data = wakes)
+                data = wake_data)
 
 # Random intercept and slope
 
@@ -366,7 +376,7 @@ model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB),
                 random = ~ 1 | SubjectID,
                 na.action = na.omit,
                 method = "REML",
-                data = wakes)
+                data = wake_data)
 
 summary(model_q1)
 intervals(model_q1)
@@ -377,14 +387,41 @@ Intercept: The average wake up time recorded by the MEM was ~829 minutes on the 
 Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
 In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. Changes in MEM time are mirrored almost exactly by changes in Booklet time.  
 
-Assessing bias: 
+In regard to bias, booklet times tended to be recorded approximately 7 minutes earlier (95% CI: (-14.28, -0.62)) than MEM times on average. 
 
 ```{r, echo = F}
-fixef(model_q1)["(Intercept)"] -
-mean(wakes$MEM_C, na.rm = TRUE)
+######## Assess bias
+# Create a variable that is the difference between MEM and Booklet times
+wake_data <- wake_data %>%
+  mutate(diff_minutes = Booklet_Minutes - MEM_Minutes)
+
+# Model to assess bias were difference is the outcome
+bias_model <- lme(
+  diff_minutes ~ 1 + factor(DAYNUMB),
+  random = ~ 1 | SubjectID,
+  data = wake_data,
+  na.action = na.omit,
+  method = "REML"
+)
+
+summary(bias_model)
+intervals(bias_model)
+```
+
+```{r, echo = F, warning = F}
+
+ggplot(wake_data, aes(x = MEM_Minutes, y = diff_minutes)) +
+  geom_point(alpha = 0.4) +
+  geom_hline(yintercept = 0, col = "red") +
+  labs(
+    x = "MEM time (minutes since midnight)",
+    y = "Booklet − MEM (minutes)",
+    title = "Agreement Between Booklet and MEM Times"
+  ) + 
+  theme_lucid()
 
 ```
-We have bias of around 2.21, indicating that there is small bias. The mean wake up time of MEM is 417.58 whereas the intercept representing the average MEM wake up time was 415.36.
+
 
 ```{r, echo = F}
 # Look at the variance covariance mat

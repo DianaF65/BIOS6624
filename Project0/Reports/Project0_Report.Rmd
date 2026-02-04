@@ -172,40 +172,138 @@ There was satisfactory agreement between the subject's recording of sampling tim
 \textbf{Hypothesis 2: } 
 Subjects adhered appropriately to the study protocol of the +30 minute and +600 minute sampling times. 
 
-\textbf{Hypothesis 3: DHEA and Cortisol levels show an initial increase from waking to 30 minutes followed by a gradual decline from 30 minutes and on. } 
+\textbf{Hypothesis 3: } 
+DHEA and Cortisol levels show an initial increase from waking to 30 minutes followed by a gradual decline from 30 minutes and on. 
 
-We will further refer to the electronic monitoring cap as MEM time and the the SPIT Booklet as Booklet time for the remainder of the report.
+\textit{We will further refer to the electronic monitoring cap as MEM time and the the SPIT Booklet as Booklet time for the remainder of the report.}
 
 # Methods
 
 ## Preliminary Data Analysis
 
-As missingness can present serious issues for the data analysis if not explored and addressed, we investigated missingness through calculating the number and percentage of missing values for each variable in the dataset. We further visualized missingness for each variable.  
-
 Below is a Table1 of the primary variables of interest for the analysis:
+
+```{r, echo = F}
+#### Table1
+
+# Fix Days to be a factor and show nicely for table1
+data <- wake_data %>%
+  mutate(
+    DAYNUMB = factor(
+      DAYNUMB,
+      levels = c(1, 2, 3),
+      labels = c("Day 1", "Day 2", "Day 3")),
+    `Collection Sample` = factor(
+      `Collection Sample`,
+      levels = c(1, 2, 3, 4),
+      labels = c("Wake Time", "+30 Min", "Pre Lunch","+600 Min")
+    )
+  )
+
+
+
+# for creating Table1
+variables <- c("minutes_since_wake",
+               "Booklet_Minutes",
+               "MEM_Minutes",
+               "DHEA (nmol/L)",
+               "Cortisol (nmol/L)")
+
+strata <- 'Collection Sample'
+
+# modify labels
+var_label(data$Booklet_Minutes) <- 'Booklet Time (Min Since Midnight)'
+var_label(data$minutes_since_wake) <- 'Minutes Since Waking (Midnight)'
+var_label(data$MEM_Minutes) <- 'MEM Time (Min Since Midnight)' 
+
+
+# create Table1
+studypop_tab1 <- CreateTableOne(
+  vars = variables,
+  strata = strata,
+  test = FALSE,
+  data = data,
+  addOverall = T
+)
+
+studypop_tab_forkbl <- print(studypop_tab1, 
+                             varLabels = T, 
+                             printToggle = F)
+
+# Create table of results
+kbl(studypop_tab_forkbl,
+    caption = 
+      'Characteristics of Study Cohort',
+    booktabs = T, 
+    align = 'c') %>%
+    kable_styling(latex_options = "HOLD_position", font_size = 9) %>% 
+    collapse_rows(columns=1, latex_hline='major', valign='middle')
+```
+
+```{r, echo = F}
+# Convert some of these back to hh:mm to talk about it
+# Create function to convert minutes to hh:mm
+min_to_clock <- function(x) {
+  h <- floor(x / 60)
+  m <- round(x %% 60)
+  sprintf("%02d:%02d", h, m)
+}
+
+
+### Get the means
+# Mean minutes since wake
+mean_minwake <- mean(data$`Sleep Diary Wake Minutes`, 
+                     na.rm = TRUE)
+# min_to_clock(mean_minwake) 
+# 06:52
+
+# Mean booklet minutes
+mean_bookmin <- mean(data$Booklet_Minutes, 
+                     na.rm = TRUE) # 654.3472
+# min_to_clock(mean_bookmin) 
+# 10:54
+
+# Mean MEM minutes
+mean_memmin <- mean(data$MEM_Minutes, 
+                     na.rm = TRUE) # 684.2379
+# min_to_clock(mean_memmin) 
+# 11:24
+```
+For analysis, we exclusively worked with the time variables in minutes. 
+Looking at Minutes Since Waking, we can see that the mean minutes closely follow the study protocol times. The average DHEA and Cortisol levels appear to be similar across the 4 time points throughout the day.
+
+As missingness can present serious issues for the data analysis if not addressed, we investigated missingness through calculating the number and percentage of missing values for each variable in the dataset. We further visualized missingness for each variable.  
 
 For the variables we employed in our analyses, we assessed and visualized distributions to determine if there were any outliers or considerations that needed to be taken for data analysis. 
 
 ## Data Cleaning
 
+For DHEA, we removed observations that were $\geq 5.205$ (nmol/L) as these are considered extremely high DHEA levels that could interfere with analysis. There were 6 observations (4 of which corresponded to Subject 3037) that had DHEA levels of 5.205 (nmol/L). We removed all observations for Subject 3037 due to multiple high DHEA values that suggest underlying health problems as well as the 2 other observations that had DHEA of 5.205 (nmol/L).
 
+For cortisol, we observed 5 observations from 4 patients that had Cortisol levels $\geq 26$. Although these values are considered high, they are biologically plausible and they were left in the analysis. One observation had a cortisol level of ~89 which was excluded for analysis. 
 
 
 ## Data Analysis
 
-\textbf{1:} To address research question 1, we employed a longitudinal linear mixed effects model with Booklet time in Minutes for the outcome, MEM in Minutes and the day number (1-3) as covariates We included a random intercept for subject that allowed us to take variability between subjects into account in our model. 
-Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality. We additionally assessed bias by.... COME BACK TO THIS
+To address the first hypothesis, we employed a longitudinal linear mixed effects model with Booklet time in Minutes for the outcome with covariates MEM in Minutes and the day number (1-3). Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality.
+We included a random intercept for subject that allowed us to take variability between subjects into account in our model. 
 
-\textbf{2: } To determine whether subjects were adhering accurately to the +30 minute and +600 minute sampling times required by study protocol, intervals of time were defined to determine the number and percentage of patients that had good or adequate adherence.
-Good adherence was defined by a collection of the saliva sample within a 7.5 minute window interval of the +30 minute and +600 minute times whereas adequate adherence if samples were within a 15 minute window. 
+To determine whether subjects were adhering accurately to the +30 minute and +600 minute sampling times required by study protocol, intervals of time were defined to determine the number and percentage of patients that had good or adequate adherence.
+Good adherence was defined by a collection of the saliva sample within a 7.5 minute window interval whereas adequate adherence if samples were within a 15 minute window. 
 To calculate the percentage and proportion of individuals that had good adherence and adequate adherence, the difference between the "correct" sampling time and the observed time was calculated and this difference was used to assess whether observed times were within the good or adequate adherence windows. 
 
 We visualized and summarized the distribution of the MEM and Booklet times to guide us in our decision to proceed with either MEM or Booklet times for our calculations.
 We observed that MEM times had a considerable amount of missingness and determined that reporting both would give a better overall sense of adherence.
-We summarized adherence by subjects as well as adherence for the whole study population.
+We summarized adherence for the study population with tables.
 
-\textbf{2: } 
+For the third hypothesis, we used a longitudinal linear mixed effects models to assess whether DHEA and Cortisol levels followed the expected diurnal pattern.
+Due to a right-skew in the distribution of DHEA, a log transformed DHEA variable was used as the outcome to assess DHEA changes. 
+No transformations was made to Cortisol. 
+Covariates for oboth models include manually calculated pre and post 30 minute variables which would give us the slopes for the two time intervals of interest. 
 
+All analyses were conducted in R version 4.4.1 (2024-06-14), using the nlme  package for modeling.
+
+\vspace{-9mm}
 
 # Results
 
@@ -213,17 +311,14 @@ From the missingness investigation, we determined the MEMs had the highest amoun
 Booklet had the second highest amount of missing with 55 missing values or 14.8%.
 Cortisol and DHEA measurements had 5 missing values or 1.34% missingness.
 
-The graphic below allowed us to visually see the quantity of missingness in the MEM times compared to the other variables in the data set, we followed certain thresholds for good and adequate adherence.
+<!-- The graphic below allowed us to visually see the quantity of missingness in the MEM times compared to the other variables in the data set, we followed certain thresholds for good and adequate adherence. -->
 
-
+\vspace{-6mm}
 ## Hypothesis 1
+\vspace{-6mm}
 
 Below is a table of the estimates, 95% Confidence Intervals and P-values for the model: 
-
-```{r, echo = F}
-
-```
-
+\newpage
 
 ```{r, echo = F}
 # LMM with random intercept for subject - Day added
@@ -243,16 +338,16 @@ kable(
   summary_df1,
   format = "latex",
   booktabs = TRUE,
-  digits = 5,
+  digits = 3,
   caption = "Model Summary"
 ) |>
-  kable_styling(latex_options = c("striped"))
+  kable_styling(latex_options = c("striped", "hold_position"))
 
 
 ```
 
 ```{r, echo = F, eval = F}
-intervals(model_q1)
+# intervals(model_q1)
 
 #  Fixed effects:
 #                       lower       est.      upper
@@ -263,7 +358,23 @@ intervals(model_q1)
 ```
 
 Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
-In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. Changes in MEM time are mirrored almost exactly by changes in Booklet time and our initial hypothesis is correct. 
+In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. This is visualized in Figure 1 below.
+Changes in MEM time are mirrored almost exactly by changes in Booklet time and our initial hypothesis is correct. 
+We additionally assessed bias by.... COME BACK TO THIS
+
+
+```{r, echo = F, warning=F, message = F, fig.cap="Booklet Vs. MEM Wake Up Times", out.width="90%", fig.align='center'}
+ggplot(wakes, aes(x = MEM_Minutes, y = Booklet_Minutes,
+                           color = factor(DAYNUMB))) + 
+  geom_point(size = 3, alpha = 0.7) + 
+  theme_lucid() + 
+  geom_abline(intercept = 0, slope = 1, linetype = "solid") +
+  labs(color = "Day") +
+  labs(title = "Relationship Between Booklet and MEM Wake Up Times",
+       x = "MEM Wake Up Time (Minutes)",
+       y = "Booklet Wake Up Time (Minutes)")
+```
+
 
 ## Hypothesis 2
 
@@ -433,10 +544,6 @@ MEM_subject_ad_30adherence <- MEM_wake_check %>%
 # sum(MEM_subject_ad_30adherence$prop_ad_adherent == 1, na.rm = T)
 # Proportion and Percentage of subjects
 # 10/31 = 0.32 or 32%
-
-
-################################### +60 Minutes ################################
-
 
 
 ```
@@ -724,6 +831,418 @@ grid.arrange(p1, p3, p2, p4, nrow = 2)
 
 ## Hypothesis 3
 
+```{r, echo = F}
+
+################################################################################
+###                               Question 3                                 ### 
+################################################################################
+
+##### Create data frame for question 3
+## Make a subset of the data with the relevant cols for Q3
+
+# Vector of the cols of interest
+cols <- c("SubjectID",
+          "Collection Date", "DAYNUMB",
+          "Collection Sample",
+          "Booket: Clock Time", "MEMs: Clock Time",
+          "Sleep Diary reported wake time",
+          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+
+# Subset the original data frame
+wake_data_q3 <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+
+### Modify data for Person 3029
+wake_data_q3 <- wake_data_q3 %>% 
+  mutate(DAYNUMB = case_when(
+    SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
+    SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
+    SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
+    TRUE ~ DAYNUMB
+  )) %>% 
+  ungroup()
+
+# Convert the Sleep diary Wake time to minutes
+wake_data_q3$`Sleep Diary Wake Minutes` <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data_q3$`Sleep Diary reported wake time`)) * 60 +
+  lubridate::minute(hm(wake_data_q3$`Sleep Diary reported wake time`))
+
+# Move this to after Collection Sample
+wake_data_q3 <- wake_data_q3 %>% 
+  relocate(`Sleep Diary Wake Minutes`, 
+           .after = `Sleep Diary reported wake time`)
+
+# Convert the Booklet Time to minutes
+wake_data_q3$Booklet_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data_q3$`Booket: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data_q3$`Booket: Clock Time`))
+
+# Move this to after Booklet: Clock Time
+wake_data_q3 <- wake_data_q3 %>% 
+  relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
+
+# Convert the MEM Time to minutes
+wake_data_q3$MEM_Minutes <-
+  # Convert to date objects and convert to minutes
+  lubridate::hour(hm(wake_data_q3$`MEMs: Clock Time`)) * 60 +
+  lubridate::minute(hm(wake_data_q3$`MEMs: Clock Time`))
+
+# Move this to after MEMs: Clock Time
+wake_data_q3 <- wake_data_q3 %>% 
+  relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
+
+# Create a Minutes SINCE WAKE variable
+wake_data_q3 <- wake_data_q3 %>%
+  group_by(SubjectID, DAYNUMB) %>%
+  mutate(wake_min = Booklet_Minutes[`Collection Sample` == 1][1],
+         minutes_since_wake = Booklet_Minutes - wake_min) %>%
+  ungroup() %>% 
+  relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
+
+
+```
+
+```{r, echo = F}
+#################################### DHEA ######################################
+
+### Remove DHEA values that equaled 5.205
+wake_data_q3 <- wake_data_q3 %>%
+  filter(
+    is.na(`DHEA (nmol/L)`) |
+    !(dplyr::near(`DHEA (nmol/L)`, 5.205) | SubjectID == "3037"))
+
+# 14 observations removed - 358 observations left
+
+```
+
+```{r, echo = F, include = F}
+ggplot(wake_data_q3, aes(x = `Collection Sample`,
+                      y = `DHEA (nmol/L)`,
+                      color = factor(SubjectID))) +
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~DAYNUMB) + 
+  theme_lucid()
+```
+
+```{r, echo = F, include = F}
+##### Data checks
+
+# A plot of the distribution of the outcome
+ggplot(wake_data_q3, aes(x = `DHEA (nmol/L)`)) +
+         geom_histogram(bins = 20, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() 
+
+# A plot of the distribution of the outcome
+ggplot(wake_data_q3, aes(x = log(`DHEA (nmol/L)`))) +
+         geom_histogram(bins = 20, fill = "palevioletred2",
+                        col = "black") + 
+  theme_lucid() 
+
+# We will log transform DHEA
+
+```
+
+```{r, echo = F}
+
+#### Fit the LMM
+
+# Create a logged DHEA variable
+wake_data_q3$log_DHEA <- log(wake_data_q3$`DHEA (nmol/L)`)
+
+# Knot at 30 minutes - Collection Sample 2
+wake_data_q3 <- wake_data_q3 %>%
+  mutate(
+    # Slope from waking to 30 miutes
+    time_pre30  = pmin(minutes_since_wake, 30),
+    # Slope from after 30 minutes
+    time_post30 = pmax(minutes_since_wake - 30,
+                       0)
+  )
+
+# Center Sleep Diary wake minutes
+wake_data_q3 <- wake_data_q3 %>% 
+  mutate(Sleep_Centered = `Sleep Diary Wake Minutes` - 
+           mean(`Sleep Diary Wake Minutes`, na.rm = TRUE),
+         Book_MinC = Booklet_Minutes - mean(Booklet_Minutes, 
+                                            na.rm = TRUE)) %>% 
+  relocate(Sleep_Centered, .after = `Sleep Diary Wake Minutes`)
+# Mean wake up time is - 409.4545 minutes
+
+
+##### Model
+model_q3 <- lme(log_DHEA ~ time_pre30 + time_post30,
+                 random = ~ 1 | SubjectID,
+                 method = "REML",
+                na.action = na.omit,
+                 data = wake_data_q3)
+
+# summary(model_q3)
+# confint(model_q3)
+
+# Display model summary with kable
+# Extract t and p-values from model for data frame
+summary_df2 <- as.data.frame(summary(model_q3)$tTable)
+
+# kable
+kable(
+  summary_df2,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 5,
+  caption = "Model Summary"
+) |>
+  kable_styling(latex_options = c("striped"))
+
+```
+
+```{r, echo = F}
+#### Back transform betas 
+# Pre 30
+a <- -0.01724 * 30 
+a_orig <- (exp(a) - 1) * 100 # -38.52871
+
+# Confidence interval
+a1 <- (exp(-0.02313 * 30) - 1) * 100 # -71.6346
+a2 <- (exp(-0.0113 * 30) - 1) * 100 # -25.92
+
+# Post 30
+b <- -0.00153 * 600
+b_org <- (exp(b) - 1) * 100 # -37.07332
+b1 <- (exp(-0.00183* 600) - 1) * 100 
+b2 <- (exp(-0.00122* 600) - 1) * 100 
+
+
+```
+
+Interpretations: 
+
+Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 40% decrease in DHEA (95% CI: (-50.04%, -28.75%)).
+This is statistically significant with p < 0.001.
+DHEA shows a statistically significant decrease, not the expected increase, from waking to 30 minutes after waking. 
+
+Time Post30: From 30 minutes to 600 minutes, there is approimately a 60% decrease in DHEA levels (95% CI: (-66.65%, -51.91%)). This is statistically significant with p-val < 0.001. 
+As expected, DHEA showed a statistically significant decline over 10 hours. 
+
+Using a piecewise linear mixed-effects model with a knot at 30 minutes post-waking, DHEA concentrations showed a significant early decline - approximately 39% decrease over the first 30 minutes. 
+After 30 minutes, DHEA declined more gradually across the day, corresponding to an additional ~60% decrease over 10 hours.
+
+
+```{r, echo = F, warning = F, message = F, out.width="80%", fig.align='center', eval =F}
+t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
+
+pred_grid <- tibble(
+  minutes_since_wake = seq(0, as.numeric(t_max), by = 5)) %>%
+  mutate(
+    time_pre30  = pmin(minutes_since_wake, 30),
+    time_post30 = pmax(minutes_since_wake - 30, 0)
+  )
+
+# Get fixed effects predictions
+pred_grid$fit <- predict(model_q3, newdata = pred_grid, re.form = NA)
+
+# Add a 95% CI
+X <- model.matrix(~ time_pre30 + time_post30, data = pred_grid)
+V <- vcov(model_q3)
+se_fit <- sqrt(diag(X %*% V %*% t(X)))
+
+pred_grid <- pred_grid %>%
+  mutate(
+    lwr = fit - 1.96 * se_fit,
+    upr = fit + 1.96 * se_fit
+  )
+
+# Plot
+ggplot() +
+  geom_point(data = wake_data_q3,
+             aes(x = minutes_since_wake, y = log_DHEA),
+             alpha = 0.25, size = 1) +
+  geom_ribbon(data = pred_grid,
+              aes(x = minutes_since_wake, 
+                  ymin = lwr,
+                  ymax = upr),
+              alpha = 0.2,
+              fill = "blue") +
+  geom_line(data = pred_grid,
+            aes(x = minutes_since_wake, y = fit),
+            linewidth = 1,
+            col = "blue") +
+  geom_vline(xintercept = 30, linetype = 2,
+             col = "red") +
+  labs(x = "Minutes since waking", y = "log(DHEA)",
+       title = "Piecewise linear mixed model fit (fixed effects only)",
+       subtitle = "Knot at 30 minutes") + 
+  theme_lucid()
+
+
+```
+
+
+```{r, echo = F, include = F, eval = F}
+###### Model diagnostics
+# Obtain data used to fit model
+model_dataq3 <- model_q3@frame
+
+# Obtain residuals of model
+model_dataq3$resids <- resid(model_q3)
+
+# Obtain fitted values
+model_dataq3$fitted <- fitted(model_q3)
+
+# Residual histogram
+ggplot(model_dataq3, aes(x = resids)) +
+  geom_histogram(bins = 25,
+                 fill = "cadetblue2",
+                 color = "black") +
+  theme_lucid()
+
+# residual vs. fitted
+ggplot(model_dataq3, aes(x = fitted, y = resids)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_classic()
+```
+
+```{r, echo = F, eval = F}
+################################## Cortisol ##################################
+
+# Determine how many measurements are above 80
+# wake_data_q3 %>% 
+#   filter(`Cortisol (nmol/L)` >= 26) %>% 
+#   reframe(SubjectID, `Collection Sample`, 
+#           DAYNUMB,`Cortisol (nmol/L)`)
+
+# Exclude the observation with 89 cortisol
+wake_data_q3 <- wake_data_q3 %>%
+  filter(!dplyr::near(`Cortisol (nmol/L)`, 89.55714))
+
+```
+
+```{r, echo = F, message = F, warning=F, out.width="80%", fig.align='center'}
+# Visualize cortisol over time
+ggplot(wake_data_q3, aes(x = `Collection Sample`,
+                      y = `Cortisol (nmol/L)`,
+                      color = factor(SubjectID))) +
+  geom_point() + 
+  geom_line() +
+  facet_wrap(~DAYNUMB) + 
+  theme_lucid()
+```
+
+```{r, echo = F, eval = F}
+######### Model
+
+model_cortisol <- lme(`Cortisol (nmol/L)` ~ time_pre30 + time_post30,
+                 random = ~ 1 | SubjectID,
+                 method = "REML",
+                 na.action = na.omit,
+                 data = wake_data_q3)
+
+# summary(model_cortisol)
+# confint(model_cortisol)
+
+# Extract t and p-values from model for data frame
+summary_df3 <- as.data.frame(summary(model_cortisol)$tTable)
+
+# kable
+kable(
+  summary_df3,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 5,
+  caption = "Model Summary"
+) |>
+  kable_styling(latex_options = c("striped"))
+
+```
+
+```{r, echo = F, eval = F}
+#### Back transform betas 
+# Pre 30
+c <- 0.014546 * 30 
+c_orig <- (exp(c) - 1) * 100 # -
+
+# Confidence interval
+c1 <- (exp(-0.0307 * 30) - 1) * 100 # 
+c2 <- (exp(0.0599 * 30) - 1) * 100 # 
+
+# Post 30
+d <- -0.009 * 600
+d_org <- (exp(d) - 1) * 100 # -37.07332
+d1 <- (exp(-0.0109* 600) - 1) * 100 
+d2 <- (exp(-0.006* 600) - 1) * 100 
+
+
+```
+
+
+Interpretations: 
+
+Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 54% increase in Cortisol (95% CI: (-60.19%, 503.15%)).
+This is not statistically significant with p = 0.53.
+Although there is an increase from waking to 30 minutes after waking, it is not a statistically significant increase.  
+
+Time Post30: From 30 minutes to 600 minutes, there is approimately a 99% decrease in DHEA levels (95% CI: (-99.86%, -97.27%)). This is statistically significant with p-val < 0.001. 
+As expected, Cortisol showed a statistically significant decline over 10 hours. 
+
+Cortisol follows the expected pattern of an increase from waking to 30 minutes followed by a decline from 30 minutes and on. 
+
+
+```{r, echo = F, warning = F, message = F, eval = F}
+t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
+
+pred_grid <- tibble(
+  minutes_since_wake = seq(0, as.numeric(t_max), by = 5)) %>%
+  mutate(
+    time_pre30  = pmin(minutes_since_wake, 30),
+    time_post30 = pmax(minutes_since_wake - 30, 0))
+
+# Get fixed effects predictions
+pred_grid$fit_cort <- predict(model_cortisol, 
+                              newdata = pred_grid,
+                              re.form = NA)
+
+# Add a 95% CI
+X_cortisol <- model.matrix(~ time_pre30 + time_post30, 
+                           data = pred_grid)
+V_cortisol <- vcov(model_cortisol)
+
+se_fit_cort <- sqrt(diag(X_cortisol %*% V_cortisol %*% t(X_cortisol)))
+
+pred_grid <- pred_grid %>%
+  mutate(
+    lwr_cort = fit_cort - 1.96 * se_fit_cort,
+    upr_cort = fit_cort + 1.96 * se_fit_cort
+  )
+
+# Plot
+ggplot() +
+  geom_point(data = wake_data_q3,
+             aes(x = minutes_since_wake, 
+                 y = `Cortisol (nmol/L)`),
+             alpha = 0.25, size = 1) +
+  geom_ribbon(data = pred_grid,
+              aes(x = minutes_since_wake, 
+                  ymin = lwr_cort,
+                  ymax = upr_cort),
+              alpha = 0.2,
+              fill = "blue") +
+  geom_line(data = pred_grid,
+            aes(x = minutes_since_wake, 
+                y = fit_cort),
+            linewidth = 1,
+            col = "blue") +
+  geom_vline(xintercept = 30, linetype = 2,
+             col = "red") +
+  labs(x = "Minutes since waking", y = "Cortisol",
+       title = "Piecewise linear mixed model fit (fixed effects only)",
+       subtitle = "Knot at 30 minutes") + 
+  theme_lucid()
+
+
+```
 
 
 # Discussion
