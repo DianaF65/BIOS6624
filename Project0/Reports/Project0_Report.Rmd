@@ -1,5 +1,7 @@
 ---
-output:
+title: Assessing DHEA and Cortisol Diurnal Patterns
+author: Diana Felipe
+output: 
   bookdown::pdf_document2:
     toc: false
     number_sections: false
@@ -14,7 +16,10 @@ header-includes:
   - \doublespacing
   - \usepackage{float}
   - \usepackage{caption}
-  - \usepackage{subcaption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-2cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
 ---
 
 ```{r, echo = F, warning=F, message = F}
@@ -174,70 +179,79 @@ DHEA and Cortisol levels show an initial increase from waking to 30 minutes foll
 
 \textit{Note: We will further refer to the electronic monitoring cap as MEM time and the the SPIT Booklet as Booklet time for the remainder of the report.}
 
+\vspace{-6mm}
 # Methods
+\vspace{-6mm}
 
 ## Preliminary Data Analysis
 
-Below is a Table1 of the primary variables of interest for the analysis:
+Below is a Table1 of the primary variables of interest for the analysis. The minutes are all minutes relative to midnight.
 
-```{r, echo = F}
-#### Table1
 
-# Fix Days to be a factor and show nicely for table1
+```{r, echo = F, warning = F, message = F}
+
+# Adjust labels for collection sample
 data <- wake_data %>%
   mutate(
-    DAYNUMB = factor(
-      DAYNUMB,
-      levels = c(1, 2, 3),
-      labels = c("Day 1", "Day 2", "Day 3")),
     `Collection Sample` = factor(
       `Collection Sample`,
       levels = c(1, 2, 3, 4),
-      labels = c("Wake Time", "+30 Min", "Pre Lunch","+600 Min")
+      labels = c("Wake Time", "+30 Min", "Pre Lunch", "+600 Min")
     )
   )
 
+# Create subject level summaries - NOT observation level
+data <- data %>%
+  group_by(SubjectID, `Collection Sample`) %>%
+  summarise(
+    mean_booklet   = mean(Booklet_Minutes, na.rm = TRUE),
+    mean_mem = mean(MEM_Minutes, na.rm = TRUE),
+    mean_wake = mean(minutes_since_wake, na.rm = TRUE),
+    mean_dhea = mean(`DHEA (nmol/L)`, na.rm = TRUE),
+    mean_cort = mean(`Cortisol (nmol/L)`, na.rm = TRUE),
+    .groups = "drop")
 
+# Define variables for the table one
+variables <- c("mean_booklet", "mean_mem", 
+               "mean_wake", "mean_dhea", "mean_cort")
 
-# for creating Table1
-variables <- c("minutes_since_wake",
-               "Booklet_Minutes",
-               "MEM_Minutes",
-               "DHEA (nmol/L)",
-               "Cortisol (nmol/L)")
-
-strata <- 'Collection Sample'
+# Separate by collection time
+strata <- "Collection Sample"
 
 # modify labels
-var_label(data$Booklet_Minutes) <- 'Booklet Time (Min Since Midnight)'
-var_label(data$minutes_since_wake) <- 'Minutes Since Waking (Midnight)'
-var_label(data$MEM_Minutes) <- 'MEM Time (Min Since Midnight)' 
+var_label(data$mean_booklet) <- 'Booklet Minutes'
+var_label(data$mean_mem) <- 'MEM Minutes'
+var_label(data$mean_wake) <- 'Minutes Since Wake' 
+var_label(data$mean_dhea) <- 'DHEA (nmol/L)'
+var_label(data$mean_cort) <- 'Cortisol (nmol/L)'
 
-
-# create Table1
+# Create the table one
 studypop_tab1 <- CreateTableOne(
   vars = variables,
   strata = strata,
   test = FALSE,
-  data = data,
-  addOverall = T
+  data = data
 )
 
-studypop_tab_forkbl <- print(studypop_tab1, 
-                             varLabels = T, 
-                             printToggle = F)
+studypop_tab_forkbl <- print(
+  studypop_tab1,
+  varLabels = TRUE,
+  printToggle = FALSE
+)
 
-# Create table of results
-kbl(studypop_tab_forkbl,
-    caption = 
-      'Characteristics of Study Cohort',
-    booktabs = T, 
-    align = 'c') %>%
-    kable_styling(latex_options = "HOLD_position", font_size = 9) %>% 
-    collapse_rows(columns=1, latex_hline='major', valign='middle')
+# Display with kbl
+kbl(
+  studypop_tab_forkbl,
+  caption = "Summary Per Subject Within Collection Sample",
+  booktabs = TRUE,
+  align = "c"
+) %>%
+  kable_styling(latex_options = "hold_position", font_size = 10)
+
 ```
 
-```{r, echo = F}
+
+```{r, echo = F, eval = F, message=F, warning=F}
 # Convert some of these back to hh:mm to talk about it
 # Create function to convert minutes to hh:mm
 min_to_clock <- function(x) {
@@ -273,13 +287,16 @@ As missingness can present serious issues for the data analysis if not addressed
 
 For the variables we employed in our analyses, we assessed and visualized distributions to determine if there were any outliers or considerations that needed to be taken for data analysis. 
 
+\vspace{-6mm}
 ## Data Cleaning
+\vspace{-6mm}
 
 For DHEA, we removed observations that were $\geq 5.205$ (nmol/L) as these are considered extremely high DHEA levels that could interfere with analysis. There were 6 observations (4 of which corresponded to Subject 3037) that had DHEA levels of 5.205 (nmol/L). We removed all observations for Subject 3037 due to multiple high DHEA values that suggest underlying health problems as well as the 2 other observations with DHEA of 5.205 (nmol/L).
 For cortisol, we observed 5 observations from 4 patients that had Cortisol levels $\geq 26$. Although these values are considered high, they are biologically plausible and they were left in the analysis. One observation had a cortisol level of ~89 which was removed for the analysis. 
 
-
+\vspace{-6mm}
 ## Data Analysis
+\vspace{-6mm}
 
 To address the first hypothesis, we employed a longitudinal linear mixed effects model with Booklet Time in Minutes as the outcome with covariates - MEM in Minutes and the Day Number (1-3). Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality.
 We included a random intercept for subject that allowed us to take variability between subjects into account in our model. 
@@ -302,6 +319,7 @@ All analyses were conducted in R version 4.4.1 (2024-06-14), using the nlme  pac
 \vspace{-9mm}
 
 # Results
+\vspace{-6mm}
 
 From the missingness investigation, we determined the MEMs had the highest amount of missing: 177 missing values which is equivalent to 47.6%. 
 Booklet had the second highest amount of missingness with 55 missing values or 14.8%.
@@ -378,7 +396,7 @@ Changes in MEM time are mirrored almost exactly by changes in Booklet time and o
 In regard to bias, booklet times tended to be recorded approximately 7-8 minutes earlier (95% CI: (-14.28, -0.62)) than MEM times on average. This difference is statistically significant with p-val $\approx$ 3.
 
 
-```{r, echo = F, warning=F, message = F, fig.cap="Booklet Vs. MEM Wake Up Times", out.width="90%", fig.align='center'}
+```{r, echo = F, warning=F, message = F, fig.cap="Booklet Vs. MEM Wake Up Times", out.width="80%", fig.align='center'}
 ggplot(wakes, aes(x = MEM_Minutes, y = Booklet_Minutes,
                            color = factor(DAYNUMB))) + 
   geom_point(size = 3, alpha = 0.7) + 
@@ -793,7 +811,7 @@ p1 <- ggplot(book_wake_check, aes(x = diff_min30)) +
 
 # MEM + 30 min
 p2 <- ggplot(MEM_wake_check, aes(x = diff_min30)) +
-  geom_histogram(binwidth = 10, col = "black", fill = "turquoise") +
+  geom_histogram(binwidth = 10, col = "black", fill = "skyblue") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
              linetype = "dashed") +
   geom_vline(xintercept = c(-15, 15), color = "hotpink",
@@ -824,7 +842,7 @@ p3 <- ggplot(book_wake_check, aes(x = diff_min600)) +
 
 # MEM +600 min
 p4 <- ggplot(MEM_wake_check, aes(x = diff_min600)) +
-  geom_histogram(binwidth = 20, col = "black", fill = "turquoise") +
+  geom_histogram(binwidth = 20, col = "black", fill = "skyblue") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
              linetype = "dashed") +
   geom_vline(xintercept = c(-15, 15), color = "hotpink",
@@ -867,6 +885,8 @@ cols <- c("SubjectID",
 
 # Subset the original data frame
 wake_data_q3 <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+
+
 
 ### Modify data for Person 3029
 wake_data_q3 <- wake_data_q3 %>% 
@@ -1127,6 +1147,8 @@ ggplot(model_dataq3, aes(x = fitted, y = resids)) +
   theme_classic()
 ```
 
+### Cortisol
+
 ```{r, echo = F}
 ################################## Cortisol ##################################
 
@@ -1154,11 +1176,8 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
 ```
 
 
-### Cortisol
-
 ```{r, echo = F}
 ######### Model
-
 
 # Model
 model_cortisol <- lme(Cortisol ~ time_pre30 + time_post30,
@@ -1168,7 +1187,7 @@ model_cortisol <- lme(Cortisol ~ time_pre30 + time_post30,
                  data = wake_data_q3)
 
 # summary(model_cortisol)
-# confint(model_cortisol)
+# intervals(model_cortisol)
 
 # Extract t and p-values from model for data frame
 summary_df3 <- as.data.frame(summary(model_cortisol)$tTable)
@@ -1188,18 +1207,18 @@ kable(
 ```{r, echo = F, eval = F}
 #### Back transform betas 
 # Pre 30
-c <- 0.014546 * 30 
-c_orig <- (exp(c) - 1) * 100 # -
+c <- 0.025216 * 30 
+c_orig <- (exp(c) - 1) * 100 # 
 
 # Confidence interval
-c1 <- (exp(-0.0307 * 30) - 1) * 100 # 
-c2 <- (exp(0.0599 * 30) - 1) * 100 # 
+c1 <- (exp(-0.0199 * 30) - 1) * 100 # 
+c2 <- (exp( 0.07038 * 30) - 1) * 100 # 
 
 # Post 30
 d <- -0.009 * 600
 d_org <- (exp(d) - 1) * 100 # -37.07332
-d1 <- (exp(-0.0109* 600) - 1) * 100 
-d2 <- (exp(-0.006* 600) - 1) * 100 
+d1 <- (exp(-0.0117* 600) - 1) * 100 
+d2 <- (exp(-0.0070* 600) - 1) * 100 
 
 
 ```
