@@ -1278,24 +1278,20 @@ ggplot() +
 ```
 
 
-# Discussion
+# Discussion and Summary
 
-In our missinginess investigation, we determined that the variable with the highest missingness was MEM Time. This is expected due to cap malfunction from low battery or user error. Booklet Time had much lower missingness compared to MEM time. DHEA and Cortisol measurements did not have a large amount of missingness. 
+In our missingness investigation, we determined that the variable with the highest missingness was MEM time. This was expected due to potential cap malfunction, such as low battery, or user error. In contrast, booklet-recorded time had much lower missingness. Measurements of DHEA and cortisol did not have substantial missingness, indicating that missingness was largely limited to the timing variables instead of the biological outcomes.
 
-In regard to the comparison of MEM and Booklet times, MEM and Booklet times had a statistically significant strong linear relationship. Although we did note that booklet times tended to be earlier than MEM times. This could be due to cap malfunction as previously described or could be due to untruthful time logs which is not something we are able to investigate but a possibility with these types of studies. 
+In regard to the comparison of MEM and booklet times, we found a statistically significant and strong linear relationship between the two measures, indicating that booklet-recorded times tracked closely with MEM times. However, we also observed that booklet times tended to be recorded slightly earlier than MEM times, on average. This suggests the presence of a small systematic bias. Possible explanations include delayed electronic cap recordings due to technical issues or perhaps inaccuracies in self-reported booklet times. While we are unable to directly determine the cause of this discrepancy, it highlights a known limitation of studies relying on self-reported sampling times.
 
-For the 30 minute sampling time, the percentages for good and adequate adherence were reasonable and satisfactorily high at around 80% or so. 
-For the 600 minute sampling time, we do observe a noticeable decrease for both good and adequate adherence, with both percentages from Booklet and MEM falling below 50%. This is expected as ..
-Across these windows and thresholds of adherence, the impact of missingness in MEM time is apparent with lower percentages compared to Booklet time for both the +30 and +60 minute windows and between good or adequate adherence. This emphasizes the importance of appropriately addressing missingness. The differences in MEM and Booklet times would almost certainly present themselves in analysis results. 
-In Figure 2, we note the noticeable differences between the distributions of minutes from the target sampling times for the +30 minute and +600 windows as well as the differences between the MEM and Booklet times. All distributions have long right tails - or bigger deviations from the target times. The peaks of the histograms are 0 though, indicating that a majority of subjects did fall within the good and adherence windows. 
+For the +30 minute sampling window, the percentages for both good and adequate adherence were reasonably high, at approximately 80%. This indicates that participants were able to comply with the short-term post-waking sampling requirement for the most part. 
+On the other hand for the +600 minute sampling window, we saw a notable decrease in adherence. Both good and adequate adherence percentages for booklet and MEM times fell below 50%. This decrease is expected, since longer intervals from waking are more susceptible to schedule variability, forgetfulness, and other daily activities, which undoubtedly can affect accurate timing.
+Across both sampling windows and adherence thresholds, the impact of missing MEM time was apparent, with lower adherence percentages compared to booklet time. 
+This emphasizes the importance of appropriately addressing missingness in electronically recorded timing data, as differences between MEM and booklet times would likely affect downstream analyses and therefore potentially affect conclusions regarding adherence and hormone trajectories.
+In Figure 2, we observed clear differences between the distributions of minutes from the target sampling times for the +30 minute and +600 minute windows, as well as between MEM and booklet times. All distributions showed long right tails, indicating larger deviations from the target sampling times for some observations. However, the distributions were centered near zero, suggesting that the majority of subjects collected samples within the good or adequate adherence windows.
 
+In the assessment of DHEA and cortisol patterns over time, we found that cortisol followed the expected diurnal pattern, with higher levels earlier in the day and a decline over time. In contrast, DHEA did not exhibit a clear or consistent pattern over the sampling period. These differences may be due to several factors, including biological differences in hormone regulation, variability within this particular cohort, or limitations in sampling frequency and timing.
 
-
-
-
-
-
-
-
+In summary, our findings suggest that booklet-based saliva collection using the SPIT device demonstrates strong agreement with electronic monitoring, though a small systematic bias toward earlier recorded booklet times was observed. Adherence to short-term sampling requirements was generally high, while adherence to longer-term sampling windows was more variable. Cortisol exhibited the expected diurnal decline, whereas DHEA did not show a clear temporal pattern in this sample. These results highlight the feasibility and limitations of at-home saliva collection protocols and emphasize the importance of accurate timing and careful handling of missing data in studies of diurnal hormone patterns.
 
 

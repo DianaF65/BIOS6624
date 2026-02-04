@@ -1,4 +1,4 @@
-This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.2.3)  4 FEB 2026 00:46
+This is XeTeX, Version 3.141592653-2.6-0.999997 (TeX Live 2025) (preloaded format=xelatex 2026.2.3)  4 FEB 2026 01:31
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -1100,7 +1100,7 @@ File: Project0_Report_files/figure-latex/unnamed-chunk-22-1.pdf Graphic file (ty
 [8]
 File: Project0_Report_files/figure-latex/unnamed-chunk-28-1.pdf Graphic file (type pdf)
 <use Project0_Report_files/figure-latex/unnamed-chunk-28-1.pdf>
-[9] [10] (./Project0_Report.aux)
+[9] [10] [11] (./Project0_Report.aux)
  ***********
 LaTeX2e <2025-11-01>
 L3 programming layer <2026-01-19>
@@ -1108,11 +1108,11 @@ L3 programming layer <2026-01-19>
  ) 
 Here is how much of TeX's memory you used:
  20057 strings out of 470190
- 368945 string characters out of 5477489
- 925437 words of memory out of 5000000
+ 368957 string characters out of 5477489
+ 925449 words of memory out of 5000000
  48361 multiletter control sequences out of 15000+600000
  633360 words of font info for 95 fonts, out of 8000000 for 9000
  14 hyphenation exceptions out of 8191
- 90i,9n,116p,530b,374s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,9n,116p,742b,374s stack positions out of 10000i,1000n,20000p,200000b,200000s
 
-Output written on Project0_Report.pdf (10 pages).
+Output written on Project0_Report.pdf (11 pages).
