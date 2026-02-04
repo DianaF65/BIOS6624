@@ -387,7 +387,7 @@ Intercept: The average wake up time recorded by the MEM was ~829 minutes on the 
 Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
 In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. Changes in MEM time are mirrored almost exactly by changes in Booklet time.  
 
-In regard to bias, booklet times tended to be recorded approximately 7 minutes earlier (95% CI: (-14.28, -0.62)) than MEM times on average. 
+In regard to bias, booklet times tended to be recorded approximately 7-8 minutes earlier (95% CI: (-14.28, -0.62)) than MEM times on average. This difference is statistically significant with p-val $\approx$ 3.
 
 ```{r, echo = F}
 ######## Assess bias

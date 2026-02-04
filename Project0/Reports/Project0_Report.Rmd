@@ -278,28 +278,27 @@ For the variables we employed in our analyses, we assessed and visualized distri
 
 ## Data Cleaning
 
-For DHEA, we removed observations that were $\geq 5.205$ (nmol/L) as these are considered extremely high DHEA levels that could interfere with analysis. There were 6 observations (4 of which corresponded to Subject 3037) that had DHEA levels of 5.205 (nmol/L). We removed all observations for Subject 3037 due to multiple high DHEA values that suggest underlying health problems as well as the 2 other observations that had DHEA of 5.205 (nmol/L).
-
-For cortisol, we observed 5 observations from 4 patients that had Cortisol levels $\geq 26$. Although these values are considered high, they are biologically plausible and they were left in the analysis. One observation had a cortisol level of ~89 which was excluded for analysis. 
+For DHEA, we removed observations that were $\geq 5.205$ (nmol/L) as these are considered extremely high DHEA levels that could interfere with analysis. There were 6 observations (4 of which corresponded to Subject 3037) that had DHEA levels of 5.205 (nmol/L). We removed all observations for Subject 3037 due to multiple high DHEA values that suggest underlying health problems as well as the 2 other observations with DHEA of 5.205 (nmol/L).
+For cortisol, we observed 5 observations from 4 patients that had Cortisol levels $\geq 26$. Although these values are considered high, they are biologically plausible and they were left in the analysis. One observation had a cortisol level of ~89 which was removed for the analysis. 
 
 
 ## Data Analysis
 
-To address the first hypothesis, we employed a longitudinal linear mixed effects model with Booklet time in Minutes for the outcome with covariates MEM in Minutes and the day number (1-3). Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality.
+To address the first hypothesis, we employed a longitudinal linear mixed effects model with Booklet Time in Minutes as the outcome with covariates - MEM in Minutes and the Day Number (1-3). Adding Day as a covariate noticeably improved diagnostic plots for the assumptions of heteroscedasticity and normality.
 We included a random intercept for subject that allowed us to take variability between subjects into account in our model. 
+To assess whether booklet times tended to be recorded earlier or later than MEM time, we used the difference between MEM and Booklet times as the outcome in a longitudinal linear mixed effects model. This model had Day Number as a covariate and a random intercept for subject. 
 
-To determine whether subjects were adhering accurately to the +30 minute and +600 minute sampling times required by study protocol, intervals of time were defined to determine the number and percentage of patients that had good or adequate adherence.
-Good adherence was defined by a collection of the saliva sample within a 7.5 minute window interval whereas adequate adherence if samples were within a 15 minute window. 
-To calculate the percentage and proportion of individuals that had good adherence and adequate adherence, the difference between the "correct" sampling time and the observed time was calculated and this difference was used to assess whether observed times were within the good or adequate adherence windows. 
-
+To determine whether subjects were adhering accurately to the +30 minute and +600 minute sampling times required by study protocol, intervals of time were defined to calculate percentages for which there was good or adequate adherence.
+Good adherence was defined by a collection of the saliva sample within a 7.5 minute window interval. Patients had adequate adherence if samples were within a 15 minute window. 
+To calculate the percentage of individuals that had good adherence and adequate adherence, the difference between the "correct" sampling time and the observed time was calculated and this difference was used to assess whether observed times were within the good or adequate adherence windows. 
 We visualized and summarized the distribution of the MEM and Booklet times to guide us in our decision to proceed with either MEM or Booklet times for our calculations.
 We observed that MEM times had a considerable amount of missingness and determined that reporting both would give a better overall sense of adherence.
 We summarized adherence for the study population with tables.
 
-For the third hypothesis, we used a longitudinal linear mixed effects models to assess whether DHEA and Cortisol levels followed the expected diurnal pattern.
-Due to a right-skew in the distribution of DHEA, a log transformed DHEA variable was used as the outcome to assess DHEA changes. 
+For the third hypothesis, we used a piecewise longitudinal linear mixed effects model to assess whether DHEA and Cortisol levels followed the expected diurnal pattern.
+Due to a right-skew in the distribution of DHEA, a log transformed DHEA variable was used as the outcome to assess DHEA changes over the day. 
 No transformations was made to Cortisol. 
-Covariates for oboth models include manually calculated pre and post 30 minute variables which would give us the slopes for the two time intervals of interest. 
+Covariates for both models included manually calculated pre and post 30 minute variables (variables for piecewise slopes) which would give us the slopes for the two time intervals of interest. 
 
 All analyses were conducted in R version 4.4.1 (2024-06-14), using the nlme  package for modeling.
 
@@ -308,8 +307,8 @@ All analyses were conducted in R version 4.4.1 (2024-06-14), using the nlme  pac
 # Results
 
 From the missingness investigation, we determined the MEMs had the highest amount of missing: 177 missing values which is equivalent to 47.6%. 
-Booklet had the second highest amount of missing with 55 missing values or 14.8%.
-Cortisol and DHEA measurements had 5 missing values or 1.34% missingness.
+Booklet had the second highest amount of missingness with 55 missing values or 14.8%.
+Cortisol and DHEA measurements had 5 missing values each or 1.34% missingness.
 
 <!-- The graphic below allowed us to visually see the quantity of missingness in the MEM times compared to the other variables in the data set, we followed certain thresholds for good and adequate adherence. -->
 
@@ -317,10 +316,9 @@ Cortisol and DHEA measurements had 5 missing values or 1.34% missingness.
 ## Hypothesis 1
 \vspace{-6mm}
 
-Below is a table of the estimates, 95% Confidence Intervals and P-values for the model: 
-\newpage
+Below is a table of the estimates, 95% Confidence Intervals and P-values: 
 
-```{r, echo = F}
+```{r, echo = F, warning = F, message = F}
 # LMM with random intercept for subject - Day added
 model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
                 random = ~ 1 | SubjectID,
@@ -357,10 +355,30 @@ kable(
 # factor(DAYNUMB)3 -5.0521491 -1.8810020  1.2901450
 ```
 
+```{r, echo = F, message = F, warning = F}
+######## Assess bias
+# Create a variable that is the difference between MEM and Booklet times
+wake_data <- wake_data %>%
+  mutate(diff_minutes = Booklet_Minutes - MEM_Minutes)
+
+# Model to assess bias were difference is the outcome
+bias_model <- lme(
+  diff_minutes ~ 1 + factor(DAYNUMB),
+  random = ~ 1 | SubjectID,
+  data = wake_data,
+  na.action = na.omit,
+  method = "REML"
+)
+
+# summary(bias_model)
+# intervals(bias_model)
+```
+
+
 Holding day constant, a one-minute increase in MEM-recorded wake time is associated with an approximately one-minute increase in Booklet-recorded wake time ($\beta$ ≈ 0.99; 95% CI: (0.97–1.01); p < 0.0001). This near one-to-one association indicates strong concordance between the two wake-time measures within a given day.
 In other words, the subject's recorded wake up time and the MEM's recorded wake up time track each other quite closely. This is visualized in Figure 1 below.
 Changes in MEM time are mirrored almost exactly by changes in Booklet time and our initial hypothesis is correct. 
-We additionally assessed bias by.... COME BACK TO THIS
+In regard to bias, booklet times tended to be recorded approximately 7-8 minutes earlier (95% CI: (-14.28, -0.62)) than MEM times on average. This difference is statistically significant with p-val $\approx$ 3.
 
 
 ```{r, echo = F, warning=F, message = F, fig.cap="Booklet Vs. MEM Wake Up Times", out.width="90%", fig.align='center'}
@@ -375,8 +393,9 @@ ggplot(wakes, aes(x = MEM_Minutes, y = Booklet_Minutes,
        y = "Booklet Wake Up Time (Minutes)")
 ```
 
-
+\vspace{-6mm}
 ## Hypothesis 2
+\vspace{-6mm}
 
 ```{r, echo = F}
 ################################################################################
@@ -548,7 +567,7 @@ MEM_subject_ad_30adherence <- MEM_wake_check %>%
 
 ```
 
-Below we summarize the percentage of subjects that adhered to the study sampling times. Percentages for the +30 Minute sampling time is in Table 2 and percentages for the +600 Minute sampling time is in Table 3, for both MEM and Booklet times. 
+Below we summarize the percentage of subjects that adhered to the study sampling times, for both MEM and Booklet times. 
 
 ```{r, echo = F}
 ################################## Good Adherence ##############################
@@ -750,9 +769,8 @@ kable(
 
 Overall, more subjects are meeting the adequate adherence thresholds compared to the good adherence thresholds for both the +30 minute and +600 minute sampling times. In addition, the MEM percentages are lower for both sampling times and for both good and adequaate thresholds.
 
-
-Below we visualize the minutes from the +30 minute sampling time (left column) and the +600 minute sampling time (right column). 
-Times for Booklet are in the top row and time for MEM are in the bottom row. 
+In Figure 2 we visualize the minutes from the +30 minute sampling time (left column) and the +600 minute sampling time (right column). 
+Times for Booklet are in the top row and Times for MEM are in the bottom row. 
 The red dashed lines indicate the $\pm$ 7.5 window for good adherence while the pink dashed lines are the $\pm$ 15 minute window for adequate adherence. 
 
 
@@ -831,7 +849,9 @@ grid.arrange(p1, p3, p2, p4, nrow = 2)
 
 ## Hypothesis 3
 
-```{r, echo = F}
+### DHEA
+
+```{r, echo = F, warning = F, message = F}
 
 ################################################################################
 ###                               Question 3                                 ### 
@@ -900,6 +920,9 @@ wake_data_q3 <- wake_data_q3 %>%
   ungroup() %>% 
   relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
 
+# Rename cortisol col
+wake_data_q3 <- wake_data_q3 %>%
+  rename(Cortisol = `Cortisol (nmol/L)`)
 
 ```
 
@@ -944,6 +967,8 @@ ggplot(wake_data_q3, aes(x = log(`DHEA (nmol/L)`))) +
 # We will log transform DHEA
 
 ```
+
+In Table 3 we display the estimates, 95% Confidence Intervals and P-values for the DHEA model:
 
 ```{r, echo = F}
 
@@ -994,7 +1019,7 @@ kable(
   digits = 5,
   caption = "Model Summary"
 ) |>
-  kable_styling(latex_options = c("striped"))
+  kable_styling(latex_options = c("striped", "hold_position"))
 
 ```
 
@@ -1017,20 +1042,21 @@ b2 <- (exp(-0.00122* 600) - 1) * 100
 
 ```
 
-Interpretations: 
-
-Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 40% decrease in DHEA (95% CI: (-50.04%, -28.75%)).
+For the time period of wake time to 30 minutes, there is approximately a 40% decrease in DHEA (95% CI: (-50.04%, -28.75%)).
 This is statistically significant with p < 0.001.
 DHEA shows a statistically significant decrease, not the expected increase, from waking to 30 minutes after waking. 
 
-Time Post30: From 30 minutes to 600 minutes, there is approimately a 60% decrease in DHEA levels (95% CI: (-66.65%, -51.91%)). This is statistically significant with p-val < 0.001. 
-As expected, DHEA showed a statistically significant decline over 10 hours. 
-
-Using a piecewise linear mixed-effects model with a knot at 30 minutes post-waking, DHEA concentrations showed a significant early decline - approximately 39% decrease over the first 30 minutes. 
-After 30 minutes, DHEA declined more gradually across the day, corresponding to an additional ~60% decrease over 10 hours.
+As hypothesized, from 30 minutes to 600 minutes, there is approimately a 60% decrease in DHEA levels (95% CI: (-66.65%, -51.91%)). This is statistically significant with p-val < 0.001.
+We visualize these slopes in Figure 3 below. 
 
 
-```{r, echo = F, warning = F, message = F, out.width="80%", fig.align='center', eval =F}
+```{r, echo = F, warning = F, message = F, out.width="90%", fig.align='center', fig.cap="Diurnal DHEA Pattern"}
+# For plotting purposes here, we use a model with lmer()!!
+model_plot_dhea <- lmer(log_DHEA ~ time_pre30 + time_post30
+                 + (1 | SubjectID),
+                 REML = TRUE,
+                 data = wake_data_q3)
+
 t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
 
 pred_grid <- tibble(
@@ -1041,11 +1067,11 @@ pred_grid <- tibble(
   )
 
 # Get fixed effects predictions
-pred_grid$fit <- predict(model_q3, newdata = pred_grid, re.form = NA)
+pred_grid$fit <- predict(model_plot_dhea, newdata = pred_grid, re.form = NA)
 
 # Add a 95% CI
 X <- model.matrix(~ time_pre30 + time_post30, data = pred_grid)
-V <- vcov(model_q3)
+V <- vcov(model_plot_dhea)
 se_fit <- sqrt(diag(X %*% V %*% t(X)))
 
 pred_grid <- pred_grid %>%
@@ -1072,10 +1098,9 @@ ggplot() +
   geom_vline(xintercept = 30, linetype = 2,
              col = "red") +
   labs(x = "Minutes since waking", y = "log(DHEA)",
-       title = "Piecewise linear mixed model fit (fixed effects only)",
+       title = "DHEA Pattern Over Time",
        subtitle = "Knot at 30 minutes") + 
   theme_lucid()
-
 
 ```
 
@@ -1105,7 +1130,7 @@ ggplot(model_dataq3, aes(x = fitted, y = resids)) +
   theme_classic()
 ```
 
-```{r, echo = F, eval = F}
+```{r, echo = F}
 ################################## Cortisol ##################################
 
 # Determine how many measurements are above 80
@@ -1116,14 +1141,14 @@ ggplot(model_dataq3, aes(x = fitted, y = resids)) +
 
 # Exclude the observation with 89 cortisol
 wake_data_q3 <- wake_data_q3 %>%
-  filter(!dplyr::near(`Cortisol (nmol/L)`, 89.55714))
+  filter(!dplyr::near(Cortisol, 89.55714))
 
 ```
 
-```{r, echo = F, message = F, warning=F, out.width="80%", fig.align='center'}
+```{r, echo = F, message = F, warning=F, out.width="80%", eval = F, fig.align='center'}
 # Visualize cortisol over time
 ggplot(wake_data_q3, aes(x = `Collection Sample`,
-                      y = `Cortisol (nmol/L)`,
+                      y = Cortisol,
                       color = factor(SubjectID))) +
   geom_point() + 
   geom_line() +
@@ -1131,11 +1156,16 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
   theme_lucid()
 ```
 
-```{r, echo = F, eval = F}
+
+### Cortisol
+
+```{r, echo = F}
 ######### Model
 
-model_cortisol <- lme(`Cortisol (nmol/L)` ~ time_pre30 + time_post30,
-                 random = ~ 1 | SubjectID,
+
+# Model
+model_cortisol <- lme(Cortisol ~ time_pre30 + time_post30,
+                  random = ~ 1 | SubjectID,
                  method = "REML",
                  na.action = na.omit,
                  data = wake_data_q3)
@@ -1154,7 +1184,7 @@ kable(
   digits = 5,
   caption = "Model Summary"
 ) |>
-  kable_styling(latex_options = c("striped"))
+  kable_styling(latex_options = c("striped", ""))
 
 ```
 
@@ -1178,19 +1208,22 @@ d2 <- (exp(-0.006* 600) - 1) * 100
 ```
 
 
-Interpretations: 
-
-Time Pre30: For the time period of wake time to 30 minutes, there is approximately a 54% increase in Cortisol (95% CI: (-60.19%, 503.15%)).
+For the time period of wake time to 30 minutes, there is approximately a 54% increase in Cortisol (95% CI: (-60.19%, 503.15%)).
 This is not statistically significant with p = 0.53.
 Although there is an increase from waking to 30 minutes after waking, it is not a statistically significant increase.  
 
-Time Post30: From 30 minutes to 600 minutes, there is approimately a 99% decrease in DHEA levels (95% CI: (-99.86%, -97.27%)). This is statistically significant with p-val < 0.001. 
+From 30 minutes to 600 minutes, there is approimately a 99% decrease in DHEA levels (95% CI: (-99.86%, -97.27%)). This is statistically significant with p-val < 0.001. 
 As expected, Cortisol showed a statistically significant decline over 10 hours. 
+Cortisol follows the expected pattern of an increase (although not significant) from waking to 30 minutes followed by a decline from 30 minutes and on. 
 
-Cortisol follows the expected pattern of an increase from waking to 30 minutes followed by a decline from 30 minutes and on. 
 
+```{r, echo = F, warning = F, message = F, out.width="90%", fig.align='center', fig.cap="Diurnal Cortisol Pattern"}
+# For plotting purposes here, we use a model with lmer()!!
+model_plot_cort <- lmer(Cortisol ~ time_pre30 + time_post30
+                 + (1 | SubjectID),
+                 REML = TRUE,
+                 data = wake_data_q3)
 
-```{r, echo = F, warning = F, message = F, eval = F}
 t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
 
 pred_grid <- tibble(
@@ -1200,14 +1233,14 @@ pred_grid <- tibble(
     time_post30 = pmax(minutes_since_wake - 30, 0))
 
 # Get fixed effects predictions
-pred_grid$fit_cort <- predict(model_cortisol, 
+pred_grid$fit_cort <- predict(model_plot_cort, 
                               newdata = pred_grid,
                               re.form = NA)
 
 # Add a 95% CI
 X_cortisol <- model.matrix(~ time_pre30 + time_post30, 
                            data = pred_grid)
-V_cortisol <- vcov(model_cortisol)
+V_cortisol <- vcov(model_plot_cort)
 
 se_fit_cort <- sqrt(diag(X_cortisol %*% V_cortisol %*% t(X_cortisol)))
 
@@ -1221,7 +1254,7 @@ pred_grid <- pred_grid %>%
 ggplot() +
   geom_point(data = wake_data_q3,
              aes(x = minutes_since_wake, 
-                 y = `Cortisol (nmol/L)`),
+                 y = Cortisol),
              alpha = 0.25, size = 1) +
   geom_ribbon(data = pred_grid,
               aes(x = minutes_since_wake, 
@@ -1237,7 +1270,7 @@ ggplot() +
   geom_vline(xintercept = 30, linetype = 2,
              col = "red") +
   labs(x = "Minutes since waking", y = "Cortisol",
-       title = "Piecewise linear mixed model fit (fixed effects only)",
+       title = "Cortisol Pattern Over Time",
        subtitle = "Knot at 30 minutes") + 
   theme_lucid()
 
@@ -1247,11 +1280,14 @@ ggplot() +
 
 # Discussion
 
+In our missinginess investigation, we determined that the variable with the highest missingness was MEM Time. This is expected due to cap malfunction from low battery or user error. Booklet Time had much lower missingness compared to MEM time. DHEA and Cortisol measurements did not have a large amount of missingness. 
 
+In regard to the comparison of MEM and Booklet times, MEM and Booklet times had a statistically significant strong linear relationship. Although we did note that booklet times tended to be earlier than MEM times. This could be due to cap malfunction as previously described or could be due to untruthful time logs which is not something we are able to investigate but a possibility with these types of studies. 
 
-
-
-
+For the 30 minute sampling time, the percentages for good and adequate adherence were reasonable and satisfactorily high at around 80% or so. 
+For the 600 minute sampling time, we do observe a noticeable decrease for both good and adequate adherence, with both percentages from Booklet and MEM falling below 50%. This is expected as ..
+Across these windows and thresholds of adherence, the impact of missingness in MEM time is apparent with lower percentages compared to Booklet time for both the +30 and +60 minute windows and between good or adequate adherence. This emphasizes the importance of appropriately addressing missingness. The differences in MEM and Booklet times would almost certainly present themselves in analysis results. 
+In Figure 2, we note the noticeable differences between the distributions of minutes from the target sampling times for the +30 minute and +600 windows as well as the differences between the MEM and Booklet times. All distributions have long right tails - or bigger deviations from the target times. The peaks of the histograms are 0 though, indicating that a majority of subjects did fall within the good and adherence windows. 
 
 
 
