@@ -50,7 +50,8 @@ opts_chunk$set(tidy = F)
 ```
 
 ```{r, echo = F, warning = F, message = F}
-# Read in the data
+### Read in the data
+# The data is located in folder called RawData
 proj0_dat <- read.csv("../RawData/Project0_Clean_v2.csv",
                       header = TRUE,
                       check.names = FALSE)
@@ -153,16 +154,12 @@ wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
 
 ```
 
-
 # Introduction
 
-Research suggests that there is a relationship between hormonal patterns across the span of a day and conditions including sleep disorders and depression.
-In this study, the focus is on the hormones, DHEA and Cortisol, which play a role in regulating stress. 
-Cortisol is an important steroid hormone that significantly affects metabolism which in turn affects the central nervous system. 
-DHEA is 
+Research suggests that there is a relationship between hormonal patterns across the span of a day and conditions including sleep disorders and depression. In this study, the focus is on the hormones DHEA and cortisol, which play an important role in regulating the body’s stress response. Cortisol is an important steroid hormone that significantly affects metabolism, which in turn influences the central nervous system. Cortisol typically follows a diurnal pattern, with levels peaking shortly after waking and then gradually declining throughout the day.
+DHEA is another steroid hormone involved in the stress response and is often considered to have effects that counterbalance cortisol. DHEA has been associated with immune function, mood regulation, and overall physiological resilience, and its daily pattern is less well characterized compared to cortisol. Because both hormones are involved in stress regulation, understanding their patterns across the day may provide insight into physiological processes related to health and disease.
 
-In this study, researchers followed the cortisol and DHEA patterns over the course of a day for a totstudal y period of three days to measure the the patterns of the two hormones in a natural environment.  
-Researchers utilized two methods to collect saliva samples; a Saliva Procurement and Integrated Testing (SPIT) booklet and an automatic Electronic Monitoring Cap. Saliva samples were collected at waking, 30 minutes after waking, before lunch, and 600 minutes after waking. Subjects did not have to adhere to a specific wake up time for 31 healthy control subjects. 
+In this study, researchers examined cortisol and DHEA patterns over the course of a day across a total study period of three days. Saliva samples were collected using two methods: a Saliva Procurement and Integrated Testing (SPIT) booklet and an automatic electronic monitoring cap. Samples were collected at waking, 30 minutes after waking, before lunch, and 600 minutes after waking. Subjects were allowed to follow their normal daily schedules and were not required to adhere to a specific wake-up time. A total of 31 healthy control subjects participated in the study. 
 
 This report addresses the following hypotheses of interest: 
 
@@ -175,7 +172,7 @@ Subjects adhered appropriately to the study protocol of the +30 minute and +600 
 \textbf{Hypothesis 3: } 
 DHEA and Cortisol levels show an initial increase from waking to 30 minutes followed by a gradual decline from 30 minutes and on. 
 
-\textit{We will further refer to the electronic monitoring cap as MEM time and the the SPIT Booklet as Booklet time for the remainder of the report.}
+\textit{Note: We will further refer to the electronic monitoring cap as MEM time and the the SPIT Booklet as Booklet time for the remainder of the report.}
 
 # Methods
 
@@ -1277,21 +1274,63 @@ ggplot() +
 
 ```
 
+```{r, echo = F, include = F, eval = F}
+###### Model diagnostics
+# Obtain data used to fit model
+model_data_cort <- model_cortisol@frame
+
+# Obtain residuals of model
+model_data_cort$resids <- resid(model_cortisol)
+
+# Obtain fitted values
+model_data_cort$fitted <- fitted(model_cortisol)
+
+# Residual histogram
+ggplot(model_data_cort, aes(x = resids)) +
+  geom_histogram(bins = 25,
+                 fill = "cadetblue2",
+                 color = "black")
+
+# residual vs. fitted
+ggplot(model_data_cort, aes(x = fitted, y = resids)) +
+  geom_point() +
+  geom_hline(yintercept = 0, linetype = 2) +
+  theme_classic()
+```
+
+
 
 # Discussion and Summary
 
-In our missingness investigation, we determined that the variable with the highest missingness was MEM time. This was expected due to potential cap malfunction, such as low battery, or user error. In contrast, booklet-recorded time had much lower missingness. Measurements of DHEA and cortisol did not have substantial missingness, indicating that missingness was largely limited to the timing variables instead of the biological outcomes.
+<!-- In our missingness investigation, we determined that the variable with the highest missingness was MEM time. This was expected due to potential cap malfunction, such as low battery, or user error. In contrast, booklet-recorded time had much lower missingness. Measurements of DHEA and cortisol did not have substantial missingness, indicating that missingness was largely limited to the timing variables instead of the biological outcomes. -->
 
-In regard to the comparison of MEM and booklet times, we found a statistically significant and strong linear relationship between the two measures, indicating that booklet-recorded times tracked closely with MEM times. However, we also observed that booklet times tended to be recorded slightly earlier than MEM times, on average. This suggests the presence of a small systematic bias. Possible explanations include delayed electronic cap recordings due to technical issues or perhaps inaccuracies in self-reported booklet times. While we are unable to directly determine the cause of this discrepancy, it highlights a known limitation of studies relying on self-reported sampling times.
+In regard to the comparison of MEM and booklet times, we found a statistically significant and strong linear relationship between the two measures, indicating that booklet-recorded times tracked closely with MEM times. However, we also observed that booklet times tended to be recorded slightly earlier than MEM times, on average. This suggests the presence of a small systematic bias. Possible explanations include delayed electronic cap recordings due to technical issues or perhaps inaccuracies in self-reported booklet times. This highlights a known limitation of studies relying on self-reported sampling times.
 
-For the +30 minute sampling window, the percentages for both good and adequate adherence were reasonably high, at approximately 80%. This indicates that participants were able to comply with the short-term post-waking sampling requirement for the most part. 
-On the other hand for the +600 minute sampling window, we saw a notable decrease in adherence. Both good and adequate adherence percentages for booklet and MEM times fell below 50%. This decrease is expected, since longer intervals from waking are more susceptible to schedule variability, forgetfulness, and other daily activities, which undoubtedly can affect accurate timing.
+For the +30 minute sampling window, the percentages for both good and adequate adherence were reasonably high, at approximately 80%.
+On the other hand for the +600 minute sampling window, we saw a notable decrease in adherence. Both good and adequate adherence percentages for booklet and MEM times fell below 50%. This decrease is expected, since longer intervals from waking are more susceptible to schedule variability which undoubtedly can affect accurate timing.
 Across both sampling windows and adherence thresholds, the impact of missing MEM time was apparent, with lower adherence percentages compared to booklet time. 
-This emphasizes the importance of appropriately addressing missingness in electronically recorded timing data, as differences between MEM and booklet times would likely affect downstream analyses and therefore potentially affect conclusions regarding adherence and hormone trajectories.
-In Figure 2, we observed clear differences between the distributions of minutes from the target sampling times for the +30 minute and +600 minute windows, as well as between MEM and booklet times. All distributions showed long right tails, indicating larger deviations from the target sampling times for some observations. However, the distributions were centered near zero, suggesting that the majority of subjects collected samples within the good or adequate adherence windows.
+<!-- In Figure 2, we observed clear differences between the distributions of minutes from the target sampling times for the +30 minute and +600 minute windows, as well as between MEM and booklet times. All distributions showed long right tails, indicating larger deviations from the target sampling times for some observations. However, the distributions were centered near zero, suggesting that the majority of subjects collected samples within the good or adequate adherence windows. -->
 
 In the assessment of DHEA and cortisol patterns over time, we found that cortisol followed the expected diurnal pattern, with higher levels earlier in the day and a decline over time. In contrast, DHEA did not exhibit a clear or consistent pattern over the sampling period. These differences may be due to several factors, including biological differences in hormone regulation, variability within this particular cohort, or limitations in sampling frequency and timing.
 
 In summary, our findings suggest that booklet-based saliva collection using the SPIT device demonstrates strong agreement with electronic monitoring, though a small systematic bias toward earlier recorded booklet times was observed. Adherence to short-term sampling requirements was generally high, while adherence to longer-term sampling windows was more variable. Cortisol exhibited the expected diurnal decline, whereas DHEA did not show a clear temporal pattern in this sample. These results highlight the feasibility and limitations of at-home saliva collection protocols and emphasize the importance of accurate timing and careful handling of missing data in studies of diurnal hormone patterns.
+
+# Data and Code Availability
+
+The data and statistical code used to generate the results and figures in this report are available in the following GitHub repository:
+
+- GitHub repository: https://github.com/DianaF65/BIOS6624
+
+Directory structure:
+
+\begin{itemize}
+  \item Background/ - A description of the background of the project.
+  \item Code/ - A R Markdown file consisting of code for exploratory and an initial report draft as well as as a .R file of code for the complete analysis.
+  \item RawData/ – Raw data files.
+  \item Reports/ R Markdown file used to generate this report
+\end{itemize}
+
+All analyses and figures were generated using R, and the repository contains the R scripts and R Markdown files used to produce this report
+
 
 
