@@ -224,6 +224,50 @@ ggplot(plot_data, aes(y = LEU3N,
   facet_grid( ~ hard_drugs)
 # On initial glance, looking like CD4 counts increasing
 
+################################################################################
+
+################################# Covariates ###################################
+
+################################## Hard Drugs  #################################
+
+ggplot(baseline, aes(x = factor(na.omit(hard_drugs)),
+                          fill = factor(na.omit(hard_drugs)))) + 
+  geom_bar() + 
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+################################### Ever ART ###################################
+
+table(analysis_data$everART)
+
+####################################### Age  ###################################
+
+# Summary of age at baseline
+summary(baseline$age)
+
+
+####################################### BMI  ###################################
+
+# Summary of BMI
+summary(analysis_data$BMI)
+
+
+###################################### Race  ###################################
+
+# Table of distribution of race
+table(factor(analysis_data$RACE))
+
+# Barplot
+ggplot(baseline, aes(x = factor(na.omit(RACE)),
+                     fill = factor(na.omit(RACE)))) + 
+  geom_bar() + 
+  theme_lucid() + 
+  theme(legend.position = "none")
+# Pretty unbalanced
+
+
+################################## Hard Drugs  #################################
+
 
 
 
