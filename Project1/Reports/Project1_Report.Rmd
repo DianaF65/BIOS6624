@@ -1,5 +1,92 @@
 ---
-title: "Project0_Report"
-output: html_document
+title: The Effectiveness of HART
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-2cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
 ---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(MASS)
+library(emmeans)
+library(multcomp)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+opts_chunk$set(tidy = F)
+```
+
+
+# Introduction
+
+The Multicenter AIDS Cohort Study is a prospective, observational, and longitudinal cohort of homosexual and bisexual men with Human Immunodeficiency Virus (HIV-1). 
+This study examines the effect of Highly Active Antiretroviral Treatment (HART), a standard treatment given to HIV-1 patients. Data was collected once annually for eight years and subjects were started on HART years 1 - 8.
+Data on important phenotypic characteristics such as age and race as well as clinical measurements including LDL Cholesterol were collected over the observation period. 
+
+This project aims to determine whether the use of hard drugs at baseline affects a patient's response to HART, particularly, in the time period from years 0 to 2. There is minimal evidence on the relationship between hard drugs and treatment response. If hard drugs negatively or positively affect a patient's response to HART, clinicians may be able to better assist patients by providing treatment that is better suited to patients based on past hard drug history. 
+
+
+
+
+
+
+
+
+
+# Methods
+
+## Data Cleaning
+
+
+## Data Analysis
+
+# Results
+
+# Discussion & Summary
+
+
+
+
+
+
+
+
 
