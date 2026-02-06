@@ -58,6 +58,8 @@ rsconnect/
 *.sas7bdat
 *.xport
 *.mdb
+*.pdf
+
 
 
 
