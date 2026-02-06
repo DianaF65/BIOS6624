@@ -1,6 +1,6 @@
 # Project 0 Code Analysis
 
-# To make commits, in terminal type: 
+# To make commits, in terminal type:
 #   Git add .
 # Git commit -m “message”
 # Git push
@@ -31,17 +31,17 @@ library(ggeffects)
 ### Read in the data
 # The data is located in folder called RawData
 proj0_dat <- read.csv("../RawData/Project0_Clean_v2.csv",
-                      header = TRUE,
-                      check.names = FALSE)
+  header = TRUE,
+  check.names = FALSE)
 
 ### Modify data for Person 3029
-proj0_dat <- proj0_dat %>% 
+proj0_dat <- proj0_dat %>%
   mutate(DAYNUMB = case_when(
     SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
     SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
     SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
     TRUE ~ DAYNUMB
-  )) %>% 
+  )) %>%
   ungroup()
 
 ############################ Data Description ##################################
@@ -57,7 +57,7 @@ data <- wake_data %>%
     `Collection Sample` = factor(
       `Collection Sample`,
       levels = c(1, 2, 3, 4),
-      labels = c("Wake Time", "+30 Min", "Pre Lunch","+600 Min")
+      labels = c("Wake Time", "+30 Min", "Pre Lunch", "+600 Min")
     )
   )
 
@@ -65,17 +65,17 @@ data <- wake_data %>%
 
 # for creating Table1
 variables <- c("minutes_since_wake",
-               "Booklet_Minutes",
-               "MEM_Minutes",
-               "DHEA (nmol/L)",
-               "Cortisol (nmol/L)")
+  "Booklet_Minutes",
+  "MEM_Minutes",
+  "DHEA (nmol/L)",
+  "Cortisol (nmol/L)")
 
-strata <- 'Collection Sample'
+strata <- "Collection Sample"
 
 # modify labels
-var_label(data$Booklet_Minutes) <- 'Booklet Time (Min Since Midnight)'
-var_label(data$minutes_since_wake) <- 'Minutes Since Waking (Midnight)'
-var_label(data$MEM_Minutes) <- 'MEM Time (Min Since Midnight)' 
+var_label(data$Booklet_Minutes) <- "Booklet Time (Min Since Midnight)"
+var_label(data$minutes_since_wake) <- "Minutes Since Waking (Midnight)"
+var_label(data$MEM_Minutes) <- "MEM Time (Min Since Midnight)"
 
 
 # create Table1
@@ -87,18 +87,18 @@ studypop_tab1 <- CreateTableOne(
   addOverall = T
 )
 
-studypop_tab_forkbl <- print(studypop_tab1, 
-                             varLabels = T, 
-                             printToggle = F)
+studypop_tab_forkbl <- print(studypop_tab1,
+  varLabels = T,
+  printToggle = F)
 
 # Create table of results
 kbl(studypop_tab_forkbl,
-    caption = 
-      'Characteristics of Study Cohort',
-    booktabs = T, 
-    align = 'c') %>%
-  kable_styling(latex_options = "HOLD_position", font_size = 9) %>% 
-  collapse_rows(columns=1, latex_hline='major', valign='middle')
+  caption =
+    "Characteristics of Study Cohort",
+  booktabs = T,
+  align = "c") %>%
+  kable_styling(latex_options = "HOLD_position", font_size = 9) %>%
+  collapse_rows(columns = 1, latex_hline = "major", valign = "middle")
 
 ###### Convert some of these back to hh:mm
 # Create function to convert minutes to hh:mm
@@ -111,25 +111,25 @@ min_to_clock <- function(x) {
 
 ### Get the means
 # Mean minutes since wake
-mean_minwake <- mean(data$`Sleep Diary Wake Minutes`, 
-                     na.rm = TRUE)
-# min_to_clock(mean_minwake) 
+mean_minwake <- mean(data$`Sleep Diary Wake Minutes`,
+  na.rm = TRUE)
+# min_to_clock(mean_minwake)
 # 06:52
 
 # Mean booklet minutes
-mean_bookmin <- mean(data$Booklet_Minutes, 
-                     na.rm = TRUE) # 654.3472
-# min_to_clock(mean_bookmin) 
+mean_bookmin <- mean(data$Booklet_Minutes,
+  na.rm = TRUE) # 654.3472
+# min_to_clock(mean_bookmin)
 # 10:54
 
 # Mean MEM minutes
-mean_memmin <- mean(data$MEM_Minutes, 
-                    na.rm = TRUE) # 684.2379
-# min_to_clock(mean_memmin) 
+mean_memmin <- mean(data$MEM_Minutes,
+  na.rm = TRUE) # 684.2379
+# min_to_clock(mean_memmin)
 # 11:24
 
 ################################################################################
-###                               Question                                  ### 
+###                               Question                                  ###
 ################################################################################
 
 ############################## Question 1 Data #################################
@@ -138,14 +138,14 @@ mean_memmin <- mean(data$MEM_Minutes,
 
 # Vector of the cols of interest
 cols <- c("SubjectID",
-          "Collection Date", "DAYNUMB",
-          "Collection Sample",
-          "Booket: Clock Time", "MEMs: Clock Time",
-          "Sleep Diary reported wake time",
-          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+  "Collection Date", "DAYNUMB",
+  "Collection Sample",
+  "Booket: Clock Time", "MEMs: Clock Time",
+  "Sleep Diary reported wake time",
+  "Cortisol (nmol/L)", "DHEA (nmol/L)")
 
 # Subset the original data frame
-wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+wake_data <- proj0_dat[, colnames(proj0_dat) %in% cols]
 
 # Convert the Sleep diary Wake time to minutes
 wake_data$`Sleep Diary Wake Minutes` <-
@@ -154,9 +154,9 @@ wake_data$`Sleep Diary Wake Minutes` <-
   lubridate::minute(hm(wake_data$`Sleep Diary reported wake time`))
 
 # Move this to after Collection Sample
-wake_data <- wake_data %>% 
-  relocate(`Sleep Diary Wake Minutes`, 
-           .after = `Sleep Diary reported wake time`)
+wake_data <- wake_data %>%
+  relocate(`Sleep Diary Wake Minutes`,
+    .after = `Sleep Diary reported wake time`)
 
 # Convert the Booklet Time to minutes
 wake_data$Booklet_Minutes <-
@@ -165,7 +165,7 @@ wake_data$Booklet_Minutes <-
   lubridate::minute(hm(wake_data$`Booket: Clock Time`))
 
 # Move this to after Booklet: Clock Time
-wake_data <- wake_data %>% 
+wake_data <- wake_data %>%
   relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
 
 # Convert the MEM Time to minutes
@@ -175,7 +175,7 @@ wake_data$MEM_Minutes <-
   lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
 
 # Move this to after MEMs: Clock Time
-wake_data <- wake_data %>% 
+wake_data <- wake_data %>%
   relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
 
 # Center MEM time
@@ -185,7 +185,7 @@ wake_data$MEM_C <-
   lubridate::minute(hm(wake_data$`MEMs: Clock Time`))
 
 # Move this to after MEMs: Clock Time
-wake_data <- wake_data %>% 
+wake_data <- wake_data %>%
   relocate(MEM_C, .after = `MEMs: Clock Time`)
 
 # Create a Minutes SINCE WAKE variable
@@ -195,19 +195,19 @@ wake_data <- wake_data %>%
       lubridate::minute(hm(`Booket: Clock Time`))) %>%
   group_by(SubjectID, DAYNUMB) %>%
   mutate(wake_min = clock_min[`Collection Sample` == 1][1],
-         minutes_since_wake = clock_min - wake_min) %>%
-  ungroup() %>% 
+    minutes_since_wake = clock_min - wake_min) %>%
+  ungroup() %>%
   relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
 
 
 ### Modify data for Person 3029
-wake_data <- wake_data %>% 
+wake_data <- wake_data %>%
   mutate(DAYNUMB = case_when(
     SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
     SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
     SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
     TRUE ~ DAYNUMB
-  )) %>% 
+  )) %>%
   ungroup()
 
 # Create a subset of the data frame that only has Wake times
@@ -217,11 +217,11 @@ wakes <- wake_data[wake_data$`Collection Sample` == 1, ]
 
 ######### Model
 # LMM with random intercept for subject - Day added
-model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB), 
-                random = ~ 1 | SubjectID,
-                na.action = na.omit,
-                method = "REML",
-                data = wakes)
+model_q1 <- lme(Booklet_Minutes ~ MEM_C + factor(DAYNUMB),
+  random = ~ 1 | SubjectID,
+  na.action = na.omit,
+  method = "REML",
+  data = wakes)
 
 
 # Display model summary with kable
@@ -269,18 +269,18 @@ bias_model <- lme(
 # Relationship Between booklet and MEM Wake times
 
 ggplot(wakes, aes(x = MEM_Minutes, y = Booklet_Minutes,
-                  color = factor(DAYNUMB))) + 
-  geom_point(size = 3, alpha = 0.7) + 
-  theme_lucid() + 
+  color = factor(DAYNUMB))) +
+  geom_point(size = 3, alpha = 0.7) +
+  theme_lucid() +
   geom_abline(intercept = 0, slope = 1, linetype = "solid") +
   labs(color = "Day") +
   labs(title = "Relationship Between Booklet and MEM Wake Up Times",
-       x = "MEM Wake Up Time (Minutes)",
-       y = "Booklet Wake Up Time (Minutes)")
+    x = "MEM Wake Up Time (Minutes)",
+    y = "Booklet Wake Up Time (Minutes)")
 
 
 ################################################################################
-###                               Question 2                                 ### 
+###                               Question 2                                 ###
 ################################################################################
 
 ############################## Question 2 Data #################################
@@ -324,13 +324,13 @@ book_wake_check <- wake_check %>%
     adequate_ad30 = abs(diff_min30) <= 15,
     # For 600 min: Define adequate adherence
     adequate_ad600 = abs(diff_min600) <= 15
-  ) %>% 
+  ) %>%
   relocate(c(target_30time, diff_min30,
-             good_adherent30, adequate_ad30), 
-           .after = Book_30time) %>% 
+    good_adherent30, adequate_ad30),
+  .after = Book_30time) %>%
   relocate(c(target_600time, diff_min600,
-             good_adherent600, adequate_ad600), 
-           .after = Book_600time)
+    good_adherent600, adequate_ad600),
+  .after = Book_600time)
 
 # Define adherence for MEM
 MEM_wake_check <- wake_check %>%
@@ -351,13 +351,13 @@ MEM_wake_check <- wake_check %>%
     adequate_ad30 = abs(diff_min30) <= 15,
     # For 600 min: Define adequate adherence
     adequate_ad600 = abs(diff_min600) <= 15
-  ) %>% 
+  ) %>%
   relocate(c(target_30time, diff_min30,
-             good_adherent30, adequate_ad30), 
-           .after = MEM_30time) %>% 
+    good_adherent30, adequate_ad30),
+  .after = MEM_30time) %>%
   relocate(c(target_600time, diff_min600,
-             good_adherent600, adequate_ad600), 
-           .after = MEM_600time)
+    good_adherent600, adequate_ad600),
+  .after = MEM_600time)
 
 
 ################################## Good Adherence ##############################
@@ -398,7 +398,7 @@ MEM_subject_good_30adherence <- MEM_wake_check %>%
 # How many subjects adhered all 3 days
 # sum(MEM_subject_good_30adherence$prop_good_adherent == 1, na.rm = T)
 # Proportion and Percentage of subjects
-# 6/31 
+# 6/31
 
 
 
@@ -522,10 +522,10 @@ adequate_MEM <- MEM_wake_check %>%
 
 ###### Create Data frame to display with this
 # Combine all the proportions into a table to display nicely
-props <- data.frame(Good = c(good_book$per_good_adherence, 
-                             good_MEM$per_good_adherence),
-                    Adequate = c(adequate_book$per_adeq_adherence,
-                                 adequate_MEM$per_adeq_adherence))
+props <- data.frame(Good = c(good_book$per_good_adherence,
+  good_MEM$per_good_adherence),
+Adequate = c(adequate_book$per_adeq_adherence,
+  adequate_MEM$per_adeq_adherence))
 
 # Add rownames
 rownames(props) <- c("Booklet", "MEM")
@@ -597,10 +597,10 @@ adequate_MEM600 <- MEM_wake_check %>%
 
 ###### Create Data frame to display with this
 # Combine all the proportions into a table to display nicely
-props600 <- data.frame(Good = c(good_book600$per_good_adherence, 
-                                good_MEM600$per_good_adherence),
-                       Adequate = c(adequate_book600$per_adeq_adherence,
-                                    adequate_MEM600$per_adeq_adherence))
+props600 <- data.frame(Good = c(good_book600$per_good_adherence,
+  good_MEM600$per_good_adherence),
+Adequate = c(adequate_book600$per_adeq_adherence,
+  adequate_MEM600$per_adeq_adherence))
 
 # Add rownames
 rownames(props600) <- c("Booklet", "MEM")
@@ -641,70 +641,70 @@ kable(
 p1 <- ggplot(book_wake_check, aes(x = diff_min30)) +
   geom_histogram(binwidth = 3, col = "black", fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
-             linetype = "dashed") +
+    linetype = "dashed") +
   geom_vline(xintercept = c(-15, 15), color = "hotpink",
-             linetype = "dashed") +
-  theme_lucid() + 
-  scale_y_continuous(breaks = seq(0, 40, by = 10)) + 
+    linetype = "dashed") +
+  theme_lucid() +
+  scale_y_continuous(breaks = seq(0, 40, by = 10)) +
   labs(title = "Minutes from +30 Minute Sampling Time",
-       subtitle = "Booklet",
-       x = "Minutes from target (+30)",
-       y = "Count") 
+    subtitle = "Booklet",
+    x = "Minutes from target (+30)",
+    y = "Count")
 
 # MEM + 30 min
 p2 <- ggplot(MEM_wake_check, aes(x = diff_min30)) +
   geom_histogram(binwidth = 10, col = "black", fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
-             linetype = "dashed") +
+    linetype = "dashed") +
   geom_vline(xintercept = c(-15, 15), color = "hotpink",
-             linetype = "dashed") +
-  theme_lucid() + 
+    linetype = "dashed") +
+  theme_lucid() +
   scale_y_continuous(breaks = seq(0, 40, by = 10),
-                     limits = c(0, 40)) +
+    limits = c(0, 40)) +
   labs(title = "Minutes from +30 Minute Sampling Time",
-       subtitle = "MEM",
-       x = "Minutes from target (+30)",
-       y = "Count") 
+    subtitle = "MEM",
+    x = "Minutes from target (+30)",
+    y = "Count")
 
 # MEM +30 Min
 p3 <- ggplot(book_wake_check, aes(x = diff_min600)) +
   geom_histogram(binwidth = 20, col = "black", fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
-             linetype = "dashed") +
+    linetype = "dashed") +
   geom_vline(xintercept = c(-15, 15), color = "hotpink",
-             linetype = "dashed") +
-  theme_lucid() + 
-  scale_x_continuous(breaks = seq(-50, 360, by = 50)) + 
+    linetype = "dashed") +
+  theme_lucid() +
+  scale_x_continuous(breaks = seq(-50, 360, by = 50)) +
   scale_y_continuous(breaks = seq(0, 40, by = 10),
-                     limits = c(0, 40)) +
+    limits = c(0, 40)) +
   labs(title = "Minutes from +600 Sampling Time",
-       subtitle = "Booklet",
-       x = "Minutes from target (+600)",
-       y = "Count") 
+    subtitle = "Booklet",
+    x = "Minutes from target (+600)",
+    y = "Count")
 
 # MEM +600 min
 p4 <- ggplot(MEM_wake_check, aes(x = diff_min600)) +
   geom_histogram(binwidth = 20, col = "black", fill = "turquoise") +
   geom_vline(xintercept = c(-7.5, 7.5), col = "red",
-             linetype = "dashed") +
+    linetype = "dashed") +
   geom_vline(xintercept = c(-15, 15), color = "hotpink",
-             linetype = "dashed") +
-  theme_lucid() + 
-  scale_x_continuous(breaks = seq(-50, 360, by = 50)) + 
+    linetype = "dashed") +
+  theme_lucid() +
+  scale_x_continuous(breaks = seq(-50, 360, by = 50)) +
   scale_y_continuous(breaks = seq(0, 40, by = 10),
-                     limits = c(0, 40)) +
+    limits = c(0, 40)) +
   labs(title = "Minutes from +600 Minute Sampling Time",
-       subtitle = "MEM",
-       x = "Minutes from target (+600)",
-       y = "Count") 
+    subtitle = "MEM",
+    x = "Minutes from target (+600)",
+    y = "Count")
 
 
-# Arrange 
+# Arrange
 grid.arrange(p1, p3, p2, p4, nrow = 2)
 
 
 ################################################################################
-###                               Question 3                                 ### 
+###                               Question 3                                 ###
 ################################################################################
 
 ##### Create data frame for question 3
@@ -712,23 +712,23 @@ grid.arrange(p1, p3, p2, p4, nrow = 2)
 
 # Vector of the cols of interest
 cols <- c("SubjectID",
-          "Collection Date", "DAYNUMB",
-          "Collection Sample",
-          "Booket: Clock Time", "MEMs: Clock Time",
-          "Sleep Diary reported wake time",
-          "Cortisol (nmol/L)", "DHEA (nmol/L)")
+  "Collection Date", "DAYNUMB",
+  "Collection Sample",
+  "Booket: Clock Time", "MEMs: Clock Time",
+  "Sleep Diary reported wake time",
+  "Cortisol (nmol/L)", "DHEA (nmol/L)")
 
 # Subset the original data frame
-wake_data_q3 <- proj0_dat[, colnames(proj0_dat) %in% cols ]
+wake_data_q3 <- proj0_dat[, colnames(proj0_dat) %in% cols]
 
 ### Modify data for Person 3029
-wake_data_q3 <- wake_data_q3 %>% 
+wake_data_q3 <- wake_data_q3 %>%
   mutate(DAYNUMB = case_when(
     SubjectID == 3029 & `Collection Date` == "10/7/2018" ~ 1,
     SubjectID == 3029 & `Collection Date` == "10/10/2018" ~ 2,
     SubjectID == 3029 & `Collection Date` == "10/12/2018" ~ 3,
     TRUE ~ DAYNUMB
-  )) %>% 
+  )) %>%
   ungroup()
 
 # Convert the Sleep diary Wake time to minutes
@@ -738,9 +738,9 @@ wake_data_q3$`Sleep Diary Wake Minutes` <-
   lubridate::minute(hm(wake_data_q3$`Sleep Diary reported wake time`))
 
 # Move this to after Collection Sample
-wake_data_q3 <- wake_data_q3 %>% 
-  relocate(`Sleep Diary Wake Minutes`, 
-           .after = `Sleep Diary reported wake time`)
+wake_data_q3 <- wake_data_q3 %>%
+  relocate(`Sleep Diary Wake Minutes`,
+    .after = `Sleep Diary reported wake time`)
 
 # Convert the Booklet Time to minutes
 wake_data_q3$Booklet_Minutes <-
@@ -749,7 +749,7 @@ wake_data_q3$Booklet_Minutes <-
   lubridate::minute(hm(wake_data_q3$`Booket: Clock Time`))
 
 # Move this to after Booklet: Clock Time
-wake_data_q3 <- wake_data_q3 %>% 
+wake_data_q3 <- wake_data_q3 %>%
   relocate(Booklet_Minutes, .after = `Booket: Clock Time`)
 
 # Convert the MEM Time to minutes
@@ -759,15 +759,15 @@ wake_data_q3$MEM_Minutes <-
   lubridate::minute(hm(wake_data_q3$`MEMs: Clock Time`))
 
 # Move this to after MEMs: Clock Time
-wake_data_q3 <- wake_data_q3 %>% 
+wake_data_q3 <- wake_data_q3 %>%
   relocate(MEM_Minutes, .after = `MEMs: Clock Time`)
 
 # Create a Minutes SINCE WAKE variable
 wake_data_q3 <- wake_data_q3 %>%
   group_by(SubjectID, DAYNUMB) %>%
   mutate(wake_min = Booklet_Minutes[`Collection Sample` == 1][1],
-         minutes_since_wake = Booklet_Minutes - wake_min) %>%
-  ungroup() %>% 
+    minutes_since_wake = Booklet_Minutes - wake_min) %>%
+  ungroup() %>%
   relocate(minutes_since_wake, .after = `Sleep Diary Wake Minutes`)
 
 # Rename cortisol col
@@ -786,9 +786,9 @@ wake_data_q3 <- wake_data_q3 %>%
 
 ## Visualize DHEA over time
 ggplot(wake_data_q3, aes(x = `Collection Sample`,
-                         y = `DHEA (nmol/L)`,
-                         color = factor(SubjectID))) +
-  geom_point() + 
+  y = `DHEA (nmol/L)`,
+  color = factor(SubjectID))) +
+  geom_point() +
   geom_line() +
   facet_wrap(~DAYNUMB)
 
@@ -797,14 +797,14 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
 # A plot of the distribution of the outcome
 ggplot(wake_data_q3, aes(x = `DHEA (nmol/L)`)) +
   geom_histogram(bins = 20, fill = "palevioletred2",
-                 col = "black") + 
-  theme_lucid() 
+    col = "black") +
+  theme_lucid()
 
 # A plot of the distribution of the outcome
 ggplot(wake_data_q3, aes(x = log(`DHEA (nmol/L)`))) +
   geom_histogram(bins = 20, fill = "palevioletred2",
-                 col = "black") + 
-  theme_lucid() 
+    col = "black") +
+  theme_lucid()
 
 # Log transform DHEA
 
@@ -823,25 +823,25 @@ wake_data_q3 <- wake_data_q3 %>%
     time_pre30  = pmin(minutes_since_wake, 30),
     # Slope from after 30 minutes
     time_post30 = pmax(minutes_since_wake - 30,
-                       0)
+      0)
   )
 
 # Center Sleep Diary wake minutes
-wake_data_q3 <- wake_data_q3 %>% 
-  mutate(Sleep_Centered = `Sleep Diary Wake Minutes` - 
-           mean(`Sleep Diary Wake Minutes`, na.rm = TRUE),
-         Book_MinC = Booklet_Minutes - mean(Booklet_Minutes, 
-                                            na.rm = TRUE)) %>% 
+wake_data_q3 <- wake_data_q3 %>%
+  mutate(Sleep_Centered = `Sleep Diary Wake Minutes` -
+    mean(`Sleep Diary Wake Minutes`, na.rm = TRUE),
+  Book_MinC = Booklet_Minutes - mean(Booklet_Minutes,
+    na.rm = TRUE)) %>%
   relocate(Sleep_Centered, .after = `Sleep Diary Wake Minutes`)
 # Mean wake up time is - 409.4545 minutes
 
 
 ##### Model
 model_q3 <- lme(log_DHEA ~ time_pre30 + time_post30,
-                random = ~ 1 | SubjectID,
-                method = "REML",
-                na.action = na.omit,
-                data = wake_data_q3)
+  random = ~ 1 | SubjectID,
+  method = "REML",
+  na.action = na.omit,
+  data = wake_data_q3)
 
 # summary(model_q3)
 # confint(model_q3)
@@ -860,9 +860,9 @@ kable(
 ) |>
   kable_styling(latex_options = c("striped", "hold_position"))
 
-#### Back transform betas 
+#### Back transform betas
 # Pre 30
-a <- -0.01724 * 30 
+a <- -0.01724 * 30
 a_orig <- (exp(a) - 1) * 100 # -38.52871
 
 # Confidence interval
@@ -872,17 +872,17 @@ a2 <- (exp(-0.0113 * 30) - 1) * 100 # -25.92
 # Post 30
 b <- -0.00153 * 600
 b_org <- (exp(b) - 1) * 100 # -37.07332
-b1 <- (exp(-0.00183* 600) - 1) * 100 
-b2 <- (exp(-0.00122* 600) - 1) * 100 
+b1 <- (exp(-0.00183 * 600) - 1) * 100
+b2 <- (exp(-0.00122 * 600) - 1) * 100
 
 
 #### Visualize DHEA trajectories with knot at 30 minutes
 
 # For plotting purposes here, we use a model with lmer()!!
 model_plot_dhea <- lmer(log_DHEA ~ time_pre30 + time_post30
-                        + (1 | SubjectID),
-                        REML = TRUE,
-                        data = wake_data_q3)
+  + (1 | SubjectID),
+REML = TRUE,
+data = wake_data_q3)
 
 t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
 
@@ -910,23 +910,23 @@ pred_grid <- pred_grid %>%
 # Plot
 ggplot() +
   geom_point(data = wake_data_q3,
-             aes(x = minutes_since_wake, y = log_DHEA),
-             alpha = 0.25, size = 1) +
+    aes(x = minutes_since_wake, y = log_DHEA),
+    alpha = 0.25, size = 1) +
   geom_ribbon(data = pred_grid,
-              aes(x = minutes_since_wake, 
-                  ymin = lwr,
-                  ymax = upr),
-              alpha = 0.2,
-              fill = "blue") +
+    aes(x = minutes_since_wake,
+      ymin = lwr,
+      ymax = upr),
+    alpha = 0.2,
+    fill = "blue") +
   geom_line(data = pred_grid,
-            aes(x = minutes_since_wake, y = fit),
-            linewidth = 1,
-            col = "blue") +
+    aes(x = minutes_since_wake, y = fit),
+    linewidth = 1,
+    col = "blue") +
   geom_vline(xintercept = 30, linetype = 2,
-             col = "red") +
+    col = "red") +
   labs(x = "Minutes since waking", y = "log(DHEA)",
-       title = "DHEA Pattern Over Time",
-       subtitle = "Knot at 30 minutes") + 
+    title = "DHEA Pattern Over Time",
+    subtitle = "Knot at 30 minutes") +
   theme_lucid()
 
 
@@ -943,8 +943,8 @@ model_dataq3$fitted <- fitted(model_q3)
 # Residual histogram
 ggplot(model_dataq3, aes(x = resids)) +
   geom_histogram(bins = 25,
-                 fill = "cadetblue2",
-                 color = "black") +
+    fill = "cadetblue2",
+    color = "black") +
   theme_lucid()
 
 # residual vs. fitted
@@ -956,9 +956,9 @@ ggplot(model_dataq3, aes(x = fitted, y = resids)) +
 ################################## Cortisol ##################################
 
 # Determine how many measurements are above 80
-# wake_data_q3 %>% 
-#   filter(`Cortisol (nmol/L)` >= 26) %>% 
-#   reframe(SubjectID, `Collection Sample`, 
+# wake_data_q3 %>%
+#   filter(`Cortisol (nmol/L)` >= 26) %>%
+#   reframe(SubjectID, `Collection Sample`,
 #           DAYNUMB,`Cortisol (nmol/L)`)
 
 # Exclude the observation with 89 cortisol
@@ -967,11 +967,11 @@ wake_data_q3 <- wake_data_q3 %>%
 
 # Visualize cortisol over time
 ggplot(wake_data_q3, aes(x = `Collection Sample`,
-                         y = Cortisol,
-                         color = factor(SubjectID))) +
-  geom_point() + 
+  y = Cortisol,
+  color = factor(SubjectID))) +
+  geom_point() +
   geom_line() +
-  facet_wrap(~DAYNUMB) + 
+  facet_wrap(~DAYNUMB) +
   theme_lucid()
 
 ######### Model
@@ -979,10 +979,10 @@ ggplot(wake_data_q3, aes(x = `Collection Sample`,
 
 # Model
 model_cortisol <- lme(Cortisol ~ time_pre30 + time_post30,
-                      random = ~ 1 | SubjectID,
-                      method = "REML",
-                      na.action = na.omit,
-                      data = wake_data_q3)
+  random = ~ 1 | SubjectID,
+  method = "REML",
+  na.action = na.omit,
+  data = wake_data_q3)
 
 # summary(model_cortisol)
 # confint(model_cortisol)
@@ -1014,8 +1014,8 @@ model_data_cort$fitted <- fitted(model_cortisol)
 # Residual histogram
 ggplot(model_data_cort, aes(x = resids)) +
   geom_histogram(bins = 25,
-                 fill = "cadetblue2",
-                 color = "black")
+    fill = "cadetblue2",
+    color = "black")
 
 # residual vs. fitted
 ggplot(model_data_cort, aes(x = fitted, y = resids)) +
@@ -1026,9 +1026,9 @@ ggplot(model_data_cort, aes(x = fitted, y = resids)) +
 #### Visualize
 # For plotting purposes here, we use a model with lmer()!!
 model_plot_cort <- lmer(Cortisol ~ time_pre30 + time_post30
-                        + (1 | SubjectID),
-                        REML = TRUE,
-                        data = wake_data_q3)
+  + (1 | SubjectID),
+REML = TRUE,
+data = wake_data_q3)
 
 t_max <- quantile(wake_data_q3$minutes_since_wake, 0.95, na.rm = TRUE)
 
@@ -1039,13 +1039,13 @@ pred_grid <- tibble(
     time_post30 = pmax(minutes_since_wake - 30, 0))
 
 # Get fixed effects predictions
-pred_grid$fit_cort <- predict(model_plot_cort, 
-                              newdata = pred_grid,
-                              re.form = NA)
+pred_grid$fit_cort <- predict(model_plot_cort,
+  newdata = pred_grid,
+  re.form = NA)
 
 # Add a 95% CI
-X_cortisol <- model.matrix(~ time_pre30 + time_post30, 
-                           data = pred_grid)
+X_cortisol <- model.matrix(~ time_pre30 + time_post30,
+  data = pred_grid)
 V_cortisol <- vcov(model_plot_cort)
 
 se_fit_cort <- sqrt(diag(X_cortisol %*% V_cortisol %*% t(X_cortisol)))
@@ -1059,24 +1059,23 @@ pred_grid <- pred_grid %>%
 # Plot
 ggplot() +
   geom_point(data = wake_data_q3,
-             aes(x = minutes_since_wake, 
-                 y = Cortisol),
-             alpha = 0.25, size = 1) +
+    aes(x = minutes_since_wake,
+      y = Cortisol),
+    alpha = 0.25, size = 1) +
   geom_ribbon(data = pred_grid,
-              aes(x = minutes_since_wake, 
-                  ymin = lwr_cort,
-                  ymax = upr_cort),
-              alpha = 0.2,
-              fill = "blue") +
+    aes(x = minutes_since_wake,
+      ymin = lwr_cort,
+      ymax = upr_cort),
+    alpha = 0.2,
+    fill = "blue") +
   geom_line(data = pred_grid,
-            aes(x = minutes_since_wake, 
-                y = fit_cort),
-            linewidth = 1,
-            col = "blue") +
+    aes(x = minutes_since_wake,
+      y = fit_cort),
+    linewidth = 1,
+    col = "blue") +
   geom_vline(xintercept = 30, linetype = 2,
-             col = "red") +
+    col = "red") +
   labs(x = "Minutes since waking", y = "Cortisol",
-       title = "Cortisol Pattern Over Time",
-       subtitle = "Knot at 30 minutes") + 
+    title = "Cortisol Pattern Over Time",
+    subtitle = "Knot at 30 minutes") +
   theme_lucid()
-
