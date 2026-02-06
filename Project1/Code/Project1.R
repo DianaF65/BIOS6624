@@ -134,6 +134,8 @@ baseline %>%
 analysis_data <- proj1_dat %>% 
   filter(years %in% c(0, 1, 2))
 
+################################## VLOAD #######################################
+
 # What is the distribution of VLOAD
 summary(analysis_data$VLOAD)
 
@@ -165,6 +167,64 @@ ggplot(filtered,
   geom_point() +
   theme_lucid() + 
   theme(legend.position = "none")
+
+################################################################################
+
+################################## LEU3N #######################################
+
+# What is the distribution of VLOAD
+summary(analysis_data$LEU3N)
+
+# Plot VLOAD trajectories
+ggplot(analysis_data, aes(y = LEU3N, 
+                          x = years, 
+                          colour = factor(newid))) + 
+  geom_path(aes(group = newid)) + #spaghetti plot
+  geom_point() +
+  theme_lucid() + 
+  theme(legend.position = "none") + 
+  facet_grid( ~ hard_drugs)
+  
+## Look into plotting mean trajectories
+ggplot(analysis_data, aes(y = LEU3N, 
+                          x = years, 
+                          colour = factor(newid))) + 
+  geom_path(aes(group = newid)) + #spaghetti plot
+  geom_point() +
+  theme_lucid() + 
+  theme(legend.position = "none") + 
+  facet_grid( ~ hard_drugs) +
+  stat_summary(fun.y = mean,
+               geom = "line",
+               lwd = 1, aes(group = 1))
+
+
+############## Randomly sample like 20 subjects
+set.seed(645)
+plot_ids <- analysis_data %>% 
+  distinct(newid) %>% 
+  sample_n(30) %>% 
+  # Obtain just the ids
+  pull(newid)
+
+# Subset analysis data frame
+plot_data <- analysis_data %>% 
+  filter(newid %in% plot_ids) %>% 
+  filter(!is.na(LEU3N))
+
+# Plot
+# Plot VLOAD trajectories
+ggplot(plot_data, aes(y = LEU3N, 
+                          x = years, 
+                          colour = factor(newid))) + 
+  geom_line() + 
+  geom_point() +
+  theme_lucid() + 
+  theme(legend.position = "none") + 
+  facet_grid( ~ hard_drugs)
+# On initial glance, looking like CD4 counts increasing
+
+
 
 
 
