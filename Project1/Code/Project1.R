@@ -114,3 +114,60 @@ kbl(
   align = "c"
 ) %>%
   kable_styling(latex_options = "hold_position", font_size = 10)
+
+# HARD DRUGS AT BASELINE
+# Subset data to just baseline aka year 1 and one observat
+baseline <- proj1_dat[proj1_dat$years == 0, ]
+
+# How many were on hard drugs at baseline?
+table(baseline$hard_drugs)
+# 0   1 
+# 649  66
+
+baseline %>% 
+  summarise(mean(hard_drugs, na.rm = TRUE))
+# Approximately 10% were on hard drugs on baseline
+
+# Pretty unbalanced that could be problematic with analysis
+
+# Subset data to the first two years
+analysis_data <- proj1_dat %>% 
+  filter(years %in% c(0, 1, 2))
+
+# What is the distribution of VLOAD
+summary(analysis_data$VLOAD)
+
+# Plot VLOAD trajectories
+ggplot(analysis_data, aes(y = VLOAD, 
+                          x = years, 
+                          colour = factor(newid))) + 
+  geom_line() + 
+  geom_point() +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+# Notice some outliers here - what are unrealistic values of VLOAD?
+
+# Filter to those that have VLOAD higher than the 3rd quartile
+analysis_data %>% 
+  filter(VLOAD >= 30929) %>% 
+  reframe(newid, years, VLOAD) %>% 
+  arrange(desc(VLOAD))
+
+# Plot without these outliers for a bit
+filtered <- analysis_data %>% 
+  filter(VLOAD < 2520009)
+
+# Plot
+ggplot(filtered,
+       aes(x = years, y = VLOAD, colour = factor(newid))) + 
+  geom_line() + 
+  geom_point() +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+
+
+
+
+
