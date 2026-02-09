@@ -45,6 +45,8 @@ naniar::miss_case_table(proj1_dat)
 # Visualize the missingness
 vis_dat(proj1_dat)
 
+
+
 ################################### Table 1 ####################################
 
 # Adjust labels for collection sample
@@ -168,6 +170,19 @@ ggplot(filtered,
   theme_lucid() + 
   theme(legend.position = "none")
 
+# Histogram of the distribution of VLOAD
+ggplot(analysis_data, aes(x = VLOAD)) + 
+  geom_histogram(bins = 20) +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+# Log transform VLOAD
+ggplot(analysis_data, aes(x = log(VLOAD))) + 
+  geom_histogram(bins = 20) +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+
 ################################################################################
 
 ################################## LEU3N #######################################
@@ -223,6 +238,43 @@ ggplot(plot_data, aes(y = LEU3N,
   theme(legend.position = "none") + 
   facet_grid( ~ hard_drugs)
 # On initial glance, looking like CD4 counts increasing
+
+# Histogram of the distribution of VLOAD
+ggplot(analysis_data, aes(x = LEU3N)) + 
+  geom_histogram(bins = 20) +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+# Log transform VLOAD
+ggplot(analysis_data, aes(x = log(LEU3N))) + 
+  geom_histogram(bins = 20) +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+# Sqrt transform VLOAD
+ggplot(analysis_data, aes(x = sqrt(LEU3N))) + 
+  geom_histogram(bins = 20) +
+  theme_lucid() + 
+  theme(legend.position = "none")
+
+################################################################################
+
+################################## AGG PHYS ####################################
+
+# What is the distribution of Aggregate phsycial quality of life score
+summary(analysis_data$AGG_PHYS)
+
+# Histogram of distribution
+ggplot(analysis_data, aes(y = AGG_PHYS)) + 
+  geom_histogram() + 
+  theme_lucid() + 
+  theme(legend.position = "none") + 
+  facet_grid( ~ hard_drugs)
+
+
+
+################################## AGG MENT ####################################
+
 
 ################################################################################
 
