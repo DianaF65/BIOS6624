@@ -30,6 +30,14 @@ library(see)
 library(data.table)
 library(gridExtra)
 library(kableExtra)
+library(cmdstanr)
+library(bayesplot)
+library(posterior)
+library(bayestestR)
+library(mcmcse)
+library(loo)
+color_scheme_set("brightblue")
+
 
 ##### Read in Data
 proj1_dat <- read.csv("../Data/hiv_6624_final.csv")
@@ -322,8 +330,34 @@ ggplot(baseline, aes(x = factor(na.omit(RACE)),
 
 
 
+################################ STAN INSTALLATION #############################
 
+### Checking if its connectivity from inside R
+# Basic connectivity check
+capabilities("libcurl")
+getOption("download.file.method")
 
+# Try to hit GitHub API directly
+u <- "https://api.github.com/repos/stan-dev/cmdstan/releases/latest"
+try(readLines(u, n = 5), silent = FALSE)
 
+# Specify a certain version
+cmdstanr::install_cmdstan(version = "2.36.0", cores = 2)
+### This worked
 
+############################# CMDSTAN Vignette #################################
+
+file <- file.path(cmdstan_path(), "examples", "bernoulli", "bernoulli.stan")
+mod <- cmdstan_model(file)
+
+# names correspond to the data block in the Stan program
+data_list <- list(N = 10, y = c(0,1,0,0,0,0,0,0,0,1))
+
+fit <- mod$sample(
+  data = data_list,
+  seed = 123,
+  chains = 4,
+  parallel_chains = 4,
+  refresh = 500 # print update every 500 iters
+)
 
