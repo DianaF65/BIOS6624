@@ -342,7 +342,7 @@ u <- "https://api.github.com/repos/stan-dev/cmdstan/releases/latest"
 try(readLines(u, n = 5), silent = FALSE)
 
 # Specify a certain version
-cmdstanr::install_cmdstan(version = "2.36.0", cores = 2)
+cmdstanr::install_cmdstan(version = "2.37.0", cores = 2)
 ### This worked
 
 ############################# CMDSTAN Vignette #################################
