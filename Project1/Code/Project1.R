@@ -69,23 +69,16 @@ vis_dat(proj1_dat)
 
 # Subset proj1 data to years 0 - 2
 data <- proj1_dat %>% 
-  filter(years %in% c(0, 1, 2))
+  filter(years %in% c(0, 2))
 
 # Create subject level summaries - NOT observation level
 data <- data %>%
   group_by(newid, years) %>%
   summarise(
-    mean_cesd = mean(CESD, na.rm = TRUE),
     mean_vload = mean(VLOAD, na.rm = TRUE),
-    mean_bmi = mean(BMI, na.rm = TRUE),
-    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
-    mean_hbp = mean(HBP, na.rm = TRUE),
-    mean_tchol = mean(TCHOL, na.rmm = TRUE),
-    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-    mean_diab = mean(DIAB, na.rm = TRUE),
-    mean_trig= mean(TRIG, na.rm = TRUE),
-    mean_ldl = mean(LDL, na.rm = TRUE),
     mean_leu3n = mean(LEU3N, na.rm = TRUE),
+    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
+    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
     mean_age = mean(age, na.rm = TRUE),
     .groups = "drop")
 
@@ -140,9 +133,24 @@ baseline %>%
 
 # Pretty unbalanced that could be problematic with analysis
 
+################################## Analysis DF #################################
 # Subset data to the first two years
 analysis_data <- proj1_dat %>% 
-  filter(years %in% c(0, 1, 2))
+  filter(years %in% c(0, 2))
+
+# Subset to cols of interest
+cols <- c("newid", 
+          "AGG_MENT", "AGG_PHYS", 
+          "VLOAD", "LEU3N",
+          "SMOKE", "RACE", "EDUCBAS", "age",
+          "ART", "everART", "years",  "hard_drugs")
+
+# Subset analysis data to these cols
+analysis_data <- analysis_data[,colnames(analysis_data) %in% cols ]
+
+##### Table1
+
+
 
 ################################## VLOAD #######################################
 
