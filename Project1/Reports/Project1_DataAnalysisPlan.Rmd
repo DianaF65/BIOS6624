@@ -17,7 +17,7 @@ header-includes:
   - \usepackage{float}
   - \usepackage{caption}
   - \usepackage{titling}
-  - \setlength{\droptitle}{-2cm}
+  - \setlength{\droptitle}{-4cm}
   - \preauthor{\vspace{-0.6cm}}
   - \postauthor{\vspace{-3cm}}
 ---
@@ -56,25 +56,50 @@ opts_chunk$set(tidy = F)
 
 
 # Introduction
+\vspace{-4mm}
 
-Meow meow mew
+The data for this project ceom from the Multicenter AIDS Cohort Study which is a prospective and observational cohort of  homosexual and bisexual men with Human Immunodeficiency Virus (HIV-1). A primary goal of this study was to determine the effects of a common treatment - Highly Active Antiretroviral Treatment (HART). 
+For this analysis, the main interest is to investigate how treatment response 2 years after being on HART differs between patients who report to be hard drug users at baseline vs. those who do not report hard drug use at baseline. 
 
+The purpose of this report is to develop the analysis plann to answer the following hypotheses/questions of interest: 
 
+Hypothesis 1: Non-hard drug users have a significantly lower viral load (HIV copies in a mL of blood) after 2 years of HART compared to hard-drug users. 
+
+Hypothesis 2: Non-hard drug users have significantly higher CD4+ T cell count after 2 years of HART compared to hard-drug users.
+
+Hypothesis 3: Aggregate mental quality of life significantly improve 2 years after HART among both hard-drug and non-hard drug users.
+
+Hypothesis 4: Aggregate physical quality of life significantly improves 2 years after HART among both hard-drug and non-hard drug users. 
+
+\vspace{-8mm}
 # Methods
 
-Meow meow
+\vspace{-8mm}
+## Missingness
+\vspace{-4mm}
 
+Missingness will be investigated through summaries and visualization of missingness for each variable.
+Relationships between missing data and all variables (outcomes and covariates) will be investigated. If data is not missing at random, we will conduct sensitivy analyses to determine how sensitive results are to different missing data assumptions. 
+
+\vspace{-4mm}
 ## Data Cleaning
+\vspace{-4mm}
 
 Meow moew
 
-
+\vspace{-4mm}
 ## Data Analysis
+\vspace{-4mm}
 
 More meow
 
+### Frequentist Analyses
 
+### Bayesian Analyses
+
+\vspace{-4mm}
 # Prelminary Results
+\vspace{-4mm}
 
 Meow meow 
 
