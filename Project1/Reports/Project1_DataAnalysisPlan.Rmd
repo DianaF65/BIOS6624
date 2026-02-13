@@ -71,6 +71,8 @@ Hypothesis 3: Aggregate mental quality of life significantly improve 2 years aft
 
 Hypothesis 4: Aggregate physical quality of life significantly improves 2 years after HART among both hard-drug and non-hard drug users. 
 
+Hypothesis 5: 
+
 \vspace{-8mm}
 # Methods
 
@@ -85,21 +87,25 @@ Relationships between missing data and all variables (outcomes and covariates) w
 ## Data Cleaning
 \vspace{-4mm}
 
-Meow moew
+Assessment of the four outcomes of interest did not reveal any abnormalities that needed to be addressed. We did observe that counts across the race categories and education at baseline categories were noticeably unbalanced. For this we...
 
-\vspace{-4mm}
+\vspace{-6mm}
 ## Data Analysis
-\vspace{-4mm}
+\vspace{-6mm}
 
-More meow
+We will conduct a multivariate general linear regression analysis between outcomes and five covariates of specific interest. The covaraites include, age, race, education, and smoking status at baseline. 
+The assumptions of linearity, homoscedasticity, and normality will be assessed through diagnostic plots. 
+A complete case analysis will be used for each model. 
+
+We will investigate the hypotheses of interest through both a Frequentist and a Bayesian lens. 
 
 ### Frequentist Analyses
 
 ### Bayesian Analyses
 
-\vspace{-4mm}
+\vspace{-6mm}
 # Prelminary Results
-\vspace{-4mm}
+\vspace{-6mm}
 
 Meow meow 
 
