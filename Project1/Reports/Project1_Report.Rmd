@@ -24,8 +24,6 @@ header-includes:
 
 ```{r, echo = F, warning=F, message = F}
 knitr::opts_chunk$set(echo = TRUE)
-
-
 library(readr)
 library(knitr)
 library(ggplot2)
