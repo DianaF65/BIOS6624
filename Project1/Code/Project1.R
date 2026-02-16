@@ -42,7 +42,6 @@ color_scheme_set("brightblue")
 ##### Read in Data
 proj1_dat <- read.csv("../Data/hiv_6624_final.csv")
 
-<<<<<<< HEAD
 ################################ Missingness ###################################
 
 # Cumulative sum of missingness for each variable
@@ -54,8 +53,6 @@ naniar::miss_case_table(proj1_dat)
 # Visualize the missingness
 vis_dat(proj1_dat)
 
-=======
->>>>>>> 08e6a7d73543f005202622615e0ab35d4926c367
 
 ################################### Table 1 ####################################
 
@@ -78,12 +75,9 @@ data <- data %>%
   group_by(newid, years) %>%
   summarise(
     mean_vload = mean(VLOAD, na.rm = TRUE),
-<<<<<<< HEAD
     mean_bmi = mean(BMI, na.rm = TRUE),
     mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
     mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-=======
->>>>>>> 08e6a7d73543f005202622615e0ab35d4926c367
     mean_leu3n = mean(LEU3N, na.rm = TRUE),
     mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
     mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
