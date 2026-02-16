@@ -111,6 +111,9 @@ kbl(
 
 
 ################################## Analysis DF #################################
+
+############################### Data for Year 0 & 2 ############################
+
 # Subset data to the first two years
 analysis_data <- proj1_dat %>% 
   filter(years %in% c(0, 2))
@@ -120,7 +123,8 @@ cols <- c("newid",
           "AGG_MENT", "AGG_PHYS", 
           "VLOAD", "LEU3N",
           "SMOKE", "RACE", "EDUCBAS", "age",
-          "ART", "everART", "years",  "hard_drugs")
+          "ART", "everART", "years",  "hard_drugs",
+          "ADH")
 
 # Subset analysis data to these cols
 analysis_data <- analysis_data[ ,colnames(analysis_data) %in% cols ]
@@ -137,6 +141,7 @@ analysis_data$RACE <- as.factor(analysis_data$RACE)
 analysis_data$EDUCBAS <- as.factor(analysis_data$EDUCBAS)
 analysis_data$ART <- as.factor(analysis_data$ART)
 analysis_data$everART <- as.factor(analysis_data$everART)
+analysis_data$ADH <- as.factor(analysis_data$ADH)
 
 ##### Table1
 
@@ -160,7 +165,7 @@ missing_plot(analysis_data)
 #### VLOAD
 explanatory <- c("AGG_MENT", "AGG_PHYS", "SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
-                 "hard_drugs")
+                 "hard_drugs", "ADH")
 # VLOAD
 vload <- c("VLOAD")
 
@@ -193,27 +198,41 @@ analysis_data %>%
 ### AGG MENT
 explanatory <- c("AGG_PHYS", "SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
-                 "hard_drugs")
+                 "hard_drugs", "ADH")
 
 agg_ment <- c("AGG_MENT")
 
 analysis_data %>% 
   missing_pattern(agg_ment, explanatory)
 
+analysis_data %>% 
+  group_by(years) %>% 
+  summarise(means = mean(AGG_MENT, na.rm = TRUE))
+# 1     0  45.4
+# 2     2  47.5
+## Not a big difference in means between both years
+
+
 # Nothing concerning here
 
 ### AGG PHYS
 explanatory <- c("AGG_MENT", "SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
-                 "hard_drugs")
+                 "hard_drugs", "ADH")
 agg_phys <- c("AGG_PHYS")
 
 analysis_data %>% 
   missing_pattern(agg_phys, explanatory)
 
 # No concerning patterns here either
+analysis_data %>% 
+  group_by(years) %>% 
+  summarise(means = mean(AGG_PHYS, na.rm = TRUE))
+# 1     0  50.1
+# 2     2  49.4
+## Not much difference in means between the two years
 
-## Based on this brief analyssis, we will not continue with missingness investigation
+## Based on this brief analysis, we will not continue with missingness investigation
 
 
 ################################# Baseline #####################################
@@ -222,43 +241,17 @@ baseline <- analysis_data[analysis_data$years == 0, ]
 # There are 280 subjects at baseline
 
 # How many were on hard drugs at baseline?
+baseline %>% 
+  summarise(prop_hd = mean(hard_drugs, na.rm = TRUE))
+# 0.09230769 not on hard drugs
+
 table(baseline$hard_drugs)
 # 0   1 
-# 252  28 
-
-baseline %>% 
-  summarise(mean(hard_drugs, na.rm = TRUE))
-# Approximately 10% were on hard drugs on baseline
+# 649  66
+# So around 11% were on hard drugs
 
 # Pretty unbalanced that could be problematic with analysis
 
-############################### Data for Year 0 & 2 ############################
-
-# Subset data to the first two years
-analysis_data <- proj1_dat %>% 
-  filter(years %in% c(0, 2))
-
-# Subset to variables of interest
-cols <- c("newid", "AGG_MENT", "AGG_PHYS", "income",
-          "SMOKE", "LEU3N", "VLOAD",
-          "RACE", "EDUCBAS", "age",
-          "ART", "everART", "years", "hard_drugs")
-analysis_data <- analysis_data[ , colnames(analysis_data) %in% cols]
-
-### Missingness here
-# Cumulative sum of missingness for each variable
-naniar::miss_var_summary(analysis_data)
-
-# How many variables 0 - 5 missing values
-naniar::miss_case_table(analysis_data)
-
-# Visualize the missingness
-vis_dat(analysis_data)
-
-#################################### Year 2 ####################################
-year2 <- analysis_data[analysis_data$years == 2, ]
-# There are 185 individuals at year 2
-## Suppose we will have to subset analysis data to these 185 individuals..?
 
 ################################## VLOAD #######################################
 
@@ -302,16 +295,31 @@ ggplot(analysis_data, aes(x = VLOAD)) +
 
 # Log transform VLOAD
 ggplot(analysis_data, aes(x = log(VLOAD))) + 
-  geom_histogram(bins = 20) +
+  geom_histogram(bins = 20,
+                 fill = "blue",
+                 col = "black") +
+  geom_density() + 
   theme_lucid() + 
   theme(legend.position = "none")
 
+## Based on this, might consider mixture modeling
+## Frequentist
+# https://jef.works/blog/2017/08/05/a-practical-introduction-to-finite-mixture-models/
+## Bayesian
+# https://rpubs.com/jensroes/mixture-models-tutorial
+
+
+# Square root
+ggplot(analysis_data, aes(x = sqrt(VLOAD))) + 
+  geom_histogram() + 
+  theme_lucid() + 
+  theme(legend.position = "none")
 
 ################################################################################
 
 ################################## LEU3N #######################################
 
-# What is the distribution of VLOAD
+# What is the distribution of LEU3n
 summary(analysis_data$LEU3N)
 
 # Plot VLOAD trajectories
@@ -365,7 +373,9 @@ ggplot(plot_data, aes(y = LEU3N,
 
 # Histogram of the distribution of VLOAD
 ggplot(analysis_data, aes(x = LEU3N)) + 
-  geom_histogram(bins = 20) +
+  geom_histogram(bins = 20,
+                 fill = "seagreen3",
+                 col = "black") +
   theme_lucid() + 
   theme(legend.position = "none")
 
@@ -374,6 +384,10 @@ ggplot(analysis_data, aes(x = log(LEU3N))) +
   geom_histogram(bins = 20) +
   theme_lucid() + 
   theme(legend.position = "none")
+## Log transformation too strong - conduct a test of normality to determine
+shapiro.test(analysis_data$LEU3N) 
+# We reject the H0 and data is not normally distributed
+
 
 # Sqrt transform VLOAD
 ggplot(analysis_data, aes(x = sqrt(LEU3N))) + 
@@ -451,14 +465,13 @@ ggplot(baseline, aes(x = factor(na.omit(RACE)),
 # Pretty unbalanced
 
 
-<<<<<<< HEAD
 ################################## Education  #################################
 
 
 
 
 ################################# Smoking Status ##############################
-=======
+
 ##################################### SMOKE  ###################################
 table(factor(baseline$SMOKE))
 # 1   2   3 
@@ -492,7 +505,10 @@ ggplot(baseline, aes(x = factor(na.omit(EDUCBAS)),
   theme_lucid() + 
   theme(legend.position = "none")
 # Pretty unbalanced
->>>>>>> 08e6a7d73543f005202622615e0ab35d4926c367
+
+
+################################## Adherence ###################################
+
 
 
 
