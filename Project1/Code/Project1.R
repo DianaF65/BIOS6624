@@ -36,23 +36,12 @@ library(posterior)
 library(bayestestR)
 library(mcmcse)
 library(loo)
+library(finalfit)
 color_scheme_set("brightblue")
 
 
 ##### Read in Data
 proj1_dat <- read.csv("../Data/hiv_6624_final.csv")
-
-################################ Missingness ###################################
-
-# Cumulative sum of missingness for each variable
-naniar::miss_var_summary(proj1_dat)
-
-# How many variables 0 - 5 missing values
-naniar::miss_case_table(proj1_dat)
-
-# Visualize the missingness
-vis_dat(proj1_dat)
-
 
 ################################### Table 1 ####################################
 
@@ -136,9 +125,24 @@ cols <- c("newid",
 # Subset analysis data to these cols
 analysis_data <- analysis_data[ ,colnames(analysis_data) %in% cols ]
 
+# Ensure that data types are correct
+str(analysis_data)
+
+### Convert to correct data types
+## Factors
+# new id
+analysis_data$newid <- as.factor(analysis_data$newid)
+analysis_data$SMOKE <- as.factor(analysis_data$SMOKE)
+analysis_data$RACE <- as.factor(analysis_data$RACE)
+analysis_data$EDUCBAS <- as.factor(analysis_data$EDUCBAS)
+analysis_data$ART <- as.factor(analysis_data$ART)
+analysis_data$everART <- as.factor(analysis_data$everART)
+
 ##### Table1
 
 ################################ Missingness ###################################
+
+#### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 
 # Cumulative sum of missingness for each variable
 naniar::miss_var_summary(analysis_data)
@@ -148,6 +152,68 @@ naniar::miss_case_table(analysis_data)
 
 # Visualize the missingness
 vis_dat(analysis_data)
+
+# Another way to visualize missingness
+missing_plot(analysis_data)
+
+## Looking for patterns of missingness
+#### VLOAD
+explanatory <- c("AGG_MENT", "AGG_PHYS", "SMOKE", "RACE",   
+                 "EDUCBAS", "age", "ART", "everART", "years",
+                 "hard_drugs")
+# VLOAD
+vload <- c("VLOAD")
+
+analysis_data %>% 
+missing_pattern(vload, explanatory)
+
+# This plot lets us see which variables are missing together. 
+# There does not seem to be a relationship with
+# missingness between any pair of predictors or predictor and outcome.
+# Each row represents a unique combination of observed vs. missing values. 
+# In other words, a row is a pattern
+# shared by many people.
+# The numbers on the right are the number of missing variables.
+# The numbers on the bottom are the number of missing observations missing for each variable.
+# The numbers on the left shows the number of cases with a specific pattern.
+# For example, looking at the bottom row, there is 1 case where 3 variables are missing,
+# years, SMOKE, and VLOAD
+# With the first row, there are 149 cases with the “0” missing pattern or no variables missing.
+# Overall, we don’t see any alarmingly large numbers on the left for particular missing patterns
+
+### LEU3N
+# VLOAD
+leu3n <- c("LEU3N")
+
+analysis_data %>% 
+  missing_pattern(leu3n, explanatory)
+
+# No alarming patterns here
+
+### AGG MENT
+explanatory <- c("AGG_PHYS", "SMOKE", "RACE",   
+                 "EDUCBAS", "age", "ART", "everART", "years",
+                 "hard_drugs")
+
+agg_ment <- c("AGG_MENT")
+
+analysis_data %>% 
+  missing_pattern(agg_ment, explanatory)
+
+# Nothing concerning here
+
+### AGG PHYS
+explanatory <- c("AGG_MENT", "SMOKE", "RACE",   
+                 "EDUCBAS", "age", "ART", "everART", "years",
+                 "hard_drugs")
+agg_phys <- c("AGG_PHYS")
+
+analysis_data %>% 
+  missing_pattern(agg_phys, explanatory)
+
+# No concerning patterns here either
+
+## Based on this brief analyssis, we will not continue with missingness investigation
 
 
 ################################# Baseline #####################################
@@ -166,7 +232,6 @@ baseline %>%
 
 # Pretty unbalanced that could be problematic with analysis
 
-<<<<<<< HEAD
 ############################### Data for Year 0 & 2 ############################
 
 # Subset data to the first two years
@@ -190,12 +255,10 @@ naniar::miss_case_table(analysis_data)
 # Visualize the missingness
 vis_dat(analysis_data)
 
-=======
 #################################### Year 2 ####################################
 year2 <- analysis_data[analysis_data$years == 2, ]
 # There are 185 individuals at year 2
 ## Suppose we will have to subset analysis data to these 185 individuals..?
->>>>>>> 08e6a7d73543f005202622615e0ab35d4926c367
 
 ################################## VLOAD #######################################
 
