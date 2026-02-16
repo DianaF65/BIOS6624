@@ -37,6 +37,7 @@ library(bayestestR)
 library(mcmcse)
 library(loo)
 library(finalfit)
+library(naniar)
 color_scheme_set("brightblue")
 
 
@@ -143,6 +144,14 @@ analysis_data$ART <- as.factor(analysis_data$ART)
 analysis_data$everART <- as.factor(analysis_data$everART)
 analysis_data$ADH <- as.factor(analysis_data$ADH)
 
+#### Filter to complete observations - OBS. for BOTH Year 0 and year 2
+# Filter to these observations
+complete_analysis_data <- analysis_data %>%
+  group_by(newid) %>%
+  filter(n_distinct(years) == 2) %>%
+  ungroup()
+# From 715 patients to 506 patients
+
 ##### Table1
 
 ################################ Missingness ###################################
@@ -150,27 +159,29 @@ analysis_data$ADH <- as.factor(analysis_data$ADH)
 #### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 
 # Cumulative sum of missingness for each variable
-naniar::miss_var_summary(analysis_data)
+naniar::miss_var_summary(complete_analysis_data)
 
 # How many variables 0 - 5 missing values
-naniar::miss_case_table(analysis_data)
+naniar::miss_case_table(complete_analysis_data)
 
 # Visualize the missingness
-vis_dat(analysis_data)
+vis_dat(complete_analysis_data)
 
 # Another way to visualize missingness
-missing_plot(analysis_data)
+missing_plot(complete_analysis_data)
 
 ## Looking for patterns of missingness
-#### VLOAD
+
+###################################### VLOAD ###################################
+
 explanatory <- c("AGG_MENT", "AGG_PHYS", "SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
                  "hard_drugs", "ADH")
 # VLOAD
 vload <- c("VLOAD")
 
-analysis_data %>% 
-missing_pattern(vload, explanatory)
+complete_analysis_data %>% 
+  missing_pattern(vload, explanatory)
 
 # This plot lets us see which variables are missing together. 
 # There does not seem to be a relationship with
@@ -186,80 +197,97 @@ missing_pattern(vload, explanatory)
 # With the first row, there are 149 cases with the “0” missing pattern or no variables missing.
 # Overall, we don’t see any alarmingly large numbers on the left for particular missing patterns
 
-### LEU3N
+
+### Compare Not Missing and Missing
+complete_analysis_data %>% 
+  missing_compare(vload, explanatory) %>% 
+  knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
+
+# Based on this, missingness does not appear to differ by any covariates
+## Data is not MAR or MCAR
+
+####################################### LEU3N ##################################
 # VLOAD
 leu3n <- c("LEU3N")
 
-analysis_data %>% 
+complete_analysis_data %>% 
   missing_pattern(leu3n, explanatory)
 
 # No alarming patterns here
 
-### AGG MENT
+#### Compare Not Missing and Missing
+complete_analysis_data %>% 
+  missing_compare(leu3n, explanatory) %>% 
+  knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
+
+# No significant differences between missing and not missing values
+# Missingness for LEU3N does not differ by covariates
+# Not MAR or MCAR
+
+#################################### AGG MENT ##################################
 explanatory <- c("AGG_PHYS", "SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
                  "hard_drugs", "ADH")
 
 agg_ment <- c("AGG_MENT")
 
-analysis_data %>% 
+complete_analysis_data %>% 
   missing_pattern(agg_ment, explanatory)
 
-analysis_data %>% 
+complete_analysis_data %>% 
   group_by(years) %>% 
   summarise(means = mean(AGG_MENT, na.rm = TRUE))
 # 1     0  45.4
 # 2     2  47.5
 ## Not a big difference in means between both years
 
-
+# Values do not significantly differ between missing and not missing 
 # Nothing concerning here
 
-### AGG PHYS
+################################### AGG PHYS ###################################
 explanatory <- c("AGG_MENT", "SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
                  "hard_drugs", "ADH")
 agg_phys <- c("AGG_PHYS")
 
-analysis_data %>% 
+complete_analysis_data %>% 
   missing_pattern(agg_phys, explanatory)
 
 # No concerning patterns here either
-analysis_data %>% 
+complete_analysis_data %>% 
   group_by(years) %>% 
   summarise(means = mean(AGG_PHYS, na.rm = TRUE))
 # 1     0  50.1
 # 2     2  49.4
 ## Not much difference in means between the two years
 
-## Based on this brief analysis, we will not continue with missingness investigation
+# Values do not significantly differ between missing and not missing 
+# Nothing concerning here
+
 
 
 ################################# Baseline #####################################
 # Subset data to just baseline aka year 1 and one observat
-baseline <- analysis_data[analysis_data$years == 0, ]
+baseline <- complete_analysis_data[complete_analysis_data$years == 0, ]
 # There are 280 subjects at baseline
 
 # How many were on hard drugs at baseline?
 baseline %>% 
   summarise(prop_hd = mean(hard_drugs, na.rm = TRUE))
-# 0.09230769 not on hard drugs
+# 0.0771 not on hard drugs
 
 table(baseline$hard_drugs)
 # 0   1 
-# 649  66
-# So around 11% were on hard drugs
-
-# Pretty unbalanced that could be problematic with analysis
-
+# 467  39
+# So around 8% were on hard drugs at baseline
 
 ################################## VLOAD #######################################
 
 # What is the distribution of VLOAD
-summary(analysis_data$VLOAD)
+summary(complete_analysis_data$VLOAD)
 
 # Plot VLOAD trajectories
-ggplot(analysis_data, aes(y = VLOAD, 
+ggplot(complete_analysis_data, aes(y = VLOAD, 
                           x = years, 
                           colour = factor(newid))) + 
   geom_line() + 
@@ -269,32 +297,14 @@ ggplot(analysis_data, aes(y = VLOAD,
 
 # Notice some outliers here - what are unrealistic values of VLOAD?
 
-# Filter to those that have VLOAD higher than the 3rd quartile
-analysis_data %>% 
-  filter(VLOAD >= 30929) %>% 
-  reframe(newid, years, VLOAD) %>% 
-  arrange(desc(VLOAD))
-
-# Plot without these outliers for a bit
-filtered <- analysis_data %>% 
-  filter(VLOAD < 2520009)
-
-# Plot
-ggplot(filtered,
-       aes(x = years, y = VLOAD, colour = factor(newid))) + 
-  geom_line() + 
-  geom_point() +
-  theme_lucid() + 
-  theme(legend.position = "none")
-
 # Histogram of the distribution of VLOAD
-ggplot(analysis_data, aes(x = VLOAD)) + 
+ggplot(complete_analysis_data, aes(x = VLOAD)) + 
   geom_histogram(bins = 20) +
   theme_lucid() + 
   theme(legend.position = "none")
 
 # Log transform VLOAD
-ggplot(analysis_data, aes(x = log(VLOAD))) + 
+ggplot(complete_analysis_data, aes(x = log(VLOAD))) + 
   geom_histogram(bins = 20,
                  fill = "blue",
                  col = "black") +
@@ -310,7 +320,7 @@ ggplot(analysis_data, aes(x = log(VLOAD))) +
 
 
 # Square root
-ggplot(analysis_data, aes(x = sqrt(VLOAD))) + 
+ggplot(complete_analysis_data, aes(x = sqrt(VLOAD))) + 
   geom_histogram() + 
   theme_lucid() + 
   theme(legend.position = "none")
@@ -320,10 +330,10 @@ ggplot(analysis_data, aes(x = sqrt(VLOAD))) +
 ################################## LEU3N #######################################
 
 # What is the distribution of LEU3n
-summary(analysis_data$LEU3N)
+summary(complete_analysis_data$LEU3N)
 
 # Plot VLOAD trajectories
-ggplot(analysis_data, aes(y = LEU3N, 
+ggplot(complete_analysis_data, aes(y = LEU3N, 
                           x = years, 
                           colour = factor(newid))) + 
   geom_path(aes(group = newid)) + #spaghetti plot
@@ -333,7 +343,7 @@ ggplot(analysis_data, aes(y = LEU3N,
   facet_grid( ~ hard_drugs)
   
 ## Look into plotting mean trajectories
-ggplot(analysis_data, aes(y = LEU3N, 
+ggplot(complete_analysis_data, aes(y = LEU3N, 
                           x = years, 
                           colour = factor(newid))) + 
   geom_path(aes(group = newid)) + #spaghetti plot
@@ -348,14 +358,14 @@ ggplot(analysis_data, aes(y = LEU3N,
 
 ############## Randomly sample like 20 subjects
 set.seed(645)
-plot_ids <- analysis_data %>% 
+plot_ids <- complete_analysis_data %>% 
   distinct(newid) %>% 
   sample_n(30) %>% 
   # Obtain just the ids
   pull(newid)
 
 # Subset analysis data frame
-plot_data <- analysis_data %>% 
+plot_data <- complete_analysis_data %>% 
   filter(newid %in% plot_ids) %>% 
   filter(!is.na(LEU3N))
 
@@ -372,7 +382,7 @@ ggplot(plot_data, aes(y = LEU3N,
 # On initial glance, looking like CD4 counts increasing
 
 # Histogram of the distribution of VLOAD
-ggplot(analysis_data, aes(x = LEU3N)) + 
+ggplot(complete_analysis_data, aes(x = LEU3N)) + 
   geom_histogram(bins = 20,
                  fill = "seagreen3",
                  col = "black") +
@@ -380,40 +390,73 @@ ggplot(analysis_data, aes(x = LEU3N)) +
   theme(legend.position = "none")
 
 # Log transform VLOAD
-ggplot(analysis_data, aes(x = log(LEU3N))) + 
+ggplot(complete_analysis_data, aes(x = log(LEU3N))) + 
   geom_histogram(bins = 20) +
   theme_lucid() + 
   theme(legend.position = "none")
 ## Log transformation too strong - conduct a test of normality to determine
-shapiro.test(analysis_data$LEU3N) 
+shapiro.test(complete_analysis_data$LEU3N) 
 # We reject the H0 and data is not normally distributed
 
 
 # Sqrt transform VLOAD
-ggplot(analysis_data, aes(x = sqrt(LEU3N))) + 
+ggplot(complete_analysis_data, aes(x = sqrt(LEU3N))) + 
   geom_histogram(bins = 20) +
   theme_lucid() + 
   theme(legend.position = "none")
 
 ################################################################################
 
+################################## AGG MENT ####################################
+
+summary(complete_analysis_data$AGG_MENT)
+
+# Histogram of distribution
+ggplot(complete_analysis_data, aes(x = (AGG_MENT))) + 
+  geom_histogram(fill = "purple", col = "black") + 
+  theme_lucid() + 
+  theme(legend.position = "none") 
+
+# Log transform
+ggplot(complete_analysis_data, aes(x = sqrt(AGG_MENT))) + 
+  geom_histogram(fill = "purple", col = "black") + 
+  theme_lucid() + 
+  theme(legend.position = "none") 
+
+### Based on this consider beta regression
+# Would have to revert percentages to decimal values
+complete_analysis_data$prop_AGG_MENT <- complete_analysis_data$AGG_MENT / 100
+
+# Histogram of this
+ggplot(complete_analysis_data, aes(x = (prop_AGG_MENT))) + 
+  geom_histogram(fill = "purple", col = "black") + 
+  theme_lucid() + 
+  theme(legend.position = "none") 
+
 ################################## AGG PHYS ####################################
 
 # What is the distribution of Aggregate phsycial quality of life score
-summary(analysis_data$AGG_PHYS)
+summary(complete_analysis_data$AGG_PHYS)
 
 # Histogram of distribution
-ggplot(analysis_data, aes(x = na.omit(AGG_PHYS))) + 
-  geom_histogram() + 
+ggplot(complete_analysis_data, aes(x = (AGG_PHYS))) + 
+  geom_histogram(fill = "orange", col = "black") + 
   theme_lucid() + 
-  theme(legend.position = "none") + 
-  facet_grid( ~ hard_drugs)
+  theme(legend.position = "none")
 
+# We also observe a left skew here
+### We will also consider beta regression with this
+# Convert percentages to decimal values
+complete_analysis_data$prop_AGG_PHYS <- complete_analysis_data$AGG_PHYS / 100
 
+# Histogram of this
+ggplot(complete_analysis_data, aes(x = (prop_AGG_PHYS))) + 
+  geom_histogram(fill = "orange", col = "black") + 
+  theme_lucid() + 
+  theme(legend.position = "none")
 
-################################## AGG MENT ####################################
+summary(complete_analysis_data$prop_AGG_PHYS)
 
-summary(analysis_data$AGG_MENT)
 
 ################################################################################
 
@@ -421,22 +464,35 @@ summary(analysis_data$AGG_MENT)
 
 ################################## Hard Drugs  #################################
 
-table(baseline$hard_drugs)
+table(complete_analysis_data$hard_drugs)
+# 0   1 
+# 649  66
+# > table(baseline$hard_drugs)
 
-ggplot(baseline, aes(x = factor(na.omit(hard_drugs)),
-                          fill = factor(na.omit(hard_drugs)))) + 
+0   1 
+467  39 
+
+## Also include for people that have follow up to 2 years
+ggplot(baseline, aes(x = factor((hard_drugs)),
+                          fill = factor((hard_drugs)))) + 
   geom_bar() + 
   theme_lucid() + 
   theme(legend.position = "none")
 
 ################################### Ever ART ###################################
 
-table(analysis_data$everART)
+table(complete_analysis_data$everART)
+table(baseline$everART)
 
 ####################################### Age  ###################################
 
 # Summary of age at baseline
 summary(baseline$age)
+
+# Histogram of distribution
+ggplot(baseline, aes(x = age)) + 
+  geom_histogram(col = "black", fill = "yellow") + 
+  theme_lucid()
 
 
 ###################################### Race  ###################################
@@ -464,21 +520,25 @@ ggplot(baseline, aes(x = factor(na.omit(RACE)),
   theme(legend.position = "none")
 # Pretty unbalanced
 
+# Collapse into these categories
+# White
+# Black
+# American Indian / Alaska Native
+# Asian / Pacific Islander
+# Other
 
-################################## Education  #################################
-
-
-
-
-################################# Smoking Status ##############################
 
 ##################################### SMOKE  ###################################
 table(factor(baseline$SMOKE))
 # 1   2   3 
 # 71  81 128 
-table(factor(analysis_data$SMOKE))
+table(factor(complete_analysis_data$SMOKE))
 # 1   2   3 
 # 120 142 202 
+
+ggplot(baseline, aes(x = SMOKE)) + 
+  geom_bar() + 
+  theme_lucid()
 
 ##################################### EDUCBAS  #################################
 
@@ -509,8 +569,12 @@ ggplot(baseline, aes(x = factor(na.omit(EDUCBAS)),
 
 ################################## Adherence ###################################
 
+table(complete_analysis_data$ADH)
 
-
+# Barplot
+ggplot(complete_analysis_data, aes(x = ADH)) + 
+  geom_bar() + 
+  theme_lucid()
 
 ################################ STAN INSTALLATION #############################
 
