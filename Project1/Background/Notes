@@ -1,24 +1,22 @@
-Main Question: 
+ Main Question: 
 Question of Interest: We are interested in understanding how treatment response
 2 years after initiating HAART differs between subjects who report using hard 
 drugs, such as heroine and cocaine, at baseline and other subjects, who did not 
 report hard drug use at baseline.  
 
 Questions for the PI: 
-- What are unrealisic values of VLOAD and CD4 Counts? 
-For example for VLOAD:
-    newid years        VLOAD
-1     236     0 190695039.60
-2      35     0 143419477.10
-3     552     0  83835646.40
-4     191     0   5227511.41
-5     123     0   2520009.00
-6     523     0   2515704.00
-7     615     0   2491415.00
 
-- There is no AIDS variable in the dataset
+Biologically plausible values for LEU3N: 300 to 500 is reasonable
+For VLOAD, will be really high 
 
+Covariates to include: 
+- Age, BMI, Education, Race Ethnicity, Smoking Status,
 
+Adherence is an important factor. Are there differences between hard drug users 
+and non drug users and adherence and the outcomes. 
+Adherence to medication is important. Tthe PI things that its possible who report 
+using hard drug might not be as adherent to medication.
+If there are differences can it be explained by differences in adherence?
 
-
-
+Outcome: Difference between Baseline and Year 2
+For covariates, use the baseline values. 
