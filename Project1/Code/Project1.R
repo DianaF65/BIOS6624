@@ -54,7 +54,6 @@ naniar::miss_case_table(proj1_dat)
 vis_dat(proj1_dat)
 
 
-
 ################################### Table 1 ####################################
 
 # Adjust labels for collection sample
@@ -79,12 +78,7 @@ data <- data %>%
     mean_vload = mean(VLOAD, na.rm = TRUE),
     mean_bmi = mean(BMI, na.rm = TRUE),
     mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
-    mean_hbp = mean(HBP, na.rm = TRUE),
-    mean_tchol = mean(TCHOL, na.rmm = TRUE),
     mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-    mean_diab = mean(DIAB, na.rm = TRUE),
-    mean_trig= mean(TRIG, na.rm = TRUE),
-    mean_ldl = mean(LDL, na.rm = TRUE),
     mean_leu3n = mean(LEU3N, na.rm = TRUE),
     mean_age = mean(age, na.rm = TRUE),
     .groups = "drop")
@@ -140,9 +134,29 @@ baseline %>%
 
 # Pretty unbalanced that could be problematic with analysis
 
+############################### Data for Year 0 & 2 ############################
+
 # Subset data to the first two years
 analysis_data <- proj1_dat %>% 
-  filter(years %in% c(0, 1, 2))
+  filter(years %in% c(0, 2))
+
+# Subset to variables of interest
+cols <- c("newid", "AGG_MENT", "AGG_PHYS", "income",
+          "SMOKE", "LEU3N", "VLOAD",
+          "RACE", "EDUCBAS", "age",
+          "ART", "everART", "years", "hard_drugs")
+analysis_data <- analysis_data[ , colnames(analysis_data) %in% cols]
+
+### Missingness here
+# Cumulative sum of missingness for each variable
+naniar::miss_var_summary(analysis_data)
+
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(analysis_data)
+
+# Visualize the missingness
+vis_dat(analysis_data)
+
 
 ################################## VLOAD #######################################
 
@@ -273,7 +287,7 @@ ggplot(analysis_data, aes(x = sqrt(LEU3N))) +
 summary(analysis_data$AGG_PHYS)
 
 # Histogram of distribution
-ggplot(analysis_data, aes(y = AGG_PHYS)) + 
+ggplot(analysis_data, aes(x = na.omit(AGG_PHYS))) + 
   geom_histogram() + 
   theme_lucid() + 
   theme(legend.position = "none") + 
@@ -319,14 +333,19 @@ table(factor(analysis_data$RACE))
 
 # Barplot
 ggplot(baseline, aes(x = factor(na.omit(RACE)),
-                     fill = factor(na.omit(RACE)))) + 
+                     fill = factor(RACE))) + 
   geom_bar() + 
   theme_lucid() + 
   theme(legend.position = "none")
 # Pretty unbalanced
 
 
-################################## Hard Drugs  #################################
+################################## Education  #################################
+
+
+
+
+################################# Smoking Status ##############################
 
 
 
