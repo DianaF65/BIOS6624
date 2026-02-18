@@ -10,10 +10,7 @@ Biologically plausible values for LEU3N: 300 to 500 is reasonable
 For VLOAD, will be really high 
 
 Covariates to include: 
-- Age, BMI, Education, Race Ethnicity, Smoking Status,
-
-Ask about whether we race categories can be combined. For example,
-White Hispanic , Black Hispanic, and Other have less than 10 individuals. 
+- Age, BMI, Education, Race Ethnicity, Smoking Status, ADH
 
 Can education categories be combined?
 Such as 8th - 12th grade, at leaat one year college, four years college, and 
@@ -31,9 +28,11 @@ TO DO NEXT:
 
 Adherence is an important factor. Are there differences between hard drug users 
 and non drug users and adherence and the outcomes. 
-Adherence to medication is important. Tthe PI things that its possible who report 
+Adherence to medication is important. The PI thinks that its possible patients who report 
 using hard drug might not be as adherent to medication.
 If there are differences can it be explained by differences in adherence?
 
 Outcome: Difference between Baseline and Year 2
 For covariates, use the baseline values. 
+
+
