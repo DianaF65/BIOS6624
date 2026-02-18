@@ -203,6 +203,20 @@ complete_analysis_data %>%
   missing_compare(vload, explanatory) %>% 
   knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
 
+## Looking at some categorical variables since there were some issues
+# Usingn simulated pvalues from chisquare test
+# SMOKE 
+complete_analysis_data %>% 
+  dplyr::summarise(
+    pval_smoke = chisq.test(SMOKE, VLOAD, simulate.p.value = TRUE)$p.value,
+    pval_race = chisq.test(RACE, VLOAD, simulate.p.value = TRUE)$p.value,
+    pval_hdrugs = chisq.test(hard_drugs, VLOAD, simulate.p.value = TRUE)$p.value,
+    pval_adh = chisq.test(ADH, VLOAD, simulate.p.value = TRUE)$p.value
+  )
+# There appears to be a significant difference between expected and obs values
+# For SMOKE and ADH
+# However, we will not delve too much more into this. 
+# The sample sizes for some categorical variables are extremley unbalanced.
 # Based on this, missingness does not appear to differ by any covariates
 ## Data is not MAR or MCAR
 
