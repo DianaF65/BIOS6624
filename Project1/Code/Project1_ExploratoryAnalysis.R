@@ -44,73 +44,6 @@ color_scheme_set("brightblue")
 ##### Read in Data
 proj1_dat <- read.csv("../Data/hiv_6624_final.csv")
 
-################################### Table 1 ####################################
-
-# Adjust labels for collection sample
-# data <- wake_data %>%
-#   mutate(
-#     `Collection Sample` = factor(
-#       `Collection Sample`,
-#       levels = c(1, 2, 3, 4),
-#       labels = c("Wake Time", "+30 Min", "Pre Lunch", "+600 Min")
-#     )
-#   )
-
-# Subset proj1 data to years 0 - 2
-data <- proj1_dat %>% 
-  filter(years %in% c(0, 2))
-
-# Create subject level summaries - NOT observation level
-data <- data %>%
-  group_by(newid, years) %>%
-  summarise(
-    mean_vload = mean(VLOAD, na.rm = TRUE),
-    mean_bmi = mean(BMI, na.rm = TRUE),
-    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
-    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-    mean_leu3n = mean(LEU3N, na.rm = TRUE),
-    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
-    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-    mean_age = mean(age, na.rm = TRUE),
-    .groups = "drop")
-
-# Define variables for the table one
-variables <- colnames(data)
-
-# Separate by collection time
-strata <- "years"
-
-# modify labels
-# var_label(data$mean_booklet) <- "Booklet Minutes"
-# var_label(data$mean_mem) <- "MEM Minutes"
-# var_label(data$mean_wake) <- "Minutes Since Wake"
-# var_label(data$mean_dhea) <- "DHEA (nmol/L)"
-# var_label(data$mean_cort) <- "Cortisol (nmol/L)"
-
-# Create the table one
-studypop_tab1 <- CreateTableOne(
-  vars = variables,
-  strata = strata,
-  test = FALSE,
-  data = data
-)
-
-studypop_tab_forkbl <- print(
-  studypop_tab1,
-  varLabels = TRUE,
-  printToggle = FALSE
-)
-
-# Display with kbl
-kbl(
-  studypop_tab_forkbl,
-  caption = "Summary Per Subject For Each Year",
-  booktabs = TRUE,
-  align = "c"
-) %>%
-  kable_styling(latex_options = "hold_position", font_size = 10)
-
-
 ################################## Analysis DF #################################
 
 ############################### Data for Year 0 & 2 ############################
@@ -124,6 +57,7 @@ cols <- c("newid",
           "AGG_MENT", "AGG_PHYS", 
           "VLOAD", "LEU3N",
           "SMOKE", "RACE", "EDUCBAS", "age",
+          "BMI",
           "ART", "everART", "years",  "hard_drugs",
           "ADH")
 
@@ -133,44 +67,91 @@ analysis_data <- analysis_data[ ,colnames(analysis_data) %in% cols ]
 # Ensure that data types are correct
 str(analysis_data)
 
-### Convert to correct data types
-## Factors
-# new id
-analysis_data$newid <- as.factor(analysis_data$newid)
-analysis_data$SMOKE <- as.factor(analysis_data$SMOKE)
-analysis_data$RACE <- as.factor(analysis_data$RACE)
-analysis_data$EDUCBAS <- as.factor(analysis_data$EDUCBAS)
-analysis_data$ART <- as.factor(analysis_data$ART)
-analysis_data$everART <- as.factor(analysis_data$everART)
-analysis_data$ADH <- as.factor(analysis_data$ADH)
-
-#### Filter to complete observations - OBS. for BOTH Year 0 and year 2
-# Filter to these observations
-complete_analysis_data <- analysis_data %>%
-  group_by(newid) %>%
-  filter(n_distinct(years) == 2) %>%
-  ungroup()
-# From 715 patients to 506 patients
-
 ##### Table1
+
+#### First glimpse of the data
+glimpse(analysis_data)
+
+# Summary of the variables in the data frame
+summary(analysis_data)
+
+# We note some concerning values for BMI: -1 and 999
+summary(analysis_data$BMI)
+
+# What is an unreasonable BMI?
+# Based on this google and this article: 
+# https://pmc.ncbi.nlm.nih.gov/articles/PMC2930234/#:~:text=The%20BMI%20is%20a%20surrogate,upper%20limit%20of%20'starvation'.
+# We will filter out individuals that have a BMI within the ranges of (10, 60)
+# Anything less than 10 indicates severe starvation and > 60 is extreme obesity
+
+# Filter out unrealistic bmi values from data set
+# We only care about baseline values
+exp_analysis_data <- analysis_data %>% 
+  group_by(years == 0) %>% 
+  # group_by(newid) %>% 
+  filter(BMI > 10 & BMI < 60)
+# From 1221 obs to 1114 obs
+# From 715 subjects to 681 subjects
 
 ################################ Missingness ###################################
 
 #### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 
 # Cumulative sum of missingness for each variable
+naniar::miss_var_summary(exp_analysis_data)
+# Looks like ADH has a lot of missingness but this is expected since adh is
+# measured at second visit
+
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(exp_analysis_data)
+
+# Visualize the missingness
+vis_dat(exp_analysis_data)
+
+# Another way to visualize missingness
+missing_plot(exp_analysis_data)
+
+######################### Complete Case Data frame (-ADH) #####################
+# Create data frame with complete observatinos - with exception of ADH
+exclude_col <- "ADH"
+
+# Get logical vector of rows that are complete except for ADH
+complete_rows <- complete.cases(exp_analysis_data[ ,
+        setdiff(names(exp_analysis_data), exclude_col)])
+
+# Create data frame
+complete_analysis_data <- exp_analysis_data[complete_rows, ]
+## We will proceed with this data frame
+# From 1114 obs to 1074 obs
+# From 681 subjects to 657 subjects
+
+# Assess missingness once again
+# Cumulative sum of missingness for each variable
 naniar::miss_var_summary(complete_analysis_data)
 
 # How many variables 0 - 5 missing values
 naniar::miss_case_table(complete_analysis_data)
+# All just missing ADH values
 
 # Visualize the missingness
 vis_dat(complete_analysis_data)
+# Only see missingness for ADH variable
 
 # Another way to visualize missingness
 missing_plot(complete_analysis_data)
 
-## Looking for patterns of missingness
+
+####### Filter to complete observations - OBS. for BOTH Year 0 and year 2 ######
+# Filter to these observations
+complete_analysis_data <- complete_analysis_data %>%
+  group_by(newid) %>%
+  filter(n_distinct(years) == 2) %>%
+  ungroup()
+# From 1074 obs to 834 obs
+# From 657 subjects to 417 obs
+
+
+###### Investigating any patterns of missingness below
 
 ###################################### VLOAD ###################################
 
@@ -280,7 +261,9 @@ complete_analysis_data %>%
 
 
 
-################################# Baseline #####################################
+################################# Baseline DF ##################################
+
+# Data frame of only baseline information
 # Subset data to just baseline aka year 1 and one observat
 baseline <- complete_analysis_data[complete_analysis_data$years == 0, ]
 # There are 280 subjects at baseline
@@ -493,10 +476,16 @@ ggplot(baseline, aes(x = factor((hard_drugs)),
   theme_lucid() + 
   theme(legend.position = "none")
 
-################################### Ever ART ###################################
+#################################### BMI ######################################
 
-table(complete_analysis_data$everART)
-table(baseline$everART)
+summary(complete_analysis_data$BMI)
+# There are some values that have 999 and even -1
+
+# Plot the distribution
+ggplot(complete_analysis_data, aes(x = BMI)) + 
+  geom_histogram(bins = 10) + 
+  theme_lucid()
+
 
 ####################################### Age  ###################################
 
@@ -589,6 +578,73 @@ table(complete_analysis_data$ADH)
 ggplot(complete_analysis_data, aes(x = ADH)) + 
   geom_bar() + 
   theme_lucid()
+
+
+
+################################### Table 1 ####################################
+
+### Convert to correct data types
+## Factors
+# new id
+analysis_data$newid <- as.factor(analysis_data$newid)
+analysis_data$SMOKE <- as.factor(analysis_data$SMOKE)
+analysis_data$RACE <- as.factor(analysis_data$RACE)
+analysis_data$EDUCBAS <- as.factor(analysis_data$EDUCBAS)
+analysis_data$ART <- as.factor(analysis_data$ART)
+analysis_data$everART <- as.factor(analysis_data$everART)
+analysis_data$ADH <- as.factor(analysis_data$ADH)
+
+# Create subject level summaries - NOT observation level
+data <- data %>%
+  group_by(newid, years) %>%
+  summarise(
+    mean_vload = mean(VLOAD, na.rm = TRUE),
+    mean_bmi = mean(BMI, na.rm = TRUE),
+    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
+    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
+    mean_leu3n = mean(LEU3N, na.rm = TRUE),
+    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
+    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
+    mean_age = mean(age, na.rm = TRUE),
+    .groups = "drop")
+
+# Define variables for the table one
+variables <- colnames(data)
+
+# Separate by collection time
+strata <- "years"
+
+# modify labels
+# var_label(data$mean_booklet) <- "Booklet Minutes"
+# var_label(data$mean_mem) <- "MEM Minutes"
+# var_label(data$mean_wake) <- "Minutes Since Wake"
+# var_label(data$mean_dhea) <- "DHEA (nmol/L)"
+# var_label(data$mean_cort) <- "Cortisol (nmol/L)"
+
+# Create the table one
+studypop_tab1 <- CreateTableOne(
+  vars = variables,
+  strata = strata,
+  test = FALSE,
+  data = data
+)
+
+studypop_tab_forkbl <- print(
+  studypop_tab1,
+  varLabels = TRUE,
+  printToggle = FALSE
+)
+
+# Display with kbl
+kbl(
+  studypop_tab_forkbl,
+  caption = "Summary Per Subject For Each Year",
+  booktabs = TRUE,
+  align = "c"
+) %>%
+  kable_styling(latex_options = "hold_position", font_size = 10)
+
+
 
 ################################ STAN INSTALLATION #############################
 
