@@ -86,12 +86,40 @@ summary(analysis_data$BMI)
 
 # Filter out unrealistic bmi values from data set
 # We only care about baseline values
-exp_analysis_data <- analysis_data %>% 
-  group_by(years == 0) %>% 
-  # group_by(newid) %>% 
-  filter(BMI > 10 & BMI < 60)
-# From 1221 obs to 1114 obs
-# From 715 subjects to 681 subjects
+# Create data frame to year 1 then filter out these BMI values
+year1 <- analysis_data %>% 
+  # Filter to baseline
+  filter(years == 0) %>% # 715 obs and 715 subjects
+  # Filter BMI values
+  filter(BMI > 10 & BMI < 60) # 671 obs and 671 subjects
+
+# Create data frame with year 2 data
+year2 <- analysis_data %>% 
+  filter(years == 2)
+# 506 obs and 506 subjects
+
+# Merge these two data frames by id
+merged_data <- rbind(year1, year2)
+
+# Organize df so subjects are together
+merged_data <- merged_data %>% 
+  group_by(newid) %>% 
+  arrange(newid)
+
+# Double check work
+fil_year1 <- merged_data %>% 
+  filter(years == 0) %>% 
+  reframe(newid, BMI)
+# Check BMI
+summary(fil_year1$BMI) # looks good
+# Clean environment
+rm(fil_year1)
+
+# Merged data will have BMIs out of this range
+summary(merged_data$BMI)
+
+### From 1221 obs to 1177 obs
+### From 715 subjects to 689 subjects
 
 ################################ Missingness ###################################
 
