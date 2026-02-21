@@ -372,26 +372,31 @@ table(baseline$hard_drugs)
 # because we are NOT doing a longitudinal analysis D:
 
 # Create vector of covariates for data manipulation
+covariates <- c("BMI", "SMOKE", "RACE",
+               "EDUCBAS",  "age",
+               "hard_drugs" )
 
 
-
-wide_data <- both_yrs_data %>%
+wide_bth_yrs <- both_yrs_data %>%
   group_by(newid) %>%
   summarise(
+    # AGG MENT
     AGG_MENT_yr0 = AGG_MENT[years == 0],
     AGG_MENT_yr2 = AGG_MENT[years == 2],
+    # AGG PHYS
+    AGG_PHYS_yr0 = AGG_PHYS[years == 0],
+    AGG_PHYS_yr2 = AGG_PHYS[years == 2],
+    # VLOAD
     VLOAD_yr0    = VLOAD[years == 0],
     VLOAD_yr2    = VLOAD[years == 2],
+    # LEU3N
     LEU3N_yr0    = LEU3N[years == 0],
     LEU3N_yr2    = LEU3N[years == 2],
-    hard_drugs      = hard_drugs[years == 0],
+    # Only need 2nd year of ADH
+    ADH_yr2      = ADH[years == 2],
+    # Baseline for all other covariates
     across(all_of(covariates), ~ .x[years == 0])
   )
-
-# Assessing changes
-both_yrs_data %>% 
-  group_by(newid) %>% 
-  reframe(newid, years, AGG_MENT, AGG_MENT_yr2, AGG_MENT_yr0)
 
 
 ################################################################################
@@ -401,10 +406,10 @@ both_yrs_data %>%
 ################################## VLOAD #######################################
 
 # What is the distribution of VLOAD
-summary(both_yrs_data$VLOAD_yr2)
+summary(wide_bth_yrs$VLOAD_yr2)
 
 # Histogram of the distribution of VLOAD
-ggplot(both_yrs_data, aes(x = VLOAD_yr2)) + 
+ggplot(wide_bth_yrs, aes(x = VLOAD_yr2)) + 
   geom_histogram(bin2 = 40,
                  fill = "blue",
                  col = "black") +
@@ -412,7 +417,7 @@ ggplot(both_yrs_data, aes(x = VLOAD_yr2)) +
   theme(legend.position = "none")
 
 # Log transform VLOAD
-ggplot(both_yrs_data, aes(x = log10(VLOAD_yr2))) + 
+ggplot(wide_bth_yrs, aes(x = log10(VLOAD_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "blue",
                  col = "black") +
@@ -421,7 +426,7 @@ ggplot(both_yrs_data, aes(x = log10(VLOAD_yr2))) +
   theme(legend.position = "none")
 
 ## Formal assessment of normality
-shapiro.test(both_yrs_data$VLOAD_yr2) 
+shapiro.test(wide_bth_yrs$VLOAD_yr2) 
 # We reject the H0 and data is not normally distributed...
 # However, Camille said log10 distribution is sufficient
 
@@ -431,10 +436,10 @@ shapiro.test(both_yrs_data$VLOAD_yr2)
 ################################## LEU3N #######################################
 
 # What is the distribution of LEU3n
-summary(both_yrs_data$LEU3N_yr2)
+summary(wide_bth_yrs$LEU3N_yr2)
 
 # Histogram of the distribution of LEU3N
-ggplot(both_yrs_data, aes(x = LEU3N_yr2)) + 
+ggplot(wide_bth_yrs, aes(x = LEU3N_yr2)) + 
   geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
@@ -442,7 +447,7 @@ ggplot(both_yrs_data, aes(x = LEU3N_yr2)) +
   theme(legend.position = "none")
 
 # Log transform LEU3N - do not log transform
-ggplot(both_yrs_data, aes(x = log10(LEU3N_yr2))) + 
+ggplot(wide_bth_yrs, aes(x = log10(LEU3N_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
@@ -450,7 +455,7 @@ ggplot(both_yrs_data, aes(x = log10(LEU3N_yr2))) +
   theme(legend.position = "none")
 
 # Sqrt transform VLOAD 
-ggplot(both_yrs_data, aes(x = sqrt(LEU3N_yr2))) + 
+ggplot(wide_bth_yrs, aes(x = sqrt(LEU3N_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
@@ -459,7 +464,7 @@ ggplot(both_yrs_data, aes(x = sqrt(LEU3N_yr2))) +
 # However, due to interpretations with square root we will not proceed with this
 
 ## Formal assessment of normality
-shapiro.test(both_yrs_data$LEU3N_yr2) 
+shapiro.test(wide_bth_yrs$LEU3N_yr2) 
 # We reject the H0 and data is not normally distributed but we proceed anyways
 
 
@@ -467,22 +472,24 @@ shapiro.test(both_yrs_data$LEU3N_yr2)
 
 ################################## AGG MENT ####################################
 
-summary(both_yrs_data$AGG_MENT_yr2)
+summary(wide_bth_yrs$AGG_MENT_yr2)
 
 # Histogram of distribution
-ggplot(both_yrs_data, aes(x = (AGG_MENT_yr2))) + 
+ggplot(wide_bth_yrs, aes(x = (AGG_MENT_yr2))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
+  scale_x_continuous(breaks = seq(0, 100, by = 10),
+                     limits = c(0, 100)) + 
   theme(legend.position = "none") 
 
 # Log transform
-ggplot(both_yrs_data, aes(x = sqrt(AGG_MENT_yr2))) + 
+ggplot(wide_bth_yrs, aes(x = sqrt(AGG_MENT_yr2))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none") 
 
 # Histogram of this
-ggplot(both_yrs_data, aes(x = (prop_AGG_MENT))) + 
+ggplot(wide_bth_yrs, aes(x = (prop_AGG_MENT))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none") 
@@ -490,26 +497,27 @@ ggplot(both_yrs_data, aes(x = (prop_AGG_MENT))) +
 ################################## AGG PHYS ####################################
 
 # What is the distribution of Aggregate phsycial quality of life score
-summary(both_yrs_data$AGG_PHYS)
+summary(wide_bth_yrs$AGG_PHYS_yr2)
 
 # Histogram of distribution
-ggplot(both_yrs_data, aes(x = (AGG_PHYS))) + 
-  geom_histogram(fill = "orange", col = "black") + 
+ggplot(wide_bth_yrs, aes(x = (AGG_PHYS_yr2))) + 
+  geom_histogram(bins = 40,
+                 fill = "orange", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none")
 
 # We also observe a left skew here
 ### We will also consider beta regression with this
 # Convert percentages to decimal values
-both_yrs_data$prop_AGG_PHYS <- both_yrs_data$AGG_PHYS / 100
+wide_bth_yrs$prop_AGG_PHYS <- wide_bth_yrs$AGG_PHYS / 100
 
 # Histogram of this
-ggplot(both_yrs_data, aes(x = (prop_AGG_PHYS))) + 
+ggplot(wide_bth_yrs, aes(x = (prop_AGG_PHYS))) + 
   geom_histogram(fill = "orange", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none")
 
-summary(both_yrs_data$prop_AGG_PHYS)
+summary(wide_bth_yrs$prop_AGG_PHYS)
 
 
 ################################################################################
@@ -518,16 +526,12 @@ summary(both_yrs_data$prop_AGG_PHYS)
 
 ################################## Hard Drugs  #################################
 
-table(both_yrs_data$hard_drugs)
+table(wide_bth_yrs$hard_drugs)
 # 0   1 
-# 649  66
-# > table(baseline$hard_drugs)
-
-0   1 
-467  39 
+# 390  35 
 
 ## Also include for people that have follow up to 2 years
-ggplot(baseline, aes(x = factor((hard_drugs)),
+ggplot(wide_bth_yrs, aes(x = factor((hard_drugs)),
                           fill = factor((hard_drugs)))) + 
   geom_bar() + 
   theme_lucid() + 
@@ -535,28 +539,31 @@ ggplot(baseline, aes(x = factor((hard_drugs)),
 
 #################################### BMI ######################################
 
-summary(both_yrs_data$BMI)
-# There are some values that have 999 and even -1
+summary(wide_bth_yrs$BMI)
+# Looks good
 
 # Plot the distribution
-ggplot(both_yrs_data, aes(x = BMI)) + 
-  geom_histogram(bins = 10) + 
+ggplot(wide_bth_yrs, aes(x = BMI)) + 
+  geom_histogram(bins = 30,
+                 fill = "brown",
+                 col = "black") + 
   theme_lucid()
 
 
 ####################################### Age  ###################################
 
 # Summary of age at baseline
-summary(baseline$age)
+summary(both_yrs_data$age)
 
 # Histogram of distribution
-ggplot(baseline, aes(x = age)) + 
+ggplot(both_yrs_data, aes(x = age)) + 
   geom_histogram(col = "black", fill = "yellow") + 
   theme_lucid()
 
 
 ###################################### Race  ###################################
 
+### The initial race categories are: 
 # 1= White, non-Hispanic
 # 2= White, Hispanic
 # 3= Black, non-Hispanic
@@ -570,38 +577,41 @@ ggplot(baseline, aes(x = age)) +
 # Blank= Missing
 
 # Table of distribution of race
-table(factor(baseline$RACE))
+table(factor(wide_bth_yrs$RACE))
+
+
+# Change to White vs. non-white
+wide_bth_yrs <- wide_bth_yrs %>% 
+  mutate(collapse_RACE = factor(ifelse(
+    RACE == 1,
+    "White_NH", "Other"
+  ))
+  )
+
+## Make sure it is a factor
 
 # Barplot
-ggplot(baseline, aes(x = factor(na.omit(RACE)),
-                     fill = factor(RACE))) + 
+ggplot(wide_bth_yrs, aes(x = collapse_RACE,
+                     fill = collapse_RACE)) + 
   geom_bar() + 
   theme_lucid() + 
   theme(legend.position = "none")
-# Pretty unbalanced
-
-# Collapse into these categories
-# White
-# Black
-# American Indian / Alaska Native
-# Asian / Pacific Islander
-# Other
 
 
 ##################################### SMOKE  ###################################
-table(factor(baseline$SMOKE))
+table(factor(wide_bth_yrs$SMOKE))
 # 1   2   3 
-# 71  81 128 
-table(factor(both_yrs_data$SMOKE))
-# 1   2   3 
-# 120 142 202 
+# 237 287 326
 
-ggplot(baseline, aes(x = SMOKE)) + 
+# Visualize the distribution
+ggplot(wide_bth_yrs, aes(x = factor(SMOKE),
+                         fill = factor(SMOKE))) + 
   geom_bar() + 
-  theme_lucid()
+  theme_lucid(legend.position = "none") 
 
 ##################################### EDUCBAS  #################################
 
+# Initial categories for education are: 
 # 1= 8th grade or less
 # 2= 9, 10, or 11th grade
 # 3= 12th grade
@@ -613,14 +623,21 @@ ggplot(baseline, aes(x = SMOKE)) +
 # 7= Post-graduate degree
 # Blank= Missing
 
+# We will collapse this to Complete college or higher and did not complete college
+wide_bth_yrs <- wide_bth_yrs %>% 
+  mutate(collapsed_EDUCBAS = ifelse(
+    EDUCBAS %in% c(5, 6, 7),
+    "Comp_Coll_Higher",
+    "Less_Than_College"
+  ))
 
-table(factor(baseline$EDUCBAS))
-# 1   2   3   4   5   6   7 
-# 2  20  49 104  54  18  33 
+table(factor(wide_bth_yrs$collapsed_EDUCBAS))
+# Comp_Coll_Higher Less_Than_College 
+# 182               243  
 
 # Barplot
-ggplot(baseline, aes(x = factor(na.omit(EDUCBAS)),
-                     fill = factor(na.omit(EDUCBAS)))) + 
+ggplot(wide_bth_yrs, aes(x = factor(collapsed_EDUCBAS),
+                     fill = factor(collapsed_EDUCBAS))) + 
   geom_bar() + 
   theme_lucid() + 
   theme(legend.position = "none")
@@ -629,27 +646,39 @@ ggplot(baseline, aes(x = factor(na.omit(EDUCBAS)),
 
 ################################## Adherence ###################################
 
-table(both_yrs_data$ADH)
+table(wide_bth_yrs$ADH_yr2)
 
 # Barplot
-ggplot(both_yrs_data, aes(x = ADH)) + 
+ggplot(wide_bth_yrs, aes(x = factor(ADH_yr2),
+                         fill = factor(ADH_yr2))) + 
   geom_bar() + 
-  theme_lucid()
+  theme_lucid(legend.position = "none")
+
+################################################################################
+###                               Final Data frame                           ###
+################################################################################
+
+# Save the final data frame for analysis
+write.csv(wide_bth_yrs,
+          "../Data/hiv_data_final.csv")
 
 
+################################################################################
+###                                   Table 1                                ###
+################################################################################
 
-################################### Table 1 ####################################
+# Create a Table 1
 
 ### Convert to correct data types
 ## Factors
 # new id
-analysis_data$newid <- as.factor(analysis_data$newid)
-analysis_data$SMOKE <- as.factor(analysis_data$SMOKE)
-analysis_data$RACE <- as.factor(analysis_data$RACE)
-analysis_data$EDUCBAS <- as.factor(analysis_data$EDUCBAS)
-analysis_data$ART <- as.factor(analysis_data$ART)
-analysis_data$everART <- as.factor(analysis_data$everART)
-analysis_data$ADH <- as.factor(analysis_data$ADH)
+wide_bth_yrs$newid <- as.factor(wide_bth_yrs$newid)
+wide_bth_yrs$SMOKE <- as.factor(wide_bth_yrs$SMOKE)
+wide_bth_yrs$RACE <- as.factor(wide_bth_yrs$RACE)
+wide_bth_yrs$EDUCBAS <- as.factor(wide_bth_yrs$EDUCBAS)
+wide_bth_yrs$ART <- as.factor(wide_bth_yrs$ART)
+wide_bth_yrs$everART <- as.factor(wide_bth_yrs$everART)
+wide_bth_yrs$ADH <- as.factor(wide_bth_yrs$ADH)
 
 # Create subject level summaries - NOT observation level
 data <- data %>%
