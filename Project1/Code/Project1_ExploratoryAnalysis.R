@@ -44,7 +44,9 @@ color_scheme_set("brightblue")
 ##### Read in Data
 proj1_dat <- read.csv("../Data/hiv_6624_final.csv")
 
-################################## Analysis DF #################################
+################################################################################
+###                        Data Exploration and Cleaning                     ###
+################################################################################
 
 ############################### Data for Year 0 & 2 ############################
 
@@ -92,6 +94,8 @@ year0 <- analysis_data %>%
   filter(years == 0) %>% # 715 obs and 715 subjects
   # Filter BMI values
   filter(BMI > 10 & BMI < 60) # 671 obs and 671 subjects
+# Double check this worked
+summary(year0$BMI) 
 
 # Create data frame with year 2 data
 year2 <- analysis_data %>% 
@@ -106,14 +110,7 @@ merged_data <- merged_data %>%
   # group_by(newid) %>% # This does something weird with the df...
   arrange(newid)
 
-# Double check work
-fil_year0 <- merged_data %>% 
-  filter(years == 0) %>% 
-  reframe(newid, BMI)
-# Check BMI
-summary(fil_year1$BMI) # looks good
-# Clean environment
-rm(fil_year0)
+### Clean environment
 rm(year0)
 rm(year2)
 
@@ -141,100 +138,24 @@ vis_dat(merged_data)
 # Another way to visualize missingness
 missing_plot(merged_data)
 
-########################## Subjects with Year1 & Year 2 ########################
-
-####### Filter to complete observations - OBS. for BOTH Year 0 and year 2 ######
-# Filter to these subjects
-complete_analysis_data <- merged_data %>%
-  group_by(newid) %>%
-  filter(n_distinct(years) == 2) %>%
-  ungroup()
-# From 1177 obs to  obs
-# From 689 subjects to 488 obs. 
-
-# Assess missingness once again
-# Cumulative sum of missingness for each variable
-naniar::miss_var_summary(complete_analysis_data)
-
-# How many variables 0 - 5 missing values
-naniar::miss_case_table(complete_analysis_data)
-# All just missing ADH values
-
-# Visualize the missingness
-vis_dat(complete_analysis_data)
-# Only see missingness for ADH variable
-
-# Another way to visualize missingness
-missing_plot(complete_analysis_data)
-
-######################### Complete Case Data frame (-ADH) #####################
-# Create data frame with complete observations - with exception of ADH
-exclude_col <- "ADH"
-
-# Get logical vector of rows that are complete except for ADH
-complete_rows <- complete.cases(merged_data[ ,
-        setdiff(names(merged_data), exclude_col)])
-
-# Create data frame
-complete_analysis_data <- merged_data[complete_rows, ]
-## We will proceed with this data frame
-# From 1177 obs to 1085 obs
-# From 689 subjects to 660
-
-# Assess missingness once again
-# Cumulative sum of missingness for each variable
-naniar::miss_var_summary(complete_analysis_data)
-
-# How many variables 0 - 5 missing values
-naniar::miss_case_table(complete_analysis_data)
-# All just missing ADH values
-
-# Visualize the missingness
-vis_dat(complete_analysis_data)
-# Only see missingness for ADH variable
-
-# Another way to visualize missingness
-missing_plot(complete_analysis_data)
-
-########################## Subjects with Year1 & Year 2 ########################
-
-####### Filter to complete observations - OBS. for BOTH Year 0 and year 2 ######
-# Filter to these subjects
-complete_analysis_data <- complete_analysis_data %>%
-  group_by(newid) %>%
-  filter(n_distinct(years) == 2) %>%
-  ungroup()
-# From 1085 obs to 850 obs
-# From 660 subjects to 425 obs
-
-# Assess missingness once again
-# Cumulative sum of missingness for each variable
-naniar::miss_var_summary(complete_analysis_data)
-
-# How many variables 0 - 5 missing values
-naniar::miss_case_table(complete_analysis_data)
-# All just missing ADH values
-
-# Visualize the missingness
-vis_dat(complete_analysis_data)
-# Only see missingness for ADH variable
-
-# Another way to visualize missingness
-missing_plot(complete_analysis_data)
-
-
 ###### Investigating any patterns of missingness below
+
+########################## Assessing patterns of missingness ###################
+
+# Explore patterns of missingness to determine if data is MNAR, MAR, MCAR
 
 ###################################### VLOAD ###################################
 
-explanatory <- c("AGG_MENT", "AGG_PHYS", "SMOKE", "RACE",   
-                 "EDUCBAS", "age", "ART", "everART", "years",
+# Explore patterns of missingness for VLOAD
+
+explanatory <- c("AGG_PHYS", "AGG_MENT", "SMOKE", "RACE",   
+                 "EDUCBAS", "age", "years",
                  "BMI",
                  "hard_drugs", "ADH")
 # VLOAD
 vload <- c("VLOAD")
 
-complete_analysis_data %>% 
+merged_data %>% 
   missing_pattern(vload, explanatory)
 
 # This plot lets us see which variables are missing together. 
@@ -252,15 +173,15 @@ complete_analysis_data %>%
 # Overall, we don’t see any alarmingly large numbers on the left for particular missing patterns
 
 
-### Compare Not Missing and Missing
-complete_analysis_data %>% 
+### Compare Not Missing and Missing for 
+merged_data %>% 
   missing_compare(vload, explanatory) %>% 
   knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
 
 ## Looking at some categorical variables since there were some issues
 # Usingn simulated pvalues from chisquare test
 # SMOKE 
-complete_analysis_data %>% 
+merged_data %>% 
   dplyr::summarise(
     pval_smoke = chisq.test(SMOKE, VLOAD, simulate.p.value = TRUE)$p.value,
     pval_race = chisq.test(RACE, VLOAD, simulate.p.value = TRUE)$p.value,
@@ -278,13 +199,13 @@ complete_analysis_data %>%
 # VLOAD
 leu3n <- c("LEU3N")
 
-complete_analysis_data %>% 
+merged_data %>% 
   missing_pattern(leu3n, explanatory)
 
 # No alarming patterns here
 
 #### Compare Not Missing and Missing
-complete_analysis_data %>% 
+merged_data %>% 
   missing_compare(leu3n, explanatory) %>% 
   knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
 
@@ -292,17 +213,35 @@ complete_analysis_data %>%
 # Missingness for LEU3N does not differ by covariates
 # Not MAR or MCAR
 
+## Looking at some categorical variables since there were some issues
+# Usingn simulated pvalues from chisquare test
+# SMOKE 
+merged_data %>% 
+  dplyr::summarise(
+    pval_smoke = chisq.test(SMOKE, LEU3N, simulate.p.value = TRUE)$p.value,
+    pval_race = chisq.test(RACE, LEU3N, simulate.p.value = TRUE)$p.value,
+    pval_hdrugs = chisq.test(hard_drugs, LEU3N, simulate.p.value = TRUE)$p.value,
+    pval_adh = chisq.test(ADH, LEU3N, simulate.p.value = TRUE)$p.value
+  )
+# There appears to be a significant difference between expected and obs values
+# For hard drugs and ADH
+# However, we will not delve too much more into this. 
+# The sample sizes for some categorical variables are extremley unbalanced.
+# Based on this, missingness does not appear to differ by any covariates
+## Data is not MAR or MCAR
+
 #################################### AGG MENT ##################################
-explanatory <- c("AGG_PHYS", "SMOKE", "RACE",   
+explanatory <- c("SMOKE", "RACE",   
                  "EDUCBAS", "age", "ART", "everART", "years",
+                 "BMI",
                  "hard_drugs", "ADH")
 
 agg_ment <- c("AGG_MENT")
 
-complete_analysis_data %>% 
+merged_data %>% 
   missing_pattern(agg_ment, explanatory)
 
-complete_analysis_data %>% 
+merged_data %>% 
   group_by(years) %>% 
   summarise(means = mean(AGG_MENT, na.rm = TRUE))
 # 1     0  45.4
@@ -313,43 +252,115 @@ complete_analysis_data %>%
 # Nothing concerning here
 
 ################################### AGG PHYS ###################################
-explanatory <- c("AGG_MENT", "SMOKE", "RACE",   
-                 "EDUCBAS", "age", "ART", "everART", "years",
+explanatory <- c("SMOKE", "RACE",   
+                 "EDUCBAS", "age", "years", "BMI",
                  "hard_drugs", "ADH")
 agg_phys <- c("AGG_PHYS")
 
-complete_analysis_data %>% 
+merged_data %>% 
   missing_pattern(agg_phys, explanatory)
 
 # No concerning patterns here either
-complete_analysis_data %>% 
+merged_data %>% 
   group_by(years) %>% 
   summarise(means = mean(AGG_PHYS, na.rm = TRUE))
 # 1     0  50.1
 # 2     2  49.4
 ## Not much difference in means between the two years
 
+#### Compare Not Missing and Missing
+merged_data %>% 
+  missing_compare(agg_phys, explanatory) %>% 
+  knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
+
 # Values do not significantly differ between missing and not missing 
 # Nothing concerning here
 
+
+######################### Complete Case Data frame (-ADH) #####################
+# Create data frame with complete observations - with exception of ADH
+exclude_col <- "ADH"
+
+# Get logical vector of rows that are complete except for ADH
+complete_rows <- complete.cases(merged_data[ ,
+        setdiff(names(merged_data), exclude_col)])
+
+# Create data frame
+complete_analysis_data <- merged_data[complete_rows, ]
+## We will proceed with this data frame
+# From 1177 obs to 1085 obs
+# From 689 obs. to 660 subjects
+
+# Assess missingness once again
+# Cumulative sum of missingness for each variable
+naniar::miss_var_summary(complete_analysis_data)
+
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(complete_analysis_data)
+# All just missing ADH values
+
+# Visualize the missingness
+vis_dat(complete_analysis_data)
+# Only see missingness for ADH variable
+
+# Another way to visualize missingness
+missing_plot(complete_analysis_data)
+
+########################## Subjects with Year1 & Year 2 ########################
+
+####### Filter to complete observations - OBS. for BOTH Year 0 and year 2 ######
+# Filter to these subjects
+both_yrs_data <- complete_analysis_data %>%
+  group_by(newid) %>%
+  filter(n_distinct(years) == 2) %>%
+  ungroup()
+# From 1085 obs to 850 obs
+# From 689 subjects to 425 obs
+
+# Assess missingness once again
+# Cumulative sum of missingness for each variable
+naniar::miss_var_summary(both_yrs_data)
+
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(both_yrs_data)
+# All just missing ADH values
+
+# Visualize the missingness
+vis_dat(both_yrs_data)
+# Only see missingness for ADH variable
+
+# Another way to visualize missingness
+missing_plot(both_yrs_data)
 
 
 ################################# Baseline DF ##################################
 
 # Data frame of only baseline information
 # Subset data to just baseline aka year 1 and one observat
-baseline <- complete_analysis_data[complete_analysis_data$years == 0, ]
-# There are 488 subjects at baseline
+baseline <- both_yrs_data[both_yrs_data$years == 0, ]
+# There are 425 subjects at baseline
 
 # How many were on hard drugs at baseline?
 baseline %>% 
   summarise(prop_hd = mean(hard_drugs, na.rm = TRUE))
-# 0.0771 not on hard drugs
+# 0.0824 not on hard drugs
 
 table(baseline$hard_drugs)
 # 0   1 
-# 452  36 
-# So around 8% were on hard drugs at baseline
+# 390  35
+# So around 9% were on hard drugs at baseline
+
+################################################################################
+###                             Distn. of Outcomes                           ###
+################################################################################
+
+# For our outcomes, we will not just be using each variable as they are
+# VLOAD gave us a weird bimodal distribution, 
+# LEU3N, gave us a heavily right skewed distribution,
+# And the QOL scores had heavily left skewed distributions.
+
+# Instead, our outcomes will be
+
 
 ################################## VLOAD #######################################
 
@@ -403,10 +414,10 @@ ggplot(complete_analysis_data, aes(x = sqrt(VLOAD))) +
 ################################## LEU3N #######################################
 
 # What is the distribution of LEU3n
-summary(complete_analysis_data$LEU3N)
+summary(both_yrs_data$LEU3N)
 
 # Plot VLOAD trajectories
-ggplot(complete_analysis_data, aes(y = LEU3N, 
+ggplot(both_yrs_data, aes(y = LEU3N, 
                           x = years, 
                           colour = factor(newid))) + 
   geom_path(aes(group = newid)) + #spaghetti plot
@@ -455,7 +466,7 @@ ggplot(plot_data, aes(y = LEU3N,
 # On initial glance, looking like CD4 counts increasing
 
 # Histogram of the distribution of VLOAD
-ggplot(complete_analysis_data, aes(x = LEU3N)) + 
+ggplot(both_yrs_data, aes(x = LEU3N)) + 
   geom_histogram(bins = 20,
                  fill = "seagreen3",
                  col = "black") +
