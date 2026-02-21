@@ -10,7 +10,7 @@ Biologically plausible values for LEU3N: 300 to 500 is reasonable
 For VLOAD, will be really high 
 
 Covariates to include: 
-- Age, BMI, Education, Race Ethnicity, Smoking Status, ADH
+- Age, BMI, Education, Race, Smoking Status, ADH
 
 Can education categories be combined?
 Such as 8th - 12th grade, at leaat one year college, four years college, and 
@@ -35,4 +35,26 @@ If there are differences can it be explained by differences in adherence?
 Outcome: Difference between Baseline and Year 2
 For covariates, use the baseline values. 
 
+2/18 Class Interim presentation notes for P1:
+- Data exploration in one separate file and final analyses in a separate file
+- PI suggested collapsing race into white and non-white
+- PI suggested collapsing education into college degree & higher /
+  Didn't finish college degree & lower
+- No interaction terms needed
+- Run models on the same dataset for all 4 outcomes
+  - remove any that have missing values in any of the 4 outcomes
+- Make clear what is exploratory and what is final data 
+- Report percent change for differences in adherence for each outcome
+- For interpretation focus on bayesian analysis and make sure it agrees with 
+frequentist analysis
+- Change of 0.5 log10(viral load) is clinically meaningful
+- Change of 2 point QOL socores is clinically meaningful
+- 50 diff in CD4 is clinically meaningful 
+
+P0 Mistakes
+- Keeping track of sample sizes - how many obs. and subjects for each analysis
+- Flowcharts of how you got final sample size
+  - Put in an appendix table
+  - Camille may or may not look at it
+- Do not include table of regression output
 

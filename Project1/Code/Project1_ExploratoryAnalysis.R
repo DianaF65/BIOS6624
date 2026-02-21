@@ -351,168 +351,138 @@ table(baseline$hard_drugs)
 # So around 9% were on hard drugs at baseline
 
 ################################################################################
-###                             Distn. of Outcomes                           ###
+###                        Models for Primary RQs                           ###
 ################################################################################
 
-# For our outcomes, we will not just be using each variable as they are
+### For our outcomes, we will not just be using each variable as they are
 # VLOAD gave us a weird bimodal distribution, 
 # LEU3N, gave us a heavily right skewed distribution,
 # And the QOL scores had heavily left skewed distributions.
 
-# Instead, our outcomes will be
+### Instead, our models will look like for the primary questions of interest: 
+# VLOAD_yr2 ~ VLOAD_yr1 + hard_drug + covariates
+# This answers the question of the VLOAD diff at year 2 for nonhard and hard drug
+# LEU3N_yr2 ~ LEU3N_yr1 + hard_drug + covariates
+# AGG_MENT_yr2 ~ AGG_MENT_yr1 + hard_drug + covariates
+# AGG_PHYS_yr2 ~ AGG_PHYS_yr1 + hard_drug + covariates
 
+########## Create these variables in the data frames
+
+## Creating a wide data frame - we need one row for each subject
+# because we are NOT doing a longitudinal analysis D:
+
+# Create vector of covariates for data manipulation
+
+
+
+wide_data <- both_yrs_data %>%
+  group_by(newid) %>%
+  summarise(
+    AGG_MENT_yr0 = AGG_MENT[years == 0],
+    AGG_MENT_yr2 = AGG_MENT[years == 2],
+    VLOAD_yr0    = VLOAD[years == 0],
+    VLOAD_yr2    = VLOAD[years == 2],
+    LEU3N_yr0    = LEU3N[years == 0],
+    LEU3N_yr2    = LEU3N[years == 2],
+    hard_drugs      = hard_drugs[years == 0],
+    across(all_of(covariates), ~ .x[years == 0])
+  )
+
+# Assessing changes
+both_yrs_data %>% 
+  group_by(newid) %>% 
+  reframe(newid, years, AGG_MENT, AGG_MENT_yr2, AGG_MENT_yr0)
+
+
+################################################################################
+###                             Distn. of Outcomes                           ###
+################################################################################
 
 ################################## VLOAD #######################################
 
 # What is the distribution of VLOAD
-summary(complete_analysis_data$VLOAD)
-
-# Plot VLOAD trajectories
-ggplot(complete_analysis_data, aes(y = VLOAD, 
-                          x = years, 
-                          colour = factor(newid))) + 
-  geom_line() + 
-  geom_point() +
-  theme_lucid() + 
-  theme(legend.position = "none")
-
-# Notice some outliers here - what are unrealistic values of VLOAD?
+summary(both_yrs_data$VLOAD_yr2)
 
 # Histogram of the distribution of VLOAD
-ggplot(complete_analysis_data, aes(x = VLOAD)) + 
-  geom_histogram(bins = 20) +
+ggplot(both_yrs_data, aes(x = VLOAD_yr2)) + 
+  geom_histogram(bin2 = 40,
+                 fill = "blue",
+                 col = "black") +
   theme_lucid() + 
   theme(legend.position = "none")
 
 # Log transform VLOAD
-ggplot(complete_analysis_data, aes(x = log(VLOAD))) + 
-  geom_histogram(bins = 20,
+ggplot(both_yrs_data, aes(x = log10(VLOAD_yr2))) + 
+  geom_histogram(bins = 30,
                  fill = "blue",
                  col = "black") +
   geom_density() + 
   theme_lucid() + 
   theme(legend.position = "none")
 
-# Calculate VLOAD diff between year 1 and year 2
-complete_analysis_data$diff_VLOAD <- complete
+## Formal assessment of normality
+shapiro.test(both_yrs_data$VLOAD_yr2) 
+# We reject the H0 and data is not normally distributed...
+# However, Camille said log10 distribution is sufficient
 
-## Based on this, might consider mixture modeling
-## Frequentist
-# https://jef.works/blog/2017/08/05/a-practical-introduction-to-finite-mixture-models/
-## Bayesian
-# https://rpubs.com/jensroes/mixture-models-tutorial
-
-
-# Square root
-ggplot(complete_analysis_data, aes(x = sqrt(VLOAD))) + 
-  geom_histogram() + 
-  theme_lucid() + 
-  theme(legend.position = "none")
 
 ################################################################################
 
 ################################## LEU3N #######################################
 
 # What is the distribution of LEU3n
-summary(both_yrs_data$LEU3N)
+summary(both_yrs_data$LEU3N_yr2)
 
-# Plot VLOAD trajectories
-ggplot(both_yrs_data, aes(y = LEU3N, 
-                          x = years, 
-                          colour = factor(newid))) + 
-  geom_path(aes(group = newid)) + #spaghetti plot
-  geom_point() +
-  theme_lucid() + 
-  theme(legend.position = "none") + 
-  facet_grid( ~ hard_drugs)
-  
-## Look into plotting mean trajectories
-ggplot(complete_analysis_data, aes(y = LEU3N, 
-                          x = years, 
-                          colour = factor(newid))) + 
-  geom_path(aes(group = newid)) + #spaghetti plot
-  geom_point() +
-  theme_lucid() + 
-  theme(legend.position = "none") + 
-  facet_grid( ~ hard_drugs) +
-  stat_summary(fun.y = mean,
-               geom = "line",
-               lwd = 1, aes(group = 1))
-
-
-############## Randomly sample like 20 subjects
-set.seed(645)
-plot_ids <- complete_analysis_data %>% 
-  distinct(newid) %>% 
-  sample_n(30) %>% 
-  # Obtain just the ids
-  pull(newid)
-
-# Subset analysis data frame
-plot_data <- complete_analysis_data %>% 
-  filter(newid %in% plot_ids) %>% 
-  filter(!is.na(LEU3N))
-
-# Plot
-# Plot VLOAD trajectories
-ggplot(plot_data, aes(y = LEU3N, 
-                          x = years, 
-                          colour = factor(newid))) + 
-  geom_line() + 
-  geom_point() +
-  theme_lucid() + 
-  theme(legend.position = "none") + 
-  facet_grid( ~ hard_drugs)
-# On initial glance, looking like CD4 counts increasing
-
-# Histogram of the distribution of VLOAD
-ggplot(both_yrs_data, aes(x = LEU3N)) + 
-  geom_histogram(bins = 20,
+# Histogram of the distribution of LEU3N
+ggplot(both_yrs_data, aes(x = LEU3N_yr2)) + 
+  geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
   theme_lucid() + 
   theme(legend.position = "none")
 
-# Log transform VLOAD
-ggplot(complete_analysis_data, aes(x = log(LEU3N))) + 
-  geom_histogram(bins = 20) +
+# Log transform LEU3N - do not log transform
+ggplot(both_yrs_data, aes(x = log10(LEU3N_yr2))) + 
+  geom_histogram(bins = 30,
+                 fill = "seagreen3",
+                 col = "black") +
   theme_lucid() + 
   theme(legend.position = "none")
-## Log transformation too strong - conduct a test of normality to determine
-shapiro.test(complete_analysis_data$LEU3N) 
-# We reject the H0 and data is not normally distributed
 
-
-# Sqrt transform VLOAD
-ggplot(complete_analysis_data, aes(x = sqrt(LEU3N))) + 
-  geom_histogram(bins = 20) +
+# Sqrt transform VLOAD 
+ggplot(both_yrs_data, aes(x = sqrt(LEU3N_yr2))) + 
+  geom_histogram(bins = 30,
+                 fill = "seagreen3",
+                 col = "black") +
   theme_lucid() + 
   theme(legend.position = "none")
+# However, due to interpretations with square root we will not proceed with this
+
+## Formal assessment of normality
+shapiro.test(both_yrs_data$LEU3N_yr2) 
+# We reject the H0 and data is not normally distributed but we proceed anyways
+
 
 ################################################################################
 
 ################################## AGG MENT ####################################
 
-summary(complete_analysis_data$AGG_MENT)
+summary(both_yrs_data$AGG_MENT_yr2)
 
 # Histogram of distribution
-ggplot(complete_analysis_data, aes(x = (AGG_MENT))) + 
+ggplot(both_yrs_data, aes(x = (AGG_MENT_yr2))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none") 
 
 # Log transform
-ggplot(complete_analysis_data, aes(x = sqrt(AGG_MENT))) + 
+ggplot(both_yrs_data, aes(x = sqrt(AGG_MENT_yr2))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none") 
 
-### Based on this consider beta regression
-# Would have to revert percentages to decimal values
-complete_analysis_data$prop_AGG_MENT <- complete_analysis_data$AGG_MENT / 100
-
 # Histogram of this
-ggplot(complete_analysis_data, aes(x = (prop_AGG_MENT))) + 
+ggplot(both_yrs_data, aes(x = (prop_AGG_MENT))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none") 
@@ -520,10 +490,10 @@ ggplot(complete_analysis_data, aes(x = (prop_AGG_MENT))) +
 ################################## AGG PHYS ####################################
 
 # What is the distribution of Aggregate phsycial quality of life score
-summary(complete_analysis_data$AGG_PHYS)
+summary(both_yrs_data$AGG_PHYS)
 
 # Histogram of distribution
-ggplot(complete_analysis_data, aes(x = (AGG_PHYS))) + 
+ggplot(both_yrs_data, aes(x = (AGG_PHYS))) + 
   geom_histogram(fill = "orange", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none")
@@ -531,15 +501,15 @@ ggplot(complete_analysis_data, aes(x = (AGG_PHYS))) +
 # We also observe a left skew here
 ### We will also consider beta regression with this
 # Convert percentages to decimal values
-complete_analysis_data$prop_AGG_PHYS <- complete_analysis_data$AGG_PHYS / 100
+both_yrs_data$prop_AGG_PHYS <- both_yrs_data$AGG_PHYS / 100
 
 # Histogram of this
-ggplot(complete_analysis_data, aes(x = (prop_AGG_PHYS))) + 
+ggplot(both_yrs_data, aes(x = (prop_AGG_PHYS))) + 
   geom_histogram(fill = "orange", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none")
 
-summary(complete_analysis_data$prop_AGG_PHYS)
+summary(both_yrs_data$prop_AGG_PHYS)
 
 
 ################################################################################
@@ -548,7 +518,7 @@ summary(complete_analysis_data$prop_AGG_PHYS)
 
 ################################## Hard Drugs  #################################
 
-table(complete_analysis_data$hard_drugs)
+table(both_yrs_data$hard_drugs)
 # 0   1 
 # 649  66
 # > table(baseline$hard_drugs)
@@ -565,11 +535,11 @@ ggplot(baseline, aes(x = factor((hard_drugs)),
 
 #################################### BMI ######################################
 
-summary(complete_analysis_data$BMI)
+summary(both_yrs_data$BMI)
 # There are some values that have 999 and even -1
 
 # Plot the distribution
-ggplot(complete_analysis_data, aes(x = BMI)) + 
+ggplot(both_yrs_data, aes(x = BMI)) + 
   geom_histogram(bins = 10) + 
   theme_lucid()
 
@@ -622,7 +592,7 @@ ggplot(baseline, aes(x = factor(na.omit(RACE)),
 table(factor(baseline$SMOKE))
 # 1   2   3 
 # 71  81 128 
-table(factor(complete_analysis_data$SMOKE))
+table(factor(both_yrs_data$SMOKE))
 # 1   2   3 
 # 120 142 202 
 
@@ -659,10 +629,10 @@ ggplot(baseline, aes(x = factor(na.omit(EDUCBAS)),
 
 ################################## Adherence ###################################
 
-table(complete_analysis_data$ADH)
+table(both_yrs_data$ADH)
 
 # Barplot
-ggplot(complete_analysis_data, aes(x = ADH)) + 
+ggplot(both_yrs_data, aes(x = ADH)) + 
   geom_bar() + 
   theme_lucid()
 
