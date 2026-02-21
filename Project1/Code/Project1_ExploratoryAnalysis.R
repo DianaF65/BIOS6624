@@ -658,9 +658,13 @@ ggplot(wide_bth_yrs, aes(x = factor(ADH_yr2),
 ###                               Final Data frame                           ###
 ################################################################################
 
+# Remove the original education and race variables
+wide_bth_yrs <- subset(wide_bth_yrs, 
+                       select = -c(RACE, EDUCBAS))
+
 # Save the final data frame for analysis
 write.csv(wide_bth_yrs,
-          "../Data/hiv_data_final.csv")
+          "../Data/final_hiv_data.csv")
 
 
 ################################################################################
@@ -674,62 +678,32 @@ write.csv(wide_bth_yrs,
 # new id
 wide_bth_yrs$newid <- as.factor(wide_bth_yrs$newid)
 wide_bth_yrs$SMOKE <- as.factor(wide_bth_yrs$SMOKE)
-wide_bth_yrs$RACE <- as.factor(wide_bth_yrs$RACE)
-wide_bth_yrs$EDUCBAS <- as.factor(wide_bth_yrs$EDUCBAS)
-wide_bth_yrs$ART <- as.factor(wide_bth_yrs$ART)
-wide_bth_yrs$everART <- as.factor(wide_bth_yrs$everART)
-wide_bth_yrs$ADH <- as.factor(wide_bth_yrs$ADH)
+wide_bth_yrs$collapse_RACE <- as.factor(wide_bth_yrs$collapse_RACE)
+wide_bth_yrs$collapsed_EDUCBAS <- as.factor(wide_bth_yrs$collapsed_EDUCBAS)
+wide_bth_yrs$ADH_yr2 <- as.factor(wide_bth_yrs$ADH_yr2)
+wide_bth_yrs$hard_drugs <- as.factor(wide_bth_yrs$hard_drugs)
 
-# Create subject level summaries - NOT observation level
-data <- data %>%
-  group_by(newid, years) %>%
-  summarise(
-    mean_vload = mean(VLOAD, na.rm = TRUE),
-    mean_bmi = mean(BMI, na.rm = TRUE),
-    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
-    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-    mean_leu3n = mean(LEU3N, na.rm = TRUE),
-    mean_agg_ment = mean(AGG_MENT, na.rm = TRUE),
-    mean_agg_phys = mean(AGG_PHYS, na.rm = TRUE),
-    mean_age = mean(age, na.rm = TRUE),
-    .groups = "drop")
 
-# Define variables for the table one
-variables <- colnames(data)
+### Attempt 2
+library(table1)
 
-# Separate by collection time
-strata <- "years"
+# Create table 1
+table1(~ VLOAD_yr2 + LEU3N_yr2 + 
+         AGG_MENT_yr2 + AGG_PHYS_yr2 +
+         hard_drugs + ADH_yr2 + SMOKE + collapse_RACE + collapsed_EDUCBAS
+       + BMI + age, 
+       data = wide_bth_yrs)
 
-# modify labels
-# var_label(data$mean_booklet) <- "Booklet Minutes"
-# var_label(data$mean_mem) <- "MEM Minutes"
-# var_label(data$mean_wake) <- "Minutes Since Wake"
-# var_label(data$mean_dhea) <- "DHEA (nmol/L)"
-# var_label(data$mean_cort) <- "Cortisol (nmol/L)"
+# Separate by hard drug exposure at baseline
+table1(~ VLOAD_yr2 + LEU3N_yr2 + 
+         AGG_MENT_yr2 + AGG_PHYS_yr2 +
+         ADH_yr2 + SMOKE + collapse_RACE + collapsed_EDUCBAS
+       + BMI + age | hard_drugs, 
+       data = wide_bth_yrs)
 
-# Create the table one
-studypop_tab1 <- CreateTableOne(
-  vars = variables,
-  strata = strata,
-  test = FALSE,
-  data = data
-)
-
-studypop_tab_forkbl <- print(
-  studypop_tab1,
-  varLabels = TRUE,
-  printToggle = FALSE
-)
-
-# Display with kbl
-kbl(
-  studypop_tab_forkbl,
-  caption = "Summary Per Subject For Each Year",
-  booktabs = TRUE,
-  align = "c"
-) %>%
-  kable_styling(latex_options = "hold_position", font_size = 10)
-
+################################################################################
+###                                   STAN                                  ###
+################################################################################
 
 
 ################################ STAN INSTALLATION #############################
