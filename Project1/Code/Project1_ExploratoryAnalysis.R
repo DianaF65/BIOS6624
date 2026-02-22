@@ -475,11 +475,6 @@ ggplot(wide_bth_yrs, aes(x = sqrt(AGG_MENT_yr2))) +
   theme_lucid() + 
   theme(legend.position = "none") 
 
-# Histogram of this
-ggplot(wide_bth_yrs, aes(x = (prop_AGG_MENT))) + 
-  geom_histogram(fill = "purple", col = "black") + 
-  theme_lucid() + 
-  theme(legend.position = "none") 
 
 ################################## AGG PHYS ####################################
 
@@ -488,23 +483,12 @@ summary(wide_bth_yrs$AGG_PHYS_yr2)
 
 # Histogram of distribution
 ggplot(wide_bth_yrs, aes(x = (AGG_PHYS_yr2))) + 
-  geom_histogram(bins = 40,
+  geom_histogram(bins = 30,
                  fill = "orange", col = "black") + 
   theme_lucid() + 
-  theme(legend.position = "none")
-
-# We also observe a left skew here
-### We will also consider beta regression with this
-# Convert percentages to decimal values
-wide_bth_yrs$prop_AGG_PHYS <- wide_bth_yrs$AGG_PHYS / 100
-
-# Histogram of this
-ggplot(wide_bth_yrs, aes(x = (prop_AGG_PHYS))) + 
-  geom_histogram(fill = "orange", col = "black") + 
-  theme_lucid() + 
-  theme(legend.position = "none")
-
-summary(wide_bth_yrs$prop_AGG_PHYS)
+  theme(legend.position = "none") + 
+  scale_x_continuous(breaks = seq(0, 100, by = 10),
+                     limits = c(0, 100))
 
 
 ################################################################################
@@ -651,7 +635,8 @@ wide_bth_yrs <- subset(wide_bth_yrs,
 
 # Save the final data frame for analysis
 write.csv(wide_bth_yrs,
-          "../Data/final_hiv_data.csv")
+          "../Data/final_hiv_data.csv",
+          row.names = FALSE)
 
 
 ################################################################################
