@@ -72,7 +72,19 @@ data$log_VLOAD_yr0 <- log10(data$VLOAD_yr0)
 The investigator is interested in knowing if differences in adherence to HAART can explain differences in the outcomes between subjects who did and did not report hard hard drug use at baseline.
 In other words, we aim to assess if Adherence to HAART is a mediator - does it explain differences in the outcomes between drug use group for all 4 primary outcomes?
 
+A mediator is defined as an intermediate variable on the causal path between an independent variable and a dependent variable.
+
+In ou particular case, the possible mediator of interest is adherence to HAART, the independent variable is hard-drug use at basleine, and the dependent variable is one of: VLOAD, LEU3N, AGG MENT, or AGG PHYS. 
+
+The indirect effect is the effect of hard drug use on the outcome that works through HAART adherence. 
+The direct effect is the effect of hard drug use on the outcome that does NOT work through HAART adherence. In other words, the remaining effect after adjusting for the mediator. 
+
+We will use this RPubs tutorial for Mediation analyses: 
+[Mediation Analysis Using R](https://rpubs.com/mbounthavong/mediation_analysis_r) which uses the [mediation](https://cran.r-project.org/web/packages/mediation/index.html) R package. 
+
 # VLOAD 
+
+
 
 
 
