@@ -64,6 +64,7 @@ data <- read.csv("../Data/final_hiv_data.csv")
 
 # Add a logged VLOAD variable
 data$log_VLOAD <- log10(data$VLOAD_yr2)
+data$log_VLOAD_yr0 <- log10(data$VLOAD_yr0)
 ```
 
 
@@ -78,32 +79,51 @@ Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who re
 
 ```{r, echo = F}
 # Fit the model for VLOAD - with LEU3N
-vload_mod1 <- lm(log_VLOAD ~ LEU3N_yr2 + factor(hard_drugs)
+vload_mod1 <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
 
 # Fit the model for VLOAD - without LEU3N
-vload_mod2 <- lm(log_VLOAD ~ factor(hard_drugs)
+vload_mod2 <- lm(log_VLOAD ~ log_VLOAD_yr0 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
 
 # Compare AIC
 AIC(vload_mod1, vload_mod2)
+# Proceed with LEU3N in model
 
-# Conduct a LRT 
-anova(vload_mod1, vload_mod2)
-# Yes, including LEU3n significantly improves model fit
+# How about the QOL Scores
+# Fit the model for VLOAD with AGG MENT
+vload_mod3 <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
+                   + BMI + age
+                   + factor(SMOKE) + factor(ADH_yr2)
+                   + AGG_MENT_yr0,
+                  data = data)
+
+# Compare AIC
+AIC(vload_mod1, vload_mod3)
+# Basically equivalent - not contuing with AGG MENT
+
+# Model with AGG PHYS
+vload_mod5 <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
+                   + BMI + age
+                   + factor(SMOKE) + factor(ADH_yr2)
+                   + AGG_PHYS_yr0,
+                  data = data)
+# Compare AGG PHYS and AGG MENT models
+AIC(vload_mod1, vload_mod5)
+# They are basically equivalent - with the simpler models, no QOL scores
 
 # Final model 
-vload_model <- lm(log_VLOAD ~ LEU3N_yr2 + factor(hard_drugs)
+VLOAD_model <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
 
 # Summary of the model
-# summary(vload_model)
+# summary(VLOAD_model)
 ```
 
 ```{r, echo = F, out.width="80%", fig.align='center'}
@@ -111,7 +131,7 @@ vload_model <- lm(log_VLOAD ~ LEU3N_yr2 + factor(hard_drugs)
 # From: 
 
 # Residual plot
-augment(vload_model) |>
+augment(VLOAD_model) |>
   ggplot(aes(x = .fitted, y = .resid)) +
   geom_point(size = 0.8) +
   # geom_smooth(se = FALSE) +
@@ -122,7 +142,7 @@ augment(vload_model) |>
 
 ```{r, echo = F, out.width="80%", fig.align='center'}
 # QQ Plot
-augment(vload_model) |>
+augment(VLOAD_model) |>
   ggplot(aes(sample = .std.resid)) +
   geom_qq() +
   geom_qq_line() +
@@ -135,10 +155,10 @@ augment(vload_model) |>
 Interpreting the results: 
 
 ```{r, echo = F}
-summary(vload_model)
+summary(VLOAD_model)
 ```
 
-After controlling for covariates, there is not significant difference (p = 0.22) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
+After controlling for covariates, there is not significant difference (p = 0.96) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
 
 <!-- REMEMBER TO INTERPRET ON LOG SCALE -->
 
@@ -168,7 +188,7 @@ anova(leu3n_mod1, leu3n_mod2)
 # Yes, including LEU3n significantly improves model fit
 
 # Final model 
-LEU3N_model <- lm(log_LEU3N ~ LEU3N_yr2 + factor(hard_drugs)
+LEU3N_model <- lm(LEU3N_yr2 ~ VLOAD_yr2 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
