@@ -67,6 +67,14 @@ data$log_VLOAD <- log10(data$VLOAD_yr2)
 data$log_VLOAD_yr0 <- log10(data$VLOAD_yr0)
 ```
 
+# Median Analysis
+
+The investigator is interested in knowing if differences in adherence to HAART can explain differences in the outcomes between subjects who did and did not report hard hard drug use at baseline.
+In other words, we aim to assess if Adherence to HAART is a mediator - does it explain differences in the outcomes between drug use group for all 4 primary outcomes?
+
+# VLOAD 
+
+
 
 # Primary Outcomes
 
@@ -126,6 +134,8 @@ VLOAD_model <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
 # summary(VLOAD_model)
 ```
 
+Model diagnostics: 
+
 ```{r, echo = F, out.width="80%", fig.align='center'}
 ### Model diagnostics
 # From: 
@@ -169,26 +179,50 @@ After controlling for covariates, there is not significant difference (p = 0.96)
 
 ```{r, echo = F}
 # Fit the model for LEU3N - with VLOAD
-leu3n_mod1 <- lm(LEU3N_yr2 ~ VLOAD_yr2 + factor(hard_drugs)
+leu3n_mod1 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + VLOAD_yr0 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
 
 # Fit the model for LEU3N - without VLOAD
-leu3n_mod2 <- lm(LEU3N_yr2 ~ factor(hard_drugs)
+leu3n_mod2 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
 
 # Compare AIC
 AIC(leu3n_mod1, leu3n_mod2)
+# These models are equivalent
 
 # Conduct a LRT 
 anova(leu3n_mod1, leu3n_mod2)
-# Yes, including LEU3n significantly improves model fit
+# No, including VLOAD does not significantly improve model fit
+
+## QOL Scores
+# AGG MENT
+leu3n_mod3 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
+                   + BMI + age
+                   + factor(SMOKE) + factor(ADH_yr2)
+                   + AGG_MENT_yr0,
+                  data = data)
+
+# Compare with AIC
+AIC(leu3n_mod2, leu3n_mod3)
+# No difference again - proceeding with simpler model 
+
+# AGG PHYS
+leu3n_mod4 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
+                   + BMI + age
+                   + factor(SMOKE) + factor(ADH_yr2)
+                   + AGG_PHYS_yr0,
+                  data = data)
+
+# Compare with AIC
+AIC(leu3n_mod2, leu3n_mod4)
+# No difference again - proceeding with simpler model 
 
 # Final model 
-LEU3N_model <- lm(LEU3N_yr2 ~ VLOAD_yr2 + factor(hard_drugs)
+LEU3N_model <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
                    + BMI + age
                    + factor(SMOKE) + factor(ADH_yr2),
                   data = data)
@@ -196,6 +230,54 @@ LEU3N_model <- lm(LEU3N_yr2 ~ VLOAD_yr2 + factor(hard_drugs)
 # Summary of the model
 # summary(LEU3N_model)
 ```
+
+Model diagnostics: 
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+### Model diagnostics
+# From: 
+
+# Residual plot
+augment(LEU3N_model) |>
+  ggplot(aes(x = .fitted, y = .resid)) +
+  geom_point(size = 0.8) +
+  # geom_smooth(se = FALSE) +
+  labs(x = "Fitted value", y = "Residual") + 
+  theme_lucid()
+
+```
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+# QQ Plot
+augment(LEU3N_model) |>
+  ggplot(aes(sample = .std.resid)) +
+  geom_qq() +
+  geom_qq_line() +
+  labs(title = "Normal Q-Q plot of standardized residuals",
+       x = "Theoretical quantiles", y = "Observed quantiles") + 
+  theme_lucid()
+
+```
+
+
+Interpreting the results: 
+
+```{r, echo = F}
+summary(LEU3N_model)
+
+# Get the CI
+# confint(LEU3N_model)
+```
+After adjusting for covariates, there is a significant difference (p < 0.0001)
+in CD4+ T cell count 2 years after HART between subjects who did and did not report hard drug use at baseline. 
+
+On average, CD4+ T cell count was about 176.59 units lower (95% CI: (-239.62, -113.58)) for subjects that reported hard drug use at baseline compared to non-hard drug use at baseline, 2 years after HAART. This is a clinically significant meaningful difference and is what we hypothesized for differences between hard-drug users and non-hard drug users. 
+
+\newpage
+
+
+
+
 
 
 
