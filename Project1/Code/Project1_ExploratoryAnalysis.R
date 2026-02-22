@@ -60,7 +60,7 @@ cols <- c("newid",
           "VLOAD", "LEU3N",
           "SMOKE", "RACE", "EDUCBAS", "age",
           "BMI",
-          "ART", "everART", "years",  "hard_drugs",
+          "ART", "years",  "hard_drugs",
           "ADH")
 
 # Subset analysis data to these cols
@@ -80,63 +80,23 @@ summary(analysis_data)
 # We note some concerning values for BMI: -1 and 999
 summary(analysis_data$BMI)
 
-# What is an unreasonable BMI?
-# Based on this google and this article: 
-# https://pmc.ncbi.nlm.nih.gov/articles/PMC2930234/#:~:text=The%20BMI%20is%20a%20surrogate,upper%20limit%20of%20'starvation'.
-# We will filter out individuals that have a BMI within the ranges of (10, 60)
-# Anything less than 10 indicates severe starvation and > 60 is extreme obesity
-
-# Filter out unrealistic bmi values from data set
-# We only care about baseline values
-# Create data frame to year 1 then filter out these BMI values
-year0 <- analysis_data %>% 
-  # Filter to baseline
-  filter(years == 0) %>% # 715 obs and 715 subjects
-  # Filter BMI values
-  filter(BMI > 10 & BMI < 60) # 671 obs and 671 subjects
-# Double check this worked
-summary(year0$BMI) 
-
-# Create data frame with year 2 data
-year2 <- analysis_data %>% 
-  filter(years == 2)
-# 506 obs and 506 subjects
-
-# Merge these two data frames by id
-merged_data <- rbind(year0, year2)
-
-# Organize df so subjects are together
-merged_data <- merged_data %>% 
-  # group_by(newid) %>% # This does something weird with the df...
-  arrange(newid)
-
-### Clean environment
-rm(year0)
-rm(year2)
-
-# Merged data will have BMIs out of this range
-summary(merged_data$BMI)
-
-### From 1221 obs to 1177 obs
-### From 715 subjects to 689 subjects
-
 ################################ Missingness ###################################
 
 #### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 
 # Cumulative sum of missingness for each variable
-naniar::miss_var_summary(merged_data)
+naniar::miss_var_summary(analysis_data)
 # Looks like ADH has a lot of missingness but this is expected since adh is
 # measured at second visit
 
 # How many variables 0 - 5 missing values
-naniar::miss_case_table(merged_data)
+naniar::miss_case_table(analysis_data)
 
 # Visualize the missingness
-vis_dat(merged_data)
+vis_dat(analysis_data)
 
 # Another way to visualize missingness
-missing_plot(merged_data)
+missing_plot(analysis_data)
 
 ###### Investigating any patterns of missingness below
 
@@ -155,7 +115,7 @@ explanatory <- c("AGG_PHYS", "AGG_MENT", "SMOKE", "RACE",
 # VLOAD
 vload <- c("VLOAD")
 
-merged_data %>% 
+analysis_data %>% 
   missing_pattern(vload, explanatory)
 
 # This plot lets us see which variables are missing together. 
@@ -174,14 +134,14 @@ merged_data %>%
 
 
 ### Compare Not Missing and Missing for 
-merged_data %>% 
+analysis_data %>% 
   missing_compare(vload, explanatory) %>% 
   knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
 
 ## Looking at some categorical variables since there were some issues
 # Usingn simulated pvalues from chisquare test
 # SMOKE 
-merged_data %>% 
+analysis_data %>% 
   dplyr::summarise(
     pval_smoke = chisq.test(SMOKE, VLOAD, simulate.p.value = TRUE)$p.value,
     pval_race = chisq.test(RACE, VLOAD, simulate.p.value = TRUE)$p.value,
@@ -199,13 +159,13 @@ merged_data %>%
 # VLOAD
 leu3n <- c("LEU3N")
 
-merged_data %>% 
+analysis_data %>% 
   missing_pattern(leu3n, explanatory)
 
 # No alarming patterns here
 
 #### Compare Not Missing and Missing
-merged_data %>% 
+analysis_data %>% 
   missing_compare(leu3n, explanatory) %>% 
   knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
 
@@ -216,7 +176,7 @@ merged_data %>%
 ## Looking at some categorical variables since there were some issues
 # Usingn simulated pvalues from chisquare test
 # SMOKE 
-merged_data %>% 
+analysis_data %>% 
   dplyr::summarise(
     pval_smoke = chisq.test(SMOKE, LEU3N, simulate.p.value = TRUE)$p.value,
     pval_race = chisq.test(RACE, LEU3N, simulate.p.value = TRUE)$p.value,
@@ -238,10 +198,10 @@ explanatory <- c("SMOKE", "RACE",
 
 agg_ment <- c("AGG_MENT")
 
-merged_data %>% 
+analysis_data %>% 
   missing_pattern(agg_ment, explanatory)
 
-merged_data %>% 
+analysis_data %>% 
   group_by(years) %>% 
   summarise(means = mean(AGG_MENT, na.rm = TRUE))
 # 1     0  45.4
@@ -257,11 +217,11 @@ explanatory <- c("SMOKE", "RACE",
                  "hard_drugs", "ADH")
 agg_phys <- c("AGG_PHYS")
 
-merged_data %>% 
+analysis_data %>% 
   missing_pattern(agg_phys, explanatory)
 
 # No concerning patterns here either
-merged_data %>% 
+analysis_data %>% 
   group_by(years) %>% 
   summarise(means = mean(AGG_PHYS, na.rm = TRUE))
 # 1     0  50.1
@@ -269,7 +229,7 @@ merged_data %>%
 ## Not much difference in means between the two years
 
 #### Compare Not Missing and Missing
-merged_data %>% 
+analysis_data %>% 
   missing_compare(agg_phys, explanatory) %>% 
   knitr::kable(row.names=FALSE, align = c("l", "l", "r", "r", "r")) 
 
@@ -282,14 +242,14 @@ merged_data %>%
 exclude_col <- "ADH"
 
 # Get logical vector of rows that are complete except for ADH
-complete_rows <- complete.cases(merged_data[ ,
-        setdiff(names(merged_data), exclude_col)])
+complete_rows <- complete.cases(analysis_data[ ,
+        setdiff(names(analysis_data), exclude_col)])
 
 # Create data frame
-complete_analysis_data <- merged_data[complete_rows, ]
+complete_analysis_data <- analysis_data[complete_rows, ]
 ## We will proceed with this data frame
-# From 1177 obs to 1085 obs
-# From 689 obs. to 660 subjects
+# From 1221 obs to 1101 obs.
+# From 715 subjecs to 663 subjects
 
 # Assess missingness once again
 # Cumulative sum of missingness for each variable
@@ -314,8 +274,8 @@ both_yrs_data <- complete_analysis_data %>%
   group_by(newid) %>%
   filter(n_distinct(years) == 2) %>%
   ungroup()
-# From 1085 obs to 850 obs
-# From 689 subjects to 425 obs
+# From 1101 obs to 876 obs
+# From 663 subjects to 438 subjects
 
 # Assess missingness once again
 # Cumulative sum of missingness for each variable
@@ -338,7 +298,7 @@ missing_plot(both_yrs_data)
 # Data frame of only baseline information
 # Subset data to just baseline aka year 1 and one observat
 baseline <- both_yrs_data[both_yrs_data$years == 0, ]
-# There are 425 subjects at baseline
+# There are 438 subjects at baseline
 
 # How many were on hard drugs at baseline?
 baseline %>% 
@@ -374,7 +334,7 @@ table(baseline$hard_drugs)
 # Create vector of covariates for data manipulation
 covariates <- c("BMI", "SMOKE", "RACE",
                "EDUCBAS",  "age",
-               "hard_drugs" )
+               "hard_drugs")
 
 
 wide_bth_yrs <- both_yrs_data %>%
@@ -397,6 +357,33 @@ wide_bth_yrs <- both_yrs_data %>%
     # Baseline for all other covariates
     across(all_of(covariates), ~ .x[years == 0])
   )
+
+# Examining data frame
+summary(wide_bth_yrs)
+
+#### Filtering out abnormal BMI values
+
+# Looking into BMI
+summary(wide_bth_yrs$BMI)
+# Need to filter out some unrealisitc BMI values.
+
+# What is an unreasonable BMI?
+# Based on this google and this article: 
+# https://pmc.ncbi.nlm.nih.gov/articles/PMC2930234/#:~:text=The%20BMI%20is%20a%20surrogate,upper%20limit%20of%20'starvation'.
+# We will filter out individuals that have a BMI within the ranges of (10, 60)
+# Anything less than 10 indicates severe starvation and > 60 is extreme obesity
+
+# Filter out unrealistic bmi values from data set
+# We only care about baseline values
+# Create data frame to year 1 then filter out these BMI values
+wide_bth_yrs <- wide_bth_yrs %>% 
+  # Filter BMI values
+  filter(BMI > 10 & BMI < 60) 
+# From 438 obs. to 425 obs.
+# Same subjects
+
+# Double check this worked
+summary(wide_bth_yrs$BMI) 
 
 
 ################################################################################
