@@ -236,46 +236,16 @@ analysis_data %>%
 # Values do not significantly differ between missing and not missing 
 # Nothing concerning here
 
-
-######################### Complete Case Data frame (-ADH) #####################
-# Create data frame with complete observations - with exception of ADH
-exclude_col <- "ADH"
-
-# Get logical vector of rows that are complete except for ADH
-complete_rows <- complete.cases(analysis_data[ ,
-        setdiff(names(analysis_data), exclude_col)])
-
-# Create data frame
-complete_analysis_data <- analysis_data[complete_rows, ]
-## We will proceed with this data frame
-# From 1221 obs to 1101 obs.
-# From 715 subjecs to 663 subjects
-
-# Assess missingness once again
-# Cumulative sum of missingness for each variable
-naniar::miss_var_summary(complete_analysis_data)
-
-# How many variables 0 - 5 missing values
-naniar::miss_case_table(complete_analysis_data)
-# All just missing ADH values
-
-# Visualize the missingness
-vis_dat(complete_analysis_data)
-# Only see missingness for ADH variable
-
-# Another way to visualize missingness
-missing_plot(complete_analysis_data)
-
 ########################## Subjects with Year1 & Year 2 ########################
 
 ####### Filter to complete observations - OBS. for BOTH Year 0 and year 2 ######
 # Filter to these subjects
-both_yrs_data <- complete_analysis_data %>%
+both_yrs_data <- analysis_data %>%
   group_by(newid) %>%
   filter(n_distinct(years) == 2) %>%
   ungroup()
-# From 1101 obs to 876 obs
-# From 663 subjects to 438 subjects
+# From 1221 obs to 1012 obs
+# From 715 subjects to 506 subjects
 
 # Assess missingness once again
 # Cumulative sum of missingness for each variable
@@ -293,22 +263,6 @@ vis_dat(both_yrs_data)
 missing_plot(both_yrs_data)
 
 
-################################# Baseline DF ##################################
-
-# Data frame of only baseline information
-# Subset data to just baseline aka year 1 and one observat
-baseline <- both_yrs_data[both_yrs_data$years == 0, ]
-# There are 438 subjects at baseline
-
-# How many were on hard drugs at baseline?
-baseline %>% 
-  summarise(prop_hd = mean(hard_drugs, na.rm = TRUE))
-# 0.0824 not on hard drugs
-
-table(baseline$hard_drugs)
-# 0   1 
-# 390  35
-# So around 9% were on hard drugs at baseline
 
 ################################################################################
 ###                        Models for Primary RQs                           ###
@@ -336,7 +290,7 @@ covariates <- c("BMI", "SMOKE", "RACE",
                "EDUCBAS",  "age",
                "hard_drugs")
 
-
+# Separate variables for years 0 and 2
 wide_bth_yrs <- both_yrs_data %>%
   group_by(newid) %>%
   summarise(
@@ -357,13 +311,14 @@ wide_bth_yrs <- both_yrs_data %>%
     # Baseline for all other covariates
     across(all_of(covariates), ~ .x[years == 0])
   )
+# 506 obs for 506 subjects
 
 # Examining data frame
 summary(wide_bth_yrs)
 
 #### Filtering out abnormal BMI values
 
-# Looking into BMI
+####### Looking into BMI
 summary(wide_bth_yrs$BMI)
 # Need to filter out some unrealisitc BMI values.
 
@@ -379,12 +334,54 @@ summary(wide_bth_yrs$BMI)
 wide_bth_yrs <- wide_bth_yrs %>% 
   # Filter BMI values
   filter(BMI > 10 & BMI < 60) 
-# From 438 obs. to 425 obs.
+# From 506 obs to 488 obs.
 # Same subjects
 
 # Double check this worked
 summary(wide_bth_yrs$BMI) 
+# Yes, BMI is in a good range now
 
+####### Reassessing Missingness again
+# We would like to remove subjects that have missing information 
+
+# Cumulative sum of missingness for each variable
+naniar::miss_var_summary(wide_bth_yrs)
+# We see some NAs for VOAD, LEU3N, and the QOL scores for Year 2
+
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(wide_bth_yrs)
+# All just missing ADH values
+
+# Visualize the missingness
+vis_dat(wide_bth_yrs)
+# Only see missingness for ADH variable
+
+# Another way to visualize missingness
+missing_plot(wide_bth_yrs)
+
+######################### Complete Case Data frame (-ADH) #####################
+
+# Create data frame
+complete_analysis_data <- wide_bth_yrs[complete.cases(wide_bth_yrs), ]
+## We will proceed with this data frame
+# From 488 obs to 463 obs.
+
+# Assess missingness once again
+# Cumulative sum of missingness for each variable
+naniar::miss_var_summary(complete_analysis_data)
+
+# How many variables 0 - 5 missing values
+naniar::miss_case_table(complete_analysis_data)
+# All just missing ADH values
+
+# Visualize the missingness
+vis_dat(complete_analysis_data)
+# Only see missingness for ADH variable
+
+# Another way to visualize missingness
+missing_plot(complete_analysis_data)
+
+# Looks good for analysis
 
 ################################################################################
 ###                             Distn. of Outcomes                           ###
@@ -393,18 +390,18 @@ summary(wide_bth_yrs$BMI)
 ################################## VLOAD #######################################
 
 # What is the distribution of VLOAD
-summary(wide_bth_yrs$VLOAD_yr2)
+summary(complete_analysis_data$VLOAD_yr2)
 
 # Histogram of the distribution of VLOAD
-ggplot(wide_bth_yrs, aes(x = VLOAD_yr2)) + 
-  geom_histogram(bin2 = 40,
+ggplot(complete_analysis_data, aes(x = VLOAD_yr2)) + 
+  geom_histogram(bins = 40,
                  fill = "blue",
                  col = "black") +
   theme_lucid() + 
   theme(legend.position = "none")
 
 # Log transform VLOAD
-ggplot(wide_bth_yrs, aes(x = log10(VLOAD_yr2))) + 
+ggplot(complete_analysis_data, aes(x = log10(VLOAD_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "blue",
                  col = "black") +
@@ -413,7 +410,7 @@ ggplot(wide_bth_yrs, aes(x = log10(VLOAD_yr2))) +
   theme(legend.position = "none")
 
 ## Formal assessment of normality
-shapiro.test(wide_bth_yrs$VLOAD_yr2) 
+shapiro.test(complete_analysis_data$VLOAD_yr2) 
 # We reject the H0 and data is not normally distributed...
 # However, Camille said log10 distribution is sufficient
 
@@ -423,10 +420,10 @@ shapiro.test(wide_bth_yrs$VLOAD_yr2)
 ################################## LEU3N #######################################
 
 # What is the distribution of LEU3n
-summary(wide_bth_yrs$LEU3N_yr2)
+summary(complete_analysis_data$LEU3N_yr2)
 
 # Histogram of the distribution of LEU3N
-ggplot(wide_bth_yrs, aes(x = LEU3N_yr2)) + 
+ggplot(complete_analysis_data, aes(x = LEU3N_yr2)) + 
   geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
@@ -434,7 +431,7 @@ ggplot(wide_bth_yrs, aes(x = LEU3N_yr2)) +
   theme(legend.position = "none")
 
 # Log transform LEU3N - do not log transform
-ggplot(wide_bth_yrs, aes(x = log10(LEU3N_yr2))) + 
+ggplot(complete_analysis_data, aes(x = log10(LEU3N_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
@@ -442,7 +439,7 @@ ggplot(wide_bth_yrs, aes(x = log10(LEU3N_yr2))) +
   theme(legend.position = "none")
 
 # Sqrt transform VLOAD 
-ggplot(wide_bth_yrs, aes(x = sqrt(LEU3N_yr2))) + 
+ggplot(complete_analysis_data, aes(x = sqrt(LEU3N_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "seagreen3",
                  col = "black") +
@@ -451,7 +448,7 @@ ggplot(wide_bth_yrs, aes(x = sqrt(LEU3N_yr2))) +
 # However, due to interpretations with square root we will not proceed with this
 
 ## Formal assessment of normality
-shapiro.test(wide_bth_yrs$LEU3N_yr2) 
+shapiro.test(complete_analysis_data$LEU3N_yr2) 
 # We reject the H0 and data is not normally distributed but we proceed anyways
 
 
@@ -459,10 +456,10 @@ shapiro.test(wide_bth_yrs$LEU3N_yr2)
 
 ################################## AGG MENT ####################################
 
-summary(wide_bth_yrs$AGG_MENT_yr2)
+summary(complete_analysis_data$AGG_MENT_yr2)
 
 # Histogram of distribution
-ggplot(wide_bth_yrs, aes(x = (AGG_MENT_yr2))) + 
+ggplot(complete_analysis_data, aes(x = (AGG_MENT_yr2))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   scale_x_continuous(breaks = seq(0, 100, by = 10),
@@ -470,7 +467,7 @@ ggplot(wide_bth_yrs, aes(x = (AGG_MENT_yr2))) +
   theme(legend.position = "none") 
 
 # Log transform
-ggplot(wide_bth_yrs, aes(x = sqrt(AGG_MENT_yr2))) + 
+ggplot(complete_analysis_data, aes(x = sqrt(AGG_MENT_yr2))) + 
   geom_histogram(fill = "purple", col = "black") + 
   theme_lucid() + 
   theme(legend.position = "none") 
@@ -479,10 +476,10 @@ ggplot(wide_bth_yrs, aes(x = sqrt(AGG_MENT_yr2))) +
 ################################## AGG PHYS ####################################
 
 # What is the distribution of Aggregate phsycial quality of life score
-summary(wide_bth_yrs$AGG_PHYS_yr2)
+summary(complete_analysis_data$AGG_PHYS_yr2)
 
 # Histogram of distribution
-ggplot(wide_bth_yrs, aes(x = (AGG_PHYS_yr2))) + 
+ggplot(complete_analysis_data, aes(x = (AGG_PHYS_yr2))) + 
   geom_histogram(bins = 30,
                  fill = "orange", col = "black") + 
   theme_lucid() + 
@@ -497,12 +494,12 @@ ggplot(wide_bth_yrs, aes(x = (AGG_PHYS_yr2))) +
 
 ################################## Hard Drugs  #################################
 
-table(wide_bth_yrs$hard_drugs)
+table(complete_analysis_data$hard_drugs)
 # 0   1 
 # 390  35 
 
 ## Also include for people that have follow up to 2 years
-ggplot(wide_bth_yrs, aes(x = factor((hard_drugs)),
+ggplot(complete_analysis_data, aes(x = factor((hard_drugs)),
                           fill = factor((hard_drugs)))) + 
   geom_bar() + 
   theme_lucid() + 
@@ -510,11 +507,11 @@ ggplot(wide_bth_yrs, aes(x = factor((hard_drugs)),
 
 #################################### BMI ######################################
 
-summary(wide_bth_yrs$BMI)
+summary(complete_analysis_data$BMI)
 # Looks good
 
 # Plot the distribution
-ggplot(wide_bth_yrs, aes(x = BMI)) + 
+ggplot(complete_analysis_data, aes(x = BMI)) + 
   geom_histogram(bins = 30,
                  fill = "brown",
                  col = "black") + 
@@ -548,11 +545,11 @@ ggplot(both_yrs_data, aes(x = age)) +
 # Blank= Missing
 
 # Table of distribution of race
-table(factor(wide_bth_yrs$RACE))
+table(factor(complete_analysis_data$RACE))
 
 
 # Change to White vs. non-white
-wide_bth_yrs <- wide_bth_yrs %>% 
+complete_analysis_data <- complete_analysis_data %>% 
   mutate(collapse_RACE = factor(ifelse(
     RACE == 1,
     "White_NH", "Other"
@@ -562,7 +559,7 @@ wide_bth_yrs <- wide_bth_yrs %>%
 ## Make sure it is a factor
 
 # Barplot
-ggplot(wide_bth_yrs, aes(x = collapse_RACE,
+ggplot(complete_analysis_data, aes(x = collapse_RACE,
                      fill = collapse_RACE)) + 
   geom_bar() + 
   theme_lucid() + 
@@ -570,12 +567,12 @@ ggplot(wide_bth_yrs, aes(x = collapse_RACE,
 
 
 ##################################### SMOKE  ###################################
-table(factor(wide_bth_yrs$SMOKE))
+table(factor(complete_analysis_data$SMOKE))
 # 1   2   3 
 # 237 287 326
 
 # Visualize the distribution
-ggplot(wide_bth_yrs, aes(x = factor(SMOKE),
+ggplot(complete_analysis_data, aes(x = factor(SMOKE),
                          fill = factor(SMOKE))) + 
   geom_bar() + 
   theme_lucid(legend.position = "none") 
@@ -595,32 +592,32 @@ ggplot(wide_bth_yrs, aes(x = factor(SMOKE),
 # Blank= Missing
 
 # We will collapse this to Complete college or higher and did not complete college
-wide_bth_yrs <- wide_bth_yrs %>% 
+complete_analysis_data <- complete_analysis_data %>% 
   mutate(collapsed_EDUCBAS = ifelse(
     EDUCBAS %in% c(5, 6, 7),
     "Comp_Coll_Higher",
     "Less_Than_College"
   ))
 
-table(factor(wide_bth_yrs$collapsed_EDUCBAS))
+table(factor(complete_analysis_data$collapsed_EDUCBAS))
 # Comp_Coll_Higher Less_Than_College 
 # 182               243  
 
 # Barplot
-ggplot(wide_bth_yrs, aes(x = factor(collapsed_EDUCBAS),
+ggplot(complete_analysis_data, aes(x = factor(collapsed_EDUCBAS),
                      fill = factor(collapsed_EDUCBAS))) + 
   geom_bar() + 
   theme_lucid() + 
   theme(legend.position = "none")
-# Pretty unbalanced
+
 
 
 ################################## Adherence ###################################
 
-table(wide_bth_yrs$ADH_yr2)
+table(complete_analysis_data$ADH_yr2)
 
 # Barplot
-ggplot(wide_bth_yrs, aes(x = factor(ADH_yr2),
+ggplot(complete_analysis_data, aes(x = factor(ADH_yr2),
                          fill = factor(ADH_yr2))) + 
   geom_bar() + 
   theme_lucid(legend.position = "none")
@@ -630,11 +627,11 @@ ggplot(wide_bth_yrs, aes(x = factor(ADH_yr2),
 ################################################################################
 
 # Remove the original education and race variables
-wide_bth_yrs <- subset(wide_bth_yrs, 
+complete_analysis_data <- subset(complete_analysis_data, 
                        select = -c(RACE, EDUCBAS))
 
 # Save the final data frame for analysis
-write.csv(wide_bth_yrs,
+write.csv(complete_analysis_data,
           "../Data/final_hiv_data.csv",
           row.names = FALSE)
 
