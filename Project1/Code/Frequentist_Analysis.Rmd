@@ -52,6 +52,8 @@ library(gridExtra)
 library(kableExtra)
 library(regressinator)
 library(broom)
+library(expss)
+library(mediation)
 opts_chunk$set(tidy = F)
 ```
 
@@ -67,6 +69,42 @@ data$log_VLOAD <- log10(data$VLOAD_yr2)
 data$log_VLOAD_yr0 <- log10(data$VLOAD_yr0)
 ```
 
+```{r, echo = F}
+# Assessment of the data first
+# str(data)
+
+# Create categorical labels and variables 
+# SMOKE
+data$SMOKE_cat <- factor(data$SMOKE,
+                         levels = c(1, 2, 3),
+                         labels = c("Never", "Former", "Current"))
+# Move after SMOKE variable
+data <- data %>% 
+  relocate(SMOKE_cat, .after = SMOKE)
+
+# Hard drugs
+data$hard_drugs_cat <- factor(data$hard_drugs,
+                              levels = c(0, 1),
+                              "No", "Yes")
+# Move after hard drugs variable
+data <- data %>% 
+  relocate(hard_drugs_cat, .after = hard_drugs)
+
+# Convert collapse race to factor
+data$collapse_RACE <- factor(data$collapse_RACE)
+
+# Convert collapse educ to factor
+data$collapsed_EDUCBAS <- factor(data$collapsed_EDUCBAS)
+
+# Relabel the variables
+med_data <- apply_labels(data,
+                   hard_drugs = "Hard Drug Use at BL",
+                   ADH_yr2 = "HAART Adherence",
+                   VLOAD_yr2 = "VLOAD - yr2")
+```
+
+
+
 # Median Analysis
 
 The investigator is interested in knowing if differences in adherence to HAART can explain differences in the outcomes between subjects who did and did not report hard hard drug use at baseline.
@@ -80,13 +118,118 @@ The indirect effect is the effect of hard drug use on the outcome that works thr
 The direct effect is the effect of hard drug use on the outcome that does NOT work through HAART adherence. In other words, the remaining effect after adjusting for the mediator. 
 
 We will use this RPubs tutorial for Mediation analyses: 
-[Mediation Analysis Using R](https://rpubs.com/mbounthavong/mediation_analysis_r) which uses the [mediation](https://cran.r-project.org/web/packages/mediation/index.html) R package. 
+[Mediation Analysis Using R](`https://rpubs.com/mbounthavong/mediation_analysis_r`) which uses the [mediation](https://cran.r-project.org/web/packages/mediation/index.html) R package. 
+
+We use the bootstrap approach from the meditation package. 
+
+A table 1 from the tutorial: 
+
+```{r, echo = F}
+data %>% 
+  tbl_summary(include = c(VLOAD_yr2, LEU3N_yr2,
+                          AGG_MENT_yr2, AGG_PHYS_yr2, 
+                          BMI, SMOKE, age, hard_drugs, collapse_RACE,
+                          collapsed_EDUCBAS),
+              statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
+  modify_header(label = "**Variable**") %>% 
+  bold_labels()
+```
+
+Separating by hard drug use at baseline: 
+
+```{r, echo = F}
+data %>% 
+  tbl_summary(include = c(VLOAD_yr2, LEU3N_yr2,
+                          AGG_MENT_yr2, AGG_PHYS_yr2, 
+                          BMI, SMOKE, age, collapse_RACE,
+                          collapsed_EDUCBAS),
+              by = hard_drugs,
+              statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
+  modify_header(label = "**Variable**") %>% 
+  bold_labels()
+```
+
+
 
 # VLOAD 
+# Parametric Approach
+
+```{r, echo = F}
+### Parametric Approach
+
+# Create the three models for the mediation analysis
+
+# 1. The direct effects model or the adjusted model
+vload_crude <- lm(VLOAD_yr2 ~ hard_drugs,
+                    data = med_data)
+
+# 2. The first-part indirect effect model or the covariate model
+vload_covariate <- lm(ADH_yr2 ~ hard_drugs,
+                     data = med_data)
+
+# 3. The second-part indirect effect model or the adjusted model
+vload_adjusted <- lm(VLOAD_yr2 ~ hard_drugs + ADH_yr2,
+                     data = med_data)
+
+# Compare betas 
+t1 <- tbl_regression(vload_crude, 
+                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
+  modify_column_hide(columns = p.value) %>% 
+  modify_column_hide(c(conf.low, conf.high))
+
+t2 <- tbl_regression(vload_covariate, 
+                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
+  modify_column_hide(columns = p.value) %>%
+  modify_column_hide(c(conf.low, conf.high))
+
+t3 <- tbl_regression(vload_adjusted, 
+                     estimate_fun = ~ style_number(.x, digits = 3)) %>% modify_column_hide(columns = p.value) %>% 
+  modify_column_hide(c(conf.low, conf.high))
+
+tbl_merge(
+  tbls = list(t1, t2, t3),
+  tab_spanner = c("**Total effect**", 
+                  "**First-part indirect effect**", 
+                  "**Second-part direct + indirect effects**")
+)
+
+```
 
 
 
+## Bootstrap Approach
 
+```{r, echo = F}
+### Bootstrap Approach
+
+## Create the three models for mediation analysis
+
+# 1. The first-part indirect effect model or the covariate model
+vload_covariate <- lm(ADH_yr2 ~ hard_drugs,
+                     data = med_data)
+
+# 2. The second-part indirect effect model or the adjusted model
+vload_adjusted <- lm(VLOAD_yr2 ~ hard_drugs + ADH_yr2,
+                     data = med_data)
+
+# Mediation analysis with 1000 simulations
+mediation_vload <- mediate(vload_covariate,
+                           vload_adjusted,
+                           treat = "hard_drugs",
+                           mediator = "ADH_yr2",
+                           boot = TRUE,
+                           sims = 1000)
+# Summary
+summary(mediation_vload)
+
+```
+
+ACME tells us the Average Causal Mediation Effect or how much of the total effect is explained by the mediator. 
+The estimated ACME was -1.03 with p = 0.074 which is not statistically significant using a significance threshold of $\alpha = 0.5$.
+The ADE row gives us the Average Direct Effect. 
+The Total Effect is from the total effect model and the Prop. Mediated was calculated with $\frac{\text{Indirect effect}}{\text{total effect}}$.
+We have that the proportion mediated is $\approx -0.03 \text{ or } -3\%$. 
+From this we conclude that the mediator effect is not statistically significant and HAART adherence does not explain differences in VLOAD at year 2 between hard drug and non hard drug users. 
 
 # Primary Outcomes
 
