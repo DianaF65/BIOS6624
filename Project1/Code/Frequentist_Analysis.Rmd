@@ -54,6 +54,18 @@ library(regressinator)
 library(broom)
 library(expss)
 library(mediation)
+
+# Libraries for Bayesian analysis
+# Dependencies 
+library(cmdstanr)
+library(bayesplot)  # diagnostic plots of the MCMC chains
+library(posterior)  # for summarizing posterior draws
+library(bayestestR) # for calculating higest density posterior intervals
+library(mcmcse)     # for calculating MCMCSE's
+library(loo)        # for getting model fit statistics (WAIC and LOO-IC)
+library(dplyr)
+library(tibble)
+
 opts_chunk$set(tidy = F)
 ```
 
@@ -104,25 +116,8 @@ med_data <- apply_labels(data,
 ```
 
 
-
-# Median Analysis
-
-The investigator is interested in knowing if differences in adherence to HAART can explain differences in the outcomes between subjects who did and did not report hard hard drug use at baseline.
-In other words, we aim to assess if Adherence to HAART is a mediator - does it explain differences in the outcomes between drug use group for all 4 primary outcomes?
-
-A mediator is defined as an intermediate variable on the causal path between an independent variable and a dependent variable.
-
-In ou particular case, the possible mediator of interest is adherence to HAART, the independent variable is hard-drug use at basleine, and the dependent variable is one of: VLOAD, LEU3N, AGG MENT, or AGG PHYS. 
-
-The indirect effect is the effect of hard drug use on the outcome that works through HAART adherence. 
-The direct effect is the effect of hard drug use on the outcome that does NOT work through HAART adherence. In other words, the remaining effect after adjusting for the mediator. 
-
-We will use this RPubs tutorial for Mediation analyses: 
-[Mediation Analysis Using R](`https://rpubs.com/mbounthavong/mediation_analysis_r`) which uses the [mediation](https://cran.r-project.org/web/packages/mediation/index.html) R package. 
-
-We use the bootstrap approach from the meditation package. 
-
-A table 1 from the tutorial: 
+A table1: 
+ 
 
 ```{r, echo = F}
 data %>% 
@@ -151,89 +146,17 @@ data %>%
 
 
 
-# VLOAD 
-# Parametric Approach
-
-```{r, echo = F}
-### Parametric Approach
-
-# Create the three models for the mediation analysis
-
-# 1. The direct effects model or the adjusted model
-vload_crude <- lm(VLOAD_yr2 ~ hard_drugs,
-                    data = med_data)
-
-# 2. The first-part indirect effect model or the covariate model
-vload_covariate <- lm(ADH_yr2 ~ hard_drugs,
-                     data = med_data)
-
-# 3. The second-part indirect effect model or the adjusted model
-vload_adjusted <- lm(VLOAD_yr2 ~ hard_drugs + ADH_yr2,
-                     data = med_data)
-
-# Compare betas 
-t1 <- tbl_regression(vload_crude, 
-                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
-  modify_column_hide(columns = p.value) %>% 
-  modify_column_hide(c(conf.low, conf.high))
-
-t2 <- tbl_regression(vload_covariate, 
-                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
-  modify_column_hide(columns = p.value) %>%
-  modify_column_hide(c(conf.low, conf.high))
-
-t3 <- tbl_regression(vload_adjusted, 
-                     estimate_fun = ~ style_number(.x, digits = 3)) %>% modify_column_hide(columns = p.value) %>% 
-  modify_column_hide(c(conf.low, conf.high))
-
-tbl_merge(
-  tbls = list(t1, t2, t3),
-  tab_spanner = c("**Total effect**", 
-                  "**First-part indirect effect**", 
-                  "**Second-part direct + indirect effects**")
-)
-
-```
-
-
-
-## Bootstrap Approach
-
-```{r, echo = F}
-### Bootstrap Approach
-
-## Create the three models for mediation analysis
-
-# 1. The first-part indirect effect model or the covariate model
-vload_covariate <- lm(ADH_yr2 ~ hard_drugs,
-                     data = med_data)
-
-# 2. The second-part indirect effect model or the adjusted model
-vload_adjusted <- lm(VLOAD_yr2 ~ hard_drugs + ADH_yr2,
-                     data = med_data)
-
-# Mediation analysis with 1000 simulations
-mediation_vload <- mediate(vload_covariate,
-                           vload_adjusted,
-                           treat = "hard_drugs",
-                           mediator = "ADH_yr2",
-                           boot = TRUE,
-                           sims = 1000)
-# Summary
-summary(mediation_vload)
-
-```
-
-ACME tells us the Average Causal Mediation Effect or how much of the total effect is explained by the mediator. 
-The estimated ACME was -1.03 with p = 0.074 which is not statistically significant using a significance threshold of $\alpha = 0.5$.
-The ADE row gives us the Average Direct Effect. 
-The Total Effect is from the total effect model and the Prop. Mediated was calculated with $\frac{\text{Indirect effect}}{\text{total effect}}$.
-We have that the proportion mediated is $\approx -0.03 \text{ or } -3\%$. 
-From this we conclude that the mediator effect is not statistically significant and HAART adherence does not explain differences in VLOAD at year 2 between hard drug and non hard drug users. 
-
-# Primary Outcomes
+# Frequentist Analysis
 
 For these simple linear regression analyses, we will use the lm() function from the stats package in R. 
+
+```{r, echo = F}
+################################################################################
+###                             Bayesian Analysis                            ###
+################################################################################
+
+```
+
 
 ## VLOAD
 The number of HIV copies in a mL of blood.
@@ -241,52 +164,15 @@ The number of HIV copies in a mL of blood.
 Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
 
 ```{r, echo = F}
-# Fit the model for VLOAD - with LEU3N
-vload_mod1 <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2),
-                  data = data)
+### Parametric Approach
+# Fit two models: With adherence and without adherence
+# We will not be doing the crude model because of the 
+# Very unbalanced hard drug use groups 
 
-# Fit the model for VLOAD - without LEU3N
-vload_mod2 <- lm(log_VLOAD ~ log_VLOAD_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2),
-                  data = data)
-
-# Compare AIC
-AIC(vload_mod1, vload_mod2)
-# Proceed with LEU3N in model
-
-# How about the QOL Scores
-# Fit the model for VLOAD with AGG MENT
-vload_mod3 <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2)
-                   + AGG_MENT_yr0,
-                  data = data)
-
-# Compare AIC
-AIC(vload_mod1, vload_mod3)
-# Basically equivalent - not contuing with AGG MENT
-
-# Model with AGG PHYS
-vload_mod5 <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2)
-                   + AGG_PHYS_yr0,
-                  data = data)
-# Compare AGG PHYS and AGG MENT models
-AIC(vload_mod1, vload_mod5)
-# They are basically equivalent - with the simpler models, no QOL scores
-
-# Final model 
-VLOAD_model <- lm(log_VLOAD ~ log_VLOAD_yr0 + LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2),
-                  data = data)
-
-# Summary of the model
-# summary(VLOAD_model)
+# Primary model - no adherence
+vload_primary <- lm(VLOAD_yr2 ~ hard_drugs + BMI + SMOKE 
+                    + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
 ```
 
 Model diagnostics: 
@@ -327,108 +213,81 @@ After controlling for covariates, there is not significant difference (p = 0.96)
 
 <!-- REMEMBER TO INTERPRET ON LOG SCALE -->
 
+Comparison of estimates between models with and without adherence: 
+
+```{r, echo = F}
+# Model WITH adherence
+vload_adh <- lm(VLOAD_yr2 ~ hard_drugs + ADH_yr2
+                     + BMI + SMOKE 
+                     + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
+
+# Compare betas 
+t1 <- tbl_regression(vload_primary, 
+                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
+  modify_column_hide(columns = p.value) %>% 
+  modify_column_hide(c(conf.low, conf.high))
+
+t2 <- tbl_regression(vload_adh, 
+                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
+  modify_column_hide(columns = p.value) %>%
+  modify_column_hide(c(conf.low, conf.high))
+
+tbl_merge(
+  tbls = list(t1, t2),
+  tab_spanner = c("**Model Without ADH**", 
+                  "**Model With ADH**")
+)
+```
 
 \newpage
 
-# LEU3N
+## LEU3N
 
-```{r, echo = F}
-# Fit the model for LEU3N - with VLOAD
-leu3n_mod1 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + VLOAD_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2),
-                  data = data)
-
-# Fit the model for LEU3N - without VLOAD
-leu3n_mod2 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2),
-                  data = data)
-
-# Compare AIC
-AIC(leu3n_mod1, leu3n_mod2)
-# These models are equivalent
-
-# Conduct a LRT 
-anova(leu3n_mod1, leu3n_mod2)
-# No, including VLOAD does not significantly improve model fit
-
-## QOL Scores
-# AGG MENT
-leu3n_mod3 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2)
-                   + AGG_MENT_yr0,
-                  data = data)
-
-# Compare with AIC
-AIC(leu3n_mod2, leu3n_mod3)
-# No difference again - proceeding with simpler model 
-
-# AGG PHYS
-leu3n_mod4 <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2)
-                   + AGG_PHYS_yr0,
-                  data = data)
-
-# Compare with AIC
-AIC(leu3n_mod2, leu3n_mod4)
-# No difference again - proceeding with simpler model 
-
-# Final model 
-LEU3N_model <- lm(LEU3N_yr2 ~ LEU3N_yr0 + factor(hard_drugs)
-                   + BMI + age
-                   + factor(SMOKE) + factor(ADH_yr2),
-                  data = data)
-
-# Summary of the model
-# summary(LEU3N_model)
-```
-
-Model diagnostics: 
-
-```{r, echo = F, out.width="80%", fig.align='center'}
-### Model diagnostics
-# From: 
-
-# Residual plot
-augment(LEU3N_model) |>
-  ggplot(aes(x = .fitted, y = .resid)) +
-  geom_point(size = 0.8) +
-  # geom_smooth(se = FALSE) +
-  labs(x = "Fitted value", y = "Residual") + 
-  theme_lucid()
-
-```
-
-```{r, echo = F, out.width="80%", fig.align='center'}
-# QQ Plot
-augment(LEU3N_model) |>
-  ggplot(aes(sample = .std.resid)) +
-  geom_qq() +
-  geom_qq_line() +
-  labs(title = "Normal Q-Q plot of standardized residuals",
-       x = "Theoretical quantiles", y = "Observed quantiles") + 
-  theme_lucid()
-
-```
-
-
-Interpreting the results: 
-
-```{r, echo = F}
-summary(LEU3N_model)
-
-# Get the CI
-# confint(LEU3N_model)
-```
-After adjusting for covariates, there is a significant difference (p < 0.0001)
-in CD4+ T cell count 2 years after HART between subjects who did and did not report hard drug use at baseline. 
-
-On average, CD4+ T cell count was about 176.59 units lower (95% CI: (-239.62, -113.58)) for subjects that reported hard drug use at baseline compared to non-hard drug use at baseline, 2 years after HAART. This is a clinically significant meaningful difference and is what we hypothesized for differences between hard-drug users and non-hard drug users. 
 
 \newpage
+
+# Bayesian Analysis
+
+Laboratory in vitro and animal studies have shown that the use of hard drugs has increases HIV replication. 
+However, since there are not any biologically plausible values that we could pickk for an informative optimist prior, we will continue with a vague prior for our Bayesian models. 
+
+For viral load, we specified a $Normal(0, 10000)$ prior for the regression coefficients and a $Half Normal(0, 100^2)$ prior for the residual variance.
+
+```{r, echo = F}
+################################################################################
+###                             Bayesian Analysis                            ###
+################################################################################
+
+# Linear model
+vload_linear <- lm(VLOAD_yr2 ~ factor(hard_drugs) + BMI + factor(SMOKE)
+                    + age + factor(collapse_RACE) + factor(collapsed_EDUCBAS),
+                     data = data)
+
+sink("Output/P1_VLOAD_ModelOutput.txt")
+print(vload_linear)
+summary(vload_linear)
+confint(vload_linear)
+anova(vload_linear)
+sink()
+
+# Bayesian Model
+
+
+
+``` 
+
+
+For CD4+ T cell counts, we specified a $Normal(0, 10000)$ prior for the regression coefficients and a $Half Normal(0, 100^2)$ prior for the residual variance.
+
+For the aggregate mental quality of life score, we specified a $Normal(0, 10000)$ prior for the regression coefficients and a $Half Normal(0, 100^2)$ prior for the residual variance.
+
+For the aggregate physical quality of life score, we specified a $Normal(0, 10000)$ prior for the regression coefficients and a $$Half Normal(0, 100^2) prior for the residual variance. 
+
+
+
+
+
 
 
 

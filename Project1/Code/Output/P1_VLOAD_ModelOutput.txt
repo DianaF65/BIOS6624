@@ -1,0 +1,106 @@
+
+Call:
+lm(formula = VLOAD_yr2 ~ factor(hard_drugs) + BMI + factor(SMOKE) + 
+    age + factor(collapse_RACE) + factor(collapsed_EDUCBAS), 
+    data = data)
+
+Coefficients:
+                               (Intercept)  
+                                   37168.3  
+                       factor(hard_drugs)1  
+                                   25238.5  
+                                       BMI  
+                                    -863.7  
+                            factor(SMOKE)2  
+                                     860.8  
+                            factor(SMOKE)3  
+                                    6040.5  
+                                       age  
+                                    -205.0  
+             factor(collapse_RACE)White_NH  
+                                   -3300.0  
+factor(collapsed_EDUCBAS)Less_Than_College  
+                                    -446.7  
+
+
+Call:
+lm(formula = VLOAD_yr2 ~ factor(hard_drugs) + BMI + factor(SMOKE) + 
+    age + factor(collapse_RACE) + factor(collapsed_EDUCBAS), 
+    data = data)
+
+Coefficients:
+                               (Intercept)  
+                                   37168.3  
+                       factor(hard_drugs)1  
+                                   25238.5  
+                                       BMI  
+                                    -863.7  
+                            factor(SMOKE)2  
+                                     860.8  
+                            factor(SMOKE)3  
+                                    6040.5  
+                                       age  
+                                    -205.0  
+             factor(collapse_RACE)White_NH  
+                                   -3300.0  
+factor(collapsed_EDUCBAS)Less_Than_College  
+                                    -446.7  
+
+
+Call:
+lm(formula = VLOAD_yr2 ~ factor(hard_drugs) + BMI + factor(SMOKE) + 
+    age + factor(collapse_RACE) + factor(collapsed_EDUCBAS), 
+    data = data)
+
+Residuals:
+   Min     1Q Median     3Q    Max 
+-41709 -10745  -5988  -1162 699702 
+
+Coefficients:
+                                           Estimate Std. Error t value
+(Intercept)                                 37168.3    18582.7   2.000
+factor(hard_drugs)1                         25238.5     9299.2   2.714
+BMI                                          -863.7      573.1  -1.507
+factor(SMOKE)2                                860.8     6236.4   0.138
+factor(SMOKE)3                               6040.5     6284.7   0.961
+age                                          -205.0      282.6  -0.725
+factor(collapse_RACE)White_NH               -3300.0     5287.7  -0.624
+factor(collapsed_EDUCBAS)Less_Than_College   -446.7     5177.6  -0.086
+                                           Pr(>|t|)   
+(Intercept)                                  0.0461 * 
+factor(hard_drugs)1                          0.0069 **
+BMI                                          0.1325   
+factor(SMOKE)2                               0.8903   
+factor(SMOKE)3                               0.3370   
+age                                          0.4686   
+factor(collapse_RACE)White_NH                0.5329   
+factor(collapsed_EDUCBAS)Less_Than_College   0.9313   
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 51830 on 455 degrees of freedom
+Multiple R-squared:  0.03449,	Adjusted R-squared:  0.01963 
+F-statistic: 2.322 on 7 and 455 DF,  p-value: 0.02461
+
+                                                 2.5 %     97.5 %
+(Intercept)                                   649.7978 73686.7912
+factor(hard_drugs)1                          6963.7135 43513.2130
+BMI                                         -1989.8369   262.4877
+factor(SMOKE)2                             -11394.9517 13116.5518
+factor(SMOKE)3                              -6310.1328 18391.2189
+age                                          -760.3090   350.3334
+factor(collapse_RACE)White_NH              -13691.2907  7091.2410
+factor(collapsed_EDUCBAS)Less_Than_College -10621.6692  9728.2572
+Analysis of Variance Table
+
+Response: VLOAD_yr2
+                           Df     Sum Sq    Mean Sq F value   Pr(>F)   
+factor(hard_drugs)          1 2.8381e+10 2.8381e+10 10.5645 0.001238 **
+BMI                         1 9.0988e+09 9.0988e+09  3.3869 0.066366 . 
+factor(SMOKE)               2 3.3741e+09 1.6871e+09  0.6280 0.534124   
+age                         1 1.7431e+09 1.7431e+09  0.6489 0.420938   
+factor(collapse_RACE)       1 1.0435e+09 1.0435e+09  0.3884 0.533437   
+factor(collapsed_EDUCBAS)   1 1.9997e+07 1.9997e+07  0.0074 0.931284   
+Residuals                 455 1.2223e+12 2.6864e+09                    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
