@@ -409,6 +409,10 @@ ggplot(complete_analysis_data, aes(x = log10(VLOAD_yr2))) +
   theme_lucid() + 
   theme(legend.position = "none")
 
+# Create the logged VLOAD variables
+complete_analysis_data$log_VLOAD_yr0 <- log(complete_analysis_data$VLOAD_yr0)
+complete_analysis_data$log_VLOAD_yr2 <- log(complete_analysis_data$VLOAD_yr2)
+
 ## Formal assessment of normality
 shapiro.test(complete_analysis_data$VLOAD_yr2) 
 # We reject the H0 and data is not normally distributed...
@@ -505,6 +509,7 @@ ggplot(complete_analysis_data, aes(x = factor((hard_drugs)),
   theme_lucid() + 
   theme(legend.position = "none")
 
+
 #################################### BMI ######################################
 
 summary(complete_analysis_data$BMI)
@@ -576,6 +581,23 @@ ggplot(complete_analysis_data, aes(x = factor(SMOKE),
                          fill = factor(SMOKE))) + 
   geom_bar() + 
   theme_lucid(legend.position = "none") 
+
+# Collapse into: Never/Former & Current
+# Change to White vs. non-white
+complete_analysis_data <- complete_analysis_data %>% 
+  mutate(collapse_SMOKE = factor(ifelse(
+    SMOKE %in% c(1, 2),
+    "Never/Former", 
+    "Current"
+  ))
+  )
+
+# Visualize this
+ggplot(complete_analysis_data, aes(x = factor(collapse_SMOKE),
+                                   fill = factor(collapse_SMOKE))) + 
+  geom_bar() + 
+  theme_lucid(legend.position = "none") 
+
 
 ##################################### EDUCBAS  #################################
 
@@ -669,40 +691,4 @@ table1(~ VLOAD_yr2 + LEU3N_yr2 +
          ADH_yr2 + SMOKE + collapse_RACE + collapsed_EDUCBAS
        + BMI + age | hard_drugs, 
        data = wide_bth_yrs)
-
-################################################################################
-###                                   STAN                                  ###
-################################################################################
-
-
-################################ STAN INSTALLATION #############################
-
-### Checking if its connectivity from inside R
-# Basic connectivity check
-capabilities("libcurl")
-getOption("download.file.method")
-
-# Try to hit GitHub API directly
-u <- "https://api.github.com/repos/stan-dev/cmdstan/releases/latest"
-try(readLines(u, n = 5), silent = FALSE)
-
-# Specify a certain version
-cmdstanr::install_cmdstan(version = "2.37.0", cores = 2)
-### This worked
-
-############################# CMDSTAN Vignette #################################
-
-file <- file.path(cmdstan_path(), "examples", "bernoulli", "bernoulli.stan")
-mod <- cmdstan_model(file)
-
-# names correspond to the data block in the Stan program
-data_list <- list(N = 10, y = c(0,1,0,0,0,0,0,0,0,1))
-
-fit <- mod$sample(
-  data = data_list,
-  seed = 123,
-  chains = 4,
-  parallel_chains = 4,
-  refresh = 500 # print update every 500 iters
-)
 

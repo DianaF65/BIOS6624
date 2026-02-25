@@ -100,7 +100,8 @@ data <- data %>%
 # Hard drugs
 data$hard_drugs_cat <- factor(data$hard_drugs,
                               levels = c(0, 1),
-                              "No", "Yes")
+                              labels = c("No", "Yes"))
+
 # Move after hard drugs variable
 data <- data %>% 
   relocate(hard_drugs_cat, .after = hard_drugs)
@@ -173,7 +174,8 @@ Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who re
 # Very unbalanced hard drug use groups 
 
 # Primary model - no adherence
-vload_primary <- lm(VLOAD_yr2 ~ hard_drugs + BMI + SMOKE 
+vload_primary <- lm(log_VLOAD ~ hard_drugs_cat + log_VLOAD_yr0
+                    + BMI + SMOKE_cat
                     + age + collapse_RACE + collapsed_EDUCBAS,
                      data = data)
 ```
@@ -185,7 +187,7 @@ Model diagnostics:
 # From: 
 
 # Residual plot
-augment(VLOAD_model) |>
+augment(vload_primary) |>
   ggplot(aes(x = .fitted, y = .resid)) +
   geom_point(size = 0.8) +
   # geom_smooth(se = FALSE) +
@@ -196,7 +198,7 @@ augment(VLOAD_model) |>
 
 ```{r, echo = F, out.width="80%", fig.align='center'}
 # QQ Plot
-augment(VLOAD_model) |>
+augment(vload_primary) |>
   ggplot(aes(sample = .std.resid)) +
   geom_qq() +
   geom_qq_line() +
@@ -209,7 +211,7 @@ augment(VLOAD_model) |>
 Interpreting the results: 
 
 ```{r, echo = F}
-summary(VLOAD_model)
+summary(vload_primary)
 ```
 
 After controlling for covariates, there is not significant difference (p = 0.96) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
