@@ -54,6 +54,7 @@ library(regressinator)
 library(broom)
 library(expss)
 library(mediation)
+library(bda)
 
 # Libraries for Bayesian analysis
 # Dependencies 
@@ -76,11 +77,6 @@ data <- read.csv("../Data/final_hiv_data.csv")
 # Examine the data and data types
 # str(data)
 
-# Add a logged VLOAD variable
-data$log_VLOAD <- log10(data$VLOAD_yr2)
-data$log_VLOAD_yr0 <- log10(data$VLOAD_yr0)
-
-# Make sure data types are correct in data frame
 
 ```
 
@@ -89,18 +85,18 @@ data$log_VLOAD_yr0 <- log10(data$VLOAD_yr0)
 # str(data)
 
 # Create categorical labels and variables 
-# SMOKE
-data$SMOKE_cat <- factor(data$SMOKE,
-                         levels = c(1, 2, 3),
-                         labels = c("Never", "Former", "Current"))
-# Move after SMOKE variable
-data <- data %>% 
-  relocate(SMOKE_cat, .after = SMOKE)
 
 # Hard drugs
 data$hard_drugs_cat <- factor(data$hard_drugs,
                               levels = c(0, 1),
                               labels = c("No", "Yes"))
+
+# adherence
+data$ADH_yr2_cat <- factor(data$ADH_yr2,
+                       levels = c(1, 2, 3, 4),
+                       labels = c("100%", "95-99%",
+                                  "75-94%",
+                                  "<75%"))
 
 # Move after hard drugs variable
 data <- data %>% 
@@ -111,6 +107,9 @@ data$collapse_RACE <- factor(data$collapse_RACE)
 
 # Convert collapse educ to factor
 data$collapsed_EDUCBAS <- factor(data$collapsed_EDUCBAS)
+
+# Convert SMOKE cat to factor
+data$collapse_SMOKE <- factor(data$collapse_SMOKE)
 
 # Relabel the variables
 med_data <- apply_labels(data,
@@ -167,6 +166,9 @@ The number of HIV copies in a mL of blood.
 
 Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
 
+
+### Mediation Analysis
+
 ```{r, echo = F}
 ### Parametric Approach
 # Fit two models: With adherence and without adherence
@@ -174,17 +176,59 @@ Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who re
 # Very unbalanced hard drug use groups 
 
 # Primary model - no adherence
-vload_primary <- lm(log_VLOAD ~ hard_drugs_cat + log_VLOAD_yr0
-                    + BMI + SMOKE_cat
+vload_no_adh <- lm(log_VLOAD_yr2 ~ hard_drugs_cat + log_VLOAD_yr0
+                    + BMI + collapse_SMOKE
                     + age + collapse_RACE + collapsed_EDUCBAS,
                      data = data)
+
+# Fit the model with adherence
+vload_adh <- lm(log_VLOAD_yr2 ~ hard_drugs_cat + log_VLOAD_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS
+                    + ADH_yr2_cat,
+                     data = data)
 ```
+
+Comparison of estimates between models with and without adherence: 
+
+```{r, echo = F}
+# Compare betas 
+t1 <- tbl_regression(vload_primary,
+                     # exponentiate = TRUE,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3)) 
+
+t2 <- tbl_regression(vload_adh, 
+                     # exponentiate = TRUE,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3))
+
+
+tbl_merge(
+  tbls = list(t1, t2),
+  tab_spanner = c("**Model Without ADH**", 
+                  "**Model With ADH**")
+)
+```
+
+We observe a difference of 0.119 units between the estimate for the two models. 
+The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
+We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
+In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
+The differences that we observe in the estimates can be explained by differences in adherence. 
+Due to these findings, we included adherence in the VLOAD model. 
+
+
+### Primary Analysis
 
 Model diagnostics: 
 
 ```{r, echo = F, out.width="80%", fig.align='center'}
 ### Model diagnostics
-# From: 
+# The final model for VLOAD
+vload_primary <- vload_adh
 
 # Residual plot
 augment(vload_primary) |>
@@ -214,29 +258,57 @@ Interpreting the results:
 summary(vload_primary)
 ```
 
-After controlling for covariates, there is not significant difference (p = 0.96) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
+After controlling for covariates, there is not significant difference (p = 0.970) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
 
 <!-- REMEMBER TO INTERPRET ON LOG SCALE -->
+
+\newpage
+
+## LEU3N
+
+### Mediation Analysis
+
+The number of CD4+ T cell counts which is a measure of immunologic health.
+With treatment, we expect CD4+ T Cll counts to increase.
+
+Hypothesis: CD4+ T cell counts are significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
+
+### Mediation Analysis
+
+```{r, echo = F}
+### Parametric Approach
+# Fit two models: With adherence and without adherence
+# We will not be doing the crude model because of the 
+# Very unbalanced hard drug use groups 
+
+# Primary model - no adherence
+leu3nno_adh <- lm(LEU3N_yr2 ~ hard_drugs_cat + LEU3N_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
+
+# Fit the model with adherence
+leu3n_adh <- lm(LEU3N_yr2 ~ hard_drugs_cat + LEU3N_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS
+                    + ADH_yr2_cat,
+                     data = data)
+```
 
 Comparison of estimates between models with and without adherence: 
 
 ```{r, echo = F}
-# Model WITH adherence
-vload_adh <- lm(VLOAD_yr2 ~ VLOAD_yr0 + hard_drugs + ADH_yr2
-                     + BMI + SMOKE 
-                     + age + collapse_RACE + collapsed_EDUCBAS,
-                     data = data)
-
 # Compare betas 
-t1 <- tbl_regression(vload_primary, 
-                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
-  modify_column_hide(columns = p.value) %>% 
-  modify_column_hide(c(conf.low, conf.high))
+t1 <- tbl_regression(leu3nno_adh,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3)) 
 
-t2 <- tbl_regression(vload_adh, 
-                     estimate_fun = ~ style_number(.x, digits = 3)) %>%
-  modify_column_hide(columns = p.value) %>%
-  modify_column_hide(c(conf.low, conf.high))
+t2 <- tbl_regression(leu3n_adh, 
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3))
+
 
 tbl_merge(
   tbls = list(t1, t2),
@@ -245,9 +317,257 @@ tbl_merge(
 )
 ```
 
+We observe a difference of 0.119 units between the estimate for the two models. 
+The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
+We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
+In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
+The differences that we observe in the estimates can be explained by differences in adherence. 
+Due to these findings, we included adherence in the VLOAD model. 
+
+
+### Primary Analysis
+
+Model diagnostics: 
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+### Model diagnostics
+# The final model for VLOAD
+leu3n_primary <- leu3n_adh
+
+# Residual plot
+augment(leu3n_primary) |>
+  ggplot(aes(x = .fitted, y = .resid)) +
+  geom_point(size = 0.8) +
+  # geom_smooth(se = FALSE) +
+  labs(x = "Fitted value", y = "Residual") + 
+  theme_lucid()
+
+```
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+# QQ Plot
+augment(leu3n_primary) |>
+  ggplot(aes(sample = .std.resid)) +
+  geom_qq() +
+  geom_qq_line() +
+  labs(title = "Normal Q-Q plot of standardized residuals",
+       x = "Theoretical quantiles", y = "Observed quantiles") + 
+  theme_lucid()
+
+```
+
+Interpreting the results: 
+
+```{r, echo = F}
+summary(leu3n_primary)
+```
+
+After controlling for covariates, there is not significant difference (p = 0.970) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
+
 \newpage
 
-## LEU3N
+## AGG PHYS
+
+The number of HIV copies in a mL of blood.
+
+Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
+
+
+### Mediation Analysis
+
+```{r, echo = F}
+### Parametric Approach
+# Fit two models: With adherence and without adherence
+# We will not be doing the crude model because of the 
+# Very unbalanced hard drug use groups 
+
+# Primary model - no adherence
+aggphys_no_adh <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
+
+# Fit the model with adherence
+aggphys_adh <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS
+                    + ADH_yr2_cat,
+                     data = data)
+```
+
+Comparison of estimates between models with and without adherence: 
+
+```{r, echo = F}
+# Compare betas 
+t1 <- tbl_regression(aggphys_no_adh,
+                     # exponentiate = TRUE,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3)) 
+
+t2 <- tbl_regression(aggphys_adh, 
+                     # exponentiate = TRUE,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3))
+
+
+tbl_merge(
+  tbls = list(t1, t2),
+  tab_spanner = c("**Model Without ADH**", 
+                  "**Model With ADH**")
+)
+```
+
+We observe a difference of 0.119 units between the estimate for the two models. 
+The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
+We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
+In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
+The differences that we observe in the estimates can be explained by differences in adherence. 
+Due to these findings, we included adherence in the VLOAD model. 
+
+
+### Primary Analysis
+
+Model diagnostics: 
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+### Model diagnostics
+# The final model for VLOAD
+aggphys_primary <- aggphys_adh
+
+# Residual plot
+augment(aggphys_primary) |>
+  ggplot(aes(x = .fitted, y = .resid)) +
+  geom_point(size = 0.8) +
+  # geom_smooth(se = FALSE) +
+  labs(x = "Fitted value", y = "Residual") + 
+  theme_lucid()
+
+```
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+# QQ Plot
+augment(aggphys_primary) |>
+  ggplot(aes(sample = .std.resid)) +
+  geom_qq() +
+  geom_qq_line() +
+  labs(title = "Normal Q-Q plot of standardized residuals",
+       x = "Theoretical quantiles", y = "Observed quantiles") + 
+  theme_lucid()
+
+```
+
+Interpreting the results: 
+
+```{r, echo = F}
+summary(aggphys_primary)
+```
+
+After controlling for covariates, there is not significant difference (p = 0.970) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
+
+<!-- REMEMBER TO INTERPRET ON LOG SCALE -->
+
+\newpage
+
+
+## AGG MENT
+
+The number of HIV copies in a mL of blood.
+
+Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
+
+
+### Mediation Analysis
+
+```{r, echo = F}
+### Parametric Approach
+# Fit two models: With adherence and without adherence
+# We will not be doing the crude model because of the 
+# Very unbalanced hard drug use groups 
+
+# Primary model - no adherence
+aggment_no_adh <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
+
+# Fit the model with adherence
+aggment_adh <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS
+                    + ADH_yr2_cat,
+                     data = data)
+```
+
+Comparison of estimates between models with and without adherence: 
+
+```{r, echo = F}
+# Compare betas 
+t1 <- tbl_regression(aggment_no_adh,
+                     # exponentiate = TRUE,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3)) 
+
+t2 <- tbl_regression(aggment_adh, 
+                     # exponentiate = TRUE,
+                     include = c("hard_drugs_cat"),
+                     pvalue_fun = label_style_pvalue(digits = 3),
+                     estimate_fun = ~ style_number(.x, digits = 3))
+
+
+tbl_merge(
+  tbls = list(t1, t2),
+  tab_spanner = c("**Model Without ADH**", 
+                  "**Model With ADH**")
+)
+```
+
+We observe a difference of 0.119 units between the estimate for the two models. 
+The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
+We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
+In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
+The differences that we observe in the estimates can be explained by differences in adherence. 
+Due to these findings, we included adherence in the VLOAD model. 
+
+
+### Primary Analysis
+
+Model diagnostics: 
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+### Model diagnostics
+# The final model for VLOAD
+aggment_primary <- aggment_adh
+
+# Residual plot
+augment(aggment_primary) |>
+  ggplot(aes(x = .fitted, y = .resid)) +
+  geom_point(size = 0.8) +
+  # geom_smooth(se = FALSE) +
+  labs(x = "Fitted value", y = "Residual") + 
+  theme_lucid()
+
+```
+
+```{r, echo = F, out.width="80%", fig.align='center'}
+# QQ Plot
+augment(aggment_primary) |>
+  ggplot(aes(sample = .std.resid)) +
+  geom_qq() +
+  geom_qq_line() +
+  labs(title = "Normal Q-Q plot of standardized residuals",
+       x = "Theoretical quantiles", y = "Observed quantiles") + 
+  theme_lucid()
+
+```
+
+Interpreting the results: 
+
+```{r, echo = F}
+summary(aggment_primary)
+```
 
 
 \newpage
