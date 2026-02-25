@@ -644,6 +644,19 @@ ggplot(complete_analysis_data, aes(x = factor(ADH_yr2),
   geom_bar() + 
   theme_lucid(legend.position = "none")
 
+# Collapse adherence into <95% and >95%
+complete_analysis_data <- complete_analysis_data %>% 
+  mutate(collapsed_ADH = ifelse(
+         ADH_yr2 %in% c(1, 2),
+         ">95%",
+         "<95%"))
+
+# Barplot
+ggplot(complete_analysis_data, aes(x = factor(collapsed_ADH),
+                                   fill = factor(collapsed_ADH))) +
+  geom_bar() + 
+  theme_lucid(legend.position = "none")
+
 ################################################################################
 ###                               Final Data frame                           ###
 ################################################################################
