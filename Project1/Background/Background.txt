@@ -52,6 +52,8 @@ Some of our colleague’s statistical team has been doing their analysis Bayesia
 We are requesting that the analysis be done in both a Bayesian and non-Bayesian
 framework and compared.
 
-
+OH Questions: 
+- Issues with the pareo K diagnostic values
+- 
 
 
