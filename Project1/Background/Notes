@@ -6,15 +6,9 @@ report hard drug use at baseline.
 
 Questions for the PI: 
 
-Biologically plausible values for LEU3N: 300 to 500 is reasonable
-For VLOAD, will be really high 
-
-Covariates to include: 
-- Age, BMI, Education, Race, Smoking Status, ADH
-
-Can education categories be combined?
-Such as 8th - 12th grade, at leaat one year college, four years college, and 
-some graduate/post-graduate degree?
+OH Questions: 
+Since we can't really perform a test to determine if there a significant difference, 
+do we decide based on the difference in the estimates and prop mediated?
 
 NOTE: 
 - Something about mediators was mentioned in class.
@@ -56,3 +50,31 @@ P0 Mistakes
   - Camille may or may not look at it
 - Do not include table of regression output
 
+2/23 Class
+ - Collapse SMOKE into two categories
+For mediation analyses: 
+Descriptive summary for hard drug use ~ adherence
+- Hard drug use + covariates
+- Hard drug use + ADH + covariates
+-- Table with estimates and comparison
+
+
+
+Mediation Notes: 
+
+The investigator is interested in knowing if differences in adherence to HAART can explain differences in the outcomes between subjects who did and did not report hard hard drug use at baseline.
+In other words, we aim to assess if Adherence to HAART is a mediator - does it explain differences in the outcomes between drug use group for all 4 primary outcomes?
+
+A mediator is defined as an intermediate variable on the causal path between an independent variable and a dependent variable.
+
+In ou particular case, the possible mediator of interest is adherence to HAART, the independent variable is hard-drug use at basleine, and the dependent variable is one of: VLOAD, LEU3N, AGG MENT, or AGG PHYS. 
+
+The indirect effect is the effect of hard drug use on the outcome that works through HAART adherence. 
+The direct effect is the effect of hard drug use on the outcome that does NOT work through HAART adherence. In other words, the remaining effect after adjusting for the mediator. 
+
+We will use this RPubs tutorial for Mediation analyses: 
+[Mediation Analysis Using R](`https://rpubs.com/mbounthavong/mediation_analysis_r`) which uses the [mediation](https://cran.r-project.org/web/packages/mediation/index.html) R package. 
+
+We use the bootstrap approach from the meditation package. 
+
+A table 1 from the tutorial:
