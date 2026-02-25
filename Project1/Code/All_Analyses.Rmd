@@ -193,7 +193,7 @@ Comparison of estimates between models with and without adherence:
 
 ```{r, echo = F}
 # Compare betas 
-t1 <- tbl_regression(vload_primary,
+t1 <- tbl_regression(vload_no_adh,
                      # exponentiate = TRUE,
                      include = c("hard_drugs_cat"),
                      pvalue_fun = label_style_pvalue(digits = 3),
@@ -282,7 +282,7 @@ Hypothesis: CD4+ T cell counts are significantly higher 2 years after HART for s
 # Very unbalanced hard drug use groups 
 
 # Primary model - no adherence
-leu3nno_adh <- lm(LEU3N_yr2 ~ hard_drugs_cat + LEU3N_yr0
+leu3n_no_adh <- lm(LEU3N_yr2 ~ hard_drugs_cat + LEU3N_yr0
                     + BMI + collapse_SMOKE
                     + age + collapse_RACE + collapsed_EDUCBAS,
                      data = data)
@@ -299,31 +299,25 @@ Comparison of estimates between models with and without adherence:
 
 ```{r, echo = F}
 # Compare betas 
-t1 <- tbl_regression(leu3nno_adh,
+t1_leu3n <- tbl_regression(leu3n_no_adh,
                      include = c("hard_drugs_cat"),
                      pvalue_fun = label_style_pvalue(digits = 3),
                      estimate_fun = ~ style_number(.x, digits = 3)) 
 
-t2 <- tbl_regression(leu3n_adh, 
+t2_leu3n <- tbl_regression(leu3n_adh, 
                      include = c("hard_drugs_cat"),
                      pvalue_fun = label_style_pvalue(digits = 3),
                      estimate_fun = ~ style_number(.x, digits = 3))
 
 
 tbl_merge(
-  tbls = list(t1, t2),
+  tbls = list(t1_leu3n, t2_leu3n),
   tab_spanner = c("**Model Without ADH**", 
                   "**Model With ADH**")
 )
 ```
 
-We observe a difference of 0.119 units between the estimate for the two models. 
-The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
-We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
-In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
-The differences that we observe in the estimates can be explained by differences in adherence. 
-Due to these findings, we included adherence in the VLOAD model. 
-
+meow meow meow
 
 ### Primary Analysis
 
@@ -332,7 +326,7 @@ Model diagnostics:
 ```{r, echo = F, out.width="80%", fig.align='center'}
 ### Model diagnostics
 # The final model for VLOAD
-leu3n_primary <- leu3n_adh
+leu3n_primary <- leu3n_no_adh
 
 # Residual plot
 augment(leu3n_primary) |>
@@ -399,13 +393,13 @@ Comparison of estimates between models with and without adherence:
 
 ```{r, echo = F}
 # Compare betas 
-t1 <- tbl_regression(aggphys_no_adh,
+t1_aggphs <- tbl_regression(aggphys_no_adh,
                      # exponentiate = TRUE,
                      include = c("hard_drugs_cat"),
                      pvalue_fun = label_style_pvalue(digits = 3),
                      estimate_fun = ~ style_number(.x, digits = 3)) 
 
-t2 <- tbl_regression(aggphys_adh, 
+t2_aggphs <- tbl_regression(aggphys_adh, 
                      # exponentiate = TRUE,
                      include = c("hard_drugs_cat"),
                      pvalue_fun = label_style_pvalue(digits = 3),
@@ -413,7 +407,7 @@ t2 <- tbl_regression(aggphys_adh,
 
 
 tbl_merge(
-  tbls = list(t1, t2),
+  tbls = list(t1_aggphs, t2_aggphs),
   tab_spanner = c("**Model Without ADH**", 
                   "**Model With ADH**")
 )
@@ -434,7 +428,7 @@ Model diagnostics:
 ```{r, echo = F, out.width="80%", fig.align='center'}
 ### Model diagnostics
 # The final model for VLOAD
-aggphys_primary <- aggphys_adh
+aggphys_primary <- aggphys_no_adh
 
 # Residual plot
 augment(aggphys_primary) |>
