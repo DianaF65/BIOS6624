@@ -1,0 +1,75 @@
+
+Call:
+lm(formula = log_VLOAD_yr2 ~ hard_drugs_cat + log_VLOAD_yr0 + 
+    BMI + collapse_SMOKE + age + collapse_RACE + collapsed_EDUCBAS, 
+    data = data)
+
+Coefficients:
+                       (Intercept)                   hard_drugs_catYes  
+                          1.111135                           -0.136453  
+                     log_VLOAD_yr0                                 BMI  
+                          0.482858                           -0.055937  
+        collapse_SMOKENever/Former                                 age  
+                         -0.052877                           -0.008845  
+             collapse_RACEWhite_NH  collapsed_EDUCBASLess_Than_College  
+                         -0.544643                            0.290932  
+
+
+Call:
+lm(formula = log_VLOAD_yr2 ~ hard_drugs_cat + log_VLOAD_yr0 + 
+    BMI + collapse_SMOKE + age + collapse_RACE + collapsed_EDUCBAS, 
+    data = data)
+
+Residuals:
+    Min      1Q  Median      3Q     Max 
+-6.0546 -1.6976 -0.4946  1.2700  9.1181 
+
+Coefficients:
+                                    Estimate Std. Error t value Pr(>|t|)
+(Intercept)                         1.111135   1.171026   0.949   0.3432
+hard_drugs_catYes                  -0.136453   0.466064  -0.293   0.7698
+log_VLOAD_yr0                       0.482858   0.058510   8.253 1.69e-15
+BMI                                -0.055937   0.029026  -1.927   0.0546
+collapse_SMOKENever/Former         -0.052877   0.266782  -0.198   0.8430
+age                                -0.008845   0.014155  -0.625   0.5323
+collapse_RACEWhite_NH              -0.544643   0.268153  -2.031   0.0428
+collapsed_EDUCBASLess_Than_College  0.290932   0.262285   1.109   0.2679
+                                      
+(Intercept)                           
+hard_drugs_catYes                     
+log_VLOAD_yr0                      ***
+BMI                                .  
+collapse_SMOKENever/Former            
+age                                   
+collapse_RACEWhite_NH              *  
+collapsed_EDUCBASLess_Than_College    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+
+Residual standard error: 2.608 on 455 degrees of freedom
+Multiple R-squared:  0.1656,	Adjusted R-squared:  0.1528 
+F-statistic:  12.9 on 7 and 455 DF,  p-value: 3.619e-15
+
+                                         2.5 %       97.5 %
+(Intercept)                        -1.19015604  3.412426046
+hard_drugs_catYes                  -1.05235733  0.779452027
+log_VLOAD_yr0                       0.36787438  0.597840653
+BMI                                -0.11297841  0.001104567
+collapse_SMOKENever/Former         -0.57715423  0.471400964
+age                                -0.03666191  0.018971139
+collapse_RACEWhite_NH              -1.07161403 -0.017671017
+collapsed_EDUCBASLess_Than_College -0.22450759  0.806371509
+Analysis of Variance Table
+
+Response: log_VLOAD_yr2
+                   Df  Sum Sq Mean Sq F value  Pr(>F)    
+hard_drugs_cat      1    0.66    0.66  0.0977 0.75472    
+log_VLOAD_yr0       1  524.16  524.16 77.0619 < 2e-16 ***
+BMI                 1   32.08   32.08  4.7165 0.03039 *  
+collapse_SMOKE      1    3.20    3.20  0.4703 0.49319    
+age                 1    5.85    5.85  0.8594 0.35440    
+collapse_RACE       1   40.10   40.10  5.8949 0.01557 *  
+collapsed_EDUCBAS   1    8.37    8.37  1.2304 0.26792    
+Residuals         455 3094.80    6.80                    
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
