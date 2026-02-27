@@ -113,28 +113,15 @@ med_data <- apply_labels(data,
 ```
 
 
-A table1: 
- 
-
-```{r, echo = F, include=FALSE}
-data %>% 
-  tbl_summary(include = c(VLOAD_yr2, LEU3N_yr2,
-                          AGG_MENT_yr2, AGG_PHYS_yr2, 
-                          BMI, SMOKE, age, hard_drugs, collapse_RACE,
-                          collapsed_EDUCBAS),
-              statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
-  modify_header(label = "**Variable**") %>% 
-  bold_labels()
-```
-
-Separating by hard drug use at baseline: 
+A table1 separating by hard drug use at baseline: 
 
 ```{r, echo = F}
-data %>% 
+med_data %>% 
   tbl_summary(include = c(VLOAD_yr2, LEU3N_yr2,
                           AGG_MENT_yr2, AGG_PHYS_yr2, 
                           BMI, SMOKE, age, collapse_RACE,
-                          collapsed_EDUCBAS),
+                          collapsed_EDUCBAS,
+                          ADH_yr2),
               by = hard_drugs,
               statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
   modify_header(label = "**Variable**") %>% 
