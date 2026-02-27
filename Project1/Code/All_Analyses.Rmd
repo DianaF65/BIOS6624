@@ -603,11 +603,11 @@ Laboratory in vitro and animal studies have shown that the use of hard drugs has
 However, since there are not any biologically plausible values that we could pick for an informative optimist prior, we will continue with a vague prior for our Bayesian models. 
 
 
-For viral load, we specified a Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
+For viral load, we specified a Normal $(0, 10000)$ prior for the regression coefficients and a Half-Normal $(0, 100^2)$ prior for the residual variance.
 
 ```{r, echo = F}
 ################################################################################
-###                             Bayesian Analysis                            ###
+###                                 VLOAD                                    ###
 ################################################################################
 
 
@@ -883,7 +883,7 @@ vload_fit_adh <- vload_mod_adh$sample(
 ```
 
 
-```{r, echo  F}
+```{r, echo = F}
 ###########################################################################
 # STEP 5: Summarize the posterior
 ###########################################################################
@@ -1267,7 +1267,7 @@ In other words, there is no statistically significant difference in viral load b
 
 ## LEU3N
 
-For CD4+ T cell counts, we specified an vague $Normal(0, 10000)$ prior for the regression coefficients and a $Half Normal(0, 100^2)$ prior for the residual variance.
+For CD4+ T cell counts, we specified an vague Normal $(0, 10000)$ prior for the regression coefficients and a Half-Normal $(0, 100^2)$ prior for the residual variance.
 
 
 ```{r, echo = F}
@@ -1308,7 +1308,7 @@ med_data <- apply_labels(data,
 
 ```{r, echo = F}
 ################################################################################
-###                             Bayesian Analysis                            ###
+###                                    LEU3N                                 ###
 ################################################################################
 
 
@@ -1533,7 +1533,7 @@ m_leu3n_adh <- c(1, rep(0, (P_leu3n_adh - 1)))
 # # SD in the prior on regression coefficients --> variance 100^2
 s_leu3n_adh <- rep(1000, P_leu3n_adh) 
 
-sigma_sd_leu3n_adh <- 100
+sigma_sd_leu3n_adh <- 1000
 
 # create data list to pass to STAN
 data_list_adh <- list(
@@ -1763,17 +1763,8 @@ kable(
   add_header_above(c(" ", "Model Without ADH" = 2, 
                      "Model With ADH" = 2)) %>% 
   footnote(general = "HPDI - Highest Density Interval ")
-  
 
 ```
-
-In the model without taking HAART adherence into account, 
-on average, viral load is 14% lower for hard drug users vs non hard drug users, 2 years after being on HAART. 
-The HDI does not contain 0 which indicates that this difference is not significant.
-When HAART adherence is taken into account, viral load is on average, 2.8% lower for hard-drug users compared to non-hard drug users, 2 years after HAART. 
-The HDI excludes 0 and we have that this difference is not significant.
-There is a noticeable difference in 
-
 
 
 ```{r, echo = F}
@@ -1786,8 +1777,8 @@ loglik_mat_leu3n <- as_draws_matrix(leu3n_fit$draws("log_lik"))
 # iterations x N
 
 # Get the LOO-CV
-loo_res <- loo(loglik_mat_leu3n)
-# looic: 2212.6
+loo_res_leu3n <- loo(loglik_mat_leu3n)
+# looic: 6124.8 
 
 ```
 
@@ -1799,7 +1790,7 @@ loglik_mat_leu3n_adh <- as_draws_matrix(leu3n_fit_adh$draws("log_lik"))
 # Get the LOO-CV
 loo_res_leu3n_adh <- loo(loglik_mat_leu3n_adh)
 # print(loo_res_leu3n_adh)
-# 2208.8
+# 6122.8
 ```
 
 
@@ -1857,8 +1848,6 @@ mcmc_trace(leu3n_draws, pars = leu3n_params)
 ```{r, echo = F, results = 'hide'}
 # Model WITH ADH
 mcmc_trace(leu3n_draws_adh, pars = leu3n_params_adh)
-
-
 ```
 
 
@@ -1873,7 +1862,7 @@ leu3n_fit$summary(variables = leu3n_params)
 ```
 
 ```{r, echo = F}
-
+# Model WITH ADH
 leu3n_fit_adh$summary(variables = leu3n_params_adh)
 
 ```
@@ -1890,7 +1879,6 @@ mcmc_dens_overlay(draws_leu3n, pars = leu3n_params)
 ```{r, echo = F, include = F, eval = F, results='hide'}
 # Posterior density plots
 # Model WITH ADH
-
 mcmc_dens_overlay(draws_leu3n_adh, pars = leu3n_params_adh)
 ```
 
@@ -1930,14 +1918,28 @@ leu3n_fit$cmdstan_diagnose()
 # 
 # Processing complete, no problems detected.
 
-# Can use .rds file for future runs
-
 ```
 
 ```{r, echo = F, results='hide'}
 # Model WITH ADH
 # Diagnostics from cmdstan
 leu3n_fit_adh$cmdstan_diagnose()
+
+### Output
+# Checking sampler transitions treedepth.
+# Treedepth satisfactory for all transitions.
+# 
+# Checking sampler transitions for divergences.
+# No divergent transitions found.
+# 
+# Checking E-BFMI - sampler transitions HMC potential energy.
+# E-BFMI satisfactory.
+# 
+# Rank-normalized split effective sample size satisfactory for all parameters.
+# 
+# Rank-normalized split R-hat values satisfactory for all parameters.
+# 
+# Processing complete, no problems detected.
 ```
 
 
@@ -1959,6 +1961,7 @@ mcmc_acf(leu3n_draws, pars = leu3n_params)
 dev.off()
 
 ```
+
 
 
 
