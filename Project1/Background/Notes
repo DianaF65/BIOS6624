@@ -57,6 +57,7 @@ Descriptive summary for hard drug use ~ adherence
 - Hard drug use + covariates
 - Hard drug use + ADH + covariates
 -- Table with estimates and comparison
+- collapse adherence into less than <95% and >95%
 
 
 
