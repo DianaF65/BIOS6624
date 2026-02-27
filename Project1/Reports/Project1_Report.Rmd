@@ -26,6 +26,7 @@ header-includes:
 knitr::opts_chunk$set(echo = FALSE)
 library(readr)
 library(knitr)
+library(tidyr)
 library(ggplot2)
 library(MASS)
 library(emmeans)
@@ -132,13 +133,50 @@ For aggregate mental quality of life scores, we specified an vague Normal$(0, 10
 
 ## Data Cleaning
 
+The original 8-year longitudinal data set contained 3935 observations for 715 subjects. 
+Before subsetting the data to the years of interest for the analysis, we investigated missingness in the whole data set to ensure concerning missingness patterns were not present. We further ensured that there were no relationships or missingness patterns between any of the four primary outcomes and other variables in the data set. 
+With the exception of adherence, all other variables in the data set had no more than ~7% missingness.
+We then subset the data to information for years 0 and 2. Investigating this particular subset more closely, we filtered out individuals whose BMI did not fall in the range of (10, 60) as anything outside of this range is highly biologically implausible BMI values for adults in the population of interest.  
+Following this, we only kept subjects that contained information for both years 0 and 2. 
+In this step, we also created the variables necessary for analysis including viral load at year 2 and viral load at year 0, and so on for the three other outcomes. 
+With the exception of adherence to medication, the baseline values were retained for hard drug use, BMI, Age, Race, Education, and Smoking Status.
+At this state, missingness were highest for viral load and CD4+ T-Cell counts at ~3%. 
+We removed any missingness for any variables at this step which was a sum of ~10% for all variables. 
+We assessed distributions for all variables and from this determined that a log transformation of viral load is necessary.
+Lastly, we collapsed categories for specific variables. 
+The original 8 race categories were collapsed to 'White' and 'Non-White',
+the original 3 smoking categories were reduced to 'Never/Former' and 'Current',
+Education was collapsed to 'Less than College' and 'Completed College or Higher',
+and adherence to HAART was collapsed to '<95%' and '>95%'.
+Our final data set for analysis contained 463 subjects with complete data for years 0 and 2.
 
 ## Data Analysis
 
 
+
 # Results
 
-<!---------------------------------------- VLOAD ------------------------------>
+<!------------------------------------ Table 1 -------------------------------->
+
+```{r, echo = F}
+data %>% 
+  tbl_summary(include = c(VLOAD_yr2, LEU3N_yr2,
+                          AGG_MENT_yr2, AGG_PHYS_yr2, 
+                          BMI, SMOKE, age, collapse_RACE,
+                          collapsed_EDUCBAS),
+              by = hard_drugs_cat,
+              statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
+  modify_header(label = "**Variable**") %>% 
+  bold_labels()
+```
+
+
+
+
+
+<!------------------------------------- VLOAD --------------------------------->
+
+
 
 Laboratory in vitro and animal studies have shown that the use of hard drugs has increases HIV replication. 
 However, since there are not any biologically plausible values that we could pick for an informative optimist prior, we will continue with a vague prior for our Bayesian models. 
@@ -1913,16 +1951,16 @@ comp_models_aggphys <- data.frame(Variable = "HD at Baseline (Yes)",
                  check.names = FALSE)
 
 # Display with kable
-kable(
-  comp_models_aggphys,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
+# kable(
+#   comp_models_aggphys,
+#   # format = "latex",
+#   booktabs = TRUE,
+#   digits = 3,
+#   caption = "Model Summary") |>
+#   kable_styling(latex_options = c("striped", "hold_position")) |>
+#   add_header_above(c(" ", "Model Without ADH" = 2, 
+#                      "Model With ADH" = 2)) %>% 
+#   footnote(general = "HPDI - Highest Density Interval ")
 
 ```
 
@@ -2569,7 +2607,7 @@ summary(aggment_adh_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, results = 'hide'}
 # Compare estimates for models with and without adherence
 
 # Model without ADH
@@ -2607,16 +2645,16 @@ comp_models_aggment <- data.frame(Variable = "HD at Baseline (Yes)",
                  check.names = FALSE)
 
 # Display with kable
-kable(
-  comp_models_aggment,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
+# kable(
+#   comp_models_aggment,
+#   # format = "latex",
+#   booktabs = TRUE,
+#   digits = 3,
+#   caption = "Model Summary") |>
+#   kable_styling(latex_options = c("striped", "hold_position")) |>
+#   add_header_above(c(" ", "Model Without ADH" = 2, 
+#                      "Model With ADH" = 2)) %>% 
+#   footnote(general = "HPDI - Highest Density Interval ")
 
 ```
 
@@ -3134,11 +3172,12 @@ kable(
 ```
 
 ```{r, echo = F}
-parse_hdi <- function(x) {
-  # expects "lower, upper"
-  nums <- str_split_fixed(x, ",\\s*", 2)
-  tibble(lower = as.numeric(nums[,1]), upper = as.numeric(nums[,2]))
-}
+# parse_hdi <- function(x) {
+#   # expects "lower, upper"
+#   nums <- str_split_fixed(x, ",\\s*", 2)
+#   tibble(lower = as.numeric(nums[,1]), upper = as.numeric(nums[,2]))
+# }
+library(stringr)
 
 # Create data frame 
 adh_comparison2 <- data.frame(Outcome = 
@@ -3234,38 +3273,44 @@ forest_df <- adh_comparison2 %>%
     OutcomeGroup = case_when(
       str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
       str_detect(Outcome, "CD4")   ~ "CD4",
-      TRUE                         ~ "Quality of life"
-    ),
-    Outcome = factor(Outcome, levels = rev(unique(adh_comparison2$Outcome)))
-  ) %>%
+      TRUE                         ~ "Quality of life"),
+    Outcome = factor(Outcome, levels = rev(unique(adh_comparison2$Outcome)))) %>%
   select(Outcome, OutcomeGroup, Model, Estimate, lower, upper)
 
 # Reference lines
 ref_lines <- tibble(
   OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
-  ref = c(1, 0, 0)
+  ref = c(0, 0, 0)
 )
 
+```
+
+```{r, echo = F}
 # Plot
-ggplot(forest_df, aes(x = Estimate, y = Outcome, shape = Model)) +
+ggplot(forest_df, aes(x = Estimate, 
+                      y = Outcome, 
+                      # shape = Model,
+                      col = Model)) +
   geom_vline(data = ref_lines,
              aes(xintercept = ref),
              linetype = "dashed",
              inherit.aes = FALSE) +
   geom_errorbarh(aes(xmin = lower, xmax = upper),
-                 height = 0.18,
-                 position = position_dodge(width = 0.5)) +
-  geom_point(size = 2.3,
-             position = position_dodge(width = 0.5)) +
-  facet_wrap(~OutcomeGroup, scales = "free_x", ncol = 1) +
+                 width = 0.1,
+                 position = position_dodge(width = 0.5),
+                 orientation = "y") +
+  geom_point(size = 2,
+             position = position_dodge(width = 0.5),
+             show.legend = FALSE) +
+  facet_wrap(~OutcomeGroup, 
+             scales = "free_x",
+             ncol = 1) +
   labs(
     x = "Estimate (95% HDI)",
     y = NULL,
     shape = NULL,
-    title = "Effect of Baseline Hard Drug Use at Year 2\nModels With vs Without ADH"
-  ) +
+    title = "Effect of Baseline Hard Drug Use at Year 2\nModels With vs Without ADH") +
   theme_minimal()
-
 ```
 
 
