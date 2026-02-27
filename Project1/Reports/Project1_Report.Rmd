@@ -54,10 +54,13 @@ library(broom)
 library(expss)
 library(mediation)
 library(bda)
+library(patchwork)
+library(purrr)
 
 # Libraries for Bayesian analysis
 # Dependencies 
 library(cmdstanr)
+library(rstan)
 library(bayesplot)  # diagnostic plots of the MCMC chains
 library(posterior)  # for summarizing posterior draws
 library(bayestestR) # for calculating higest density posterior intervals
@@ -2922,13 +2925,60 @@ kbl(
   footnote(general = "HDI - Highest Density Interval ")
 ```
 
-<!-- VLOAD -->
+
+```{r, echo = F, eval = F}
+
+effects_df1 <- tibble(
+  Outcome = c("CD4+ T-Cell Count"),
+  Estimate = c(-163.420),
+  Lower = c( -223.956),
+  Upper = c(-102.143)
+)
 
 
-```{r, echo = F}
-
+ggplot(effects_df1, 
+       aes(x = Estimate, 
+           y = reorder(Outcome, Estimate),
+           col = Outcome)) +
+  geom_point(size = 2) +
+  geom_errorbarh(aes(xmin = Lower, 
+                     xmax = Upper),
+                 width = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(x = "Adjusted Difference at Year 2",
+       y = "",
+       title = "Adjusted Effect of Baseline Hard Drug Use") +
+  scale_x_continuous(breaks = seq(-250, 50, by = 50)) + 
+  theme_lucid()
 ```
 
+```{r, echo = F, eval= F}
+effects_df2 <- tibble(
+  Outcome = c("Log(Viral Load)",
+              "Mental QOL", "Physical QOL"),
+  Estimate = c(-0.140, -3.347, -3.343),
+  Lower = c(-1.057,  -6.147, -6.221),
+  Upper = c(0.738,  -0.711, -0.675)
+)
+
+ggplot(effects_df2, 
+       aes(x = Estimate, 
+           y = reorder(Outcome, Estimate),
+           col = Outcome)) +
+  geom_point(size = 2) +
+  geom_errorbarh(aes(xmin = Lower, 
+                     xmax = Upper),
+                 width = 0.2) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  labs(x = "Adjusted Difference at Year 2",
+       y = "",
+       title = "Adjusted Effect of Baseline Hard Drug Use") +
+  scale_x_continuous(breaks = seq(-7, 2, by = 1)) + 
+  theme_lucid()
+```
+
+
+<!-- VLOAD -->
 
 We have that on average, the number of HIV copies in a mL of blood 2 years after HAART is 0.14 units lower for subjects who report hard drug use at baseline compared to subjects who report no hard drug use at baseline. However, this is not statistically significant (P=0.77). 
 In other words, there is no statistically significant difference in viral load between subjects who report hard drug use and subjects who did not report hard drug use at baseline. 
@@ -3081,6 +3131,141 @@ kable(
   add_header_above(c(" ", "Model Without ADH" = 2, 
                      "Model With ADH" = 2)) %>% 
   footnote(general = "HPDI - Highest Density Interval ")
+```
+
+```{r, echo = F}
+parse_hdi <- function(x) {
+  # expects "lower, upper"
+  nums <- str_split_fixed(x, ",\\s*", 2)
+  tibble(lower = as.numeric(nums[,1]), upper = as.numeric(nums[,2]))
+}
+
+# Create data frame 
+adh_comparison2 <- data.frame(Outcome = 
+                          # VLOAD
+                          c("Log(Viral Load)",
+                          # LEU3N
+                          "CD4+ T-Cell Count",
+                          # AGG PHYS
+                          "Agg. Mental QOL Score",
+                          # AGG MENT
+                          "Agg. Physical QOL Score"),
+                  ## WITHOUT ADH
+                 Estimate_No_ADH = 
+                   # VLOAD
+                   c(round(exp(vload_terms$Estimate), 3),
+                   # LEU3N
+                    round(leu3n_terms$Estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_terms$Estimate, 3),
+                   # AGG MENT
+                   round(aggment_terms$Estimate, 3)),
+                 ## WITHOUT ADH
+                 `95% HDI (No ADH)` = c(
+                   # VLOAD
+                   paste(round(exp(vload_terms$HPDI_2.5), 3), 
+                                    round(exp(vload_terms$HPDI_97.5), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_terms$HPDI_2.5, 3), 
+                                    round(leu3n_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_terms$HPDI_2.5, 3), 
+                                    round(aggphys_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_terms$HPDI_2.5, 3), 
+                                    round(aggment_terms$HPDI_97.5, 3), 
+                                    sep = ", ")),
+                 ## WITH ADH
+                 Estimate_ADH = 
+                   # VLOAD
+                   c(round(exp(vload_adh_terms$Estimate), 3),
+                   # LEU3N
+                    round(leu3n_adh_terms$Estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_adh_terms$Estimate, 3),
+                   # AGG MENT
+                   round(aggment_adh_terms$Estimate, 3)),
+                 # WITH ADH
+                 `95% HDI (ADH)` = c(
+                   # VLOAD
+                   paste(round(exp(vload_adh_terms$HPDI_2.5), 3), 
+                                    round(exp(vload_adh_terms$HPDI_97.5), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_adh_terms$HPDI_2.5, 3), 
+                                    round(leu3n_adh_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_adh_terms$HPDI_2.5, 3), 
+                                    round(aggphys_adh_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_adh_terms$HPDI_2.5, 3), 
+                                    round(aggment_adh_terms$HPDI_97.5, 3), 
+                                    sep = ", ")),
+                 check.names = FALSE
+)
+
+
+forest_df <- adh_comparison2 %>%
+  pivot_longer(
+    cols = c(Estimate_No_ADH, Estimate_ADH),
+    names_to = "Model",
+    values_to = "Estimate"
+  ) %>%
+  mutate(
+    # Attach correct HDI column
+    HDI = case_when(
+      Model == "Estimate_No_ADH" ~ `95% HDI (No ADH)`,
+      Model == "Estimate_ADH"    ~ `95% HDI (ADH)`
+    ),
+    # Clean model labels
+    Model = case_when(
+      Model == "Estimate_No_ADH" ~ "Without ADH",
+      Model == "Estimate_ADH"    ~ "With ADH"
+    ),
+    # Parse lower/upper from "lower, upper"
+    lower = as.numeric(str_trim(str_extract(HDI, "^[^,]+"))),
+    upper = as.numeric(str_trim(str_extract(HDI, "[^,]+$"))),
+    # Group outcomes for scaling
+    OutcomeGroup = case_when(
+      str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
+      str_detect(Outcome, "CD4")   ~ "CD4",
+      TRUE                         ~ "Quality of life"
+    ),
+    Outcome = factor(Outcome, levels = rev(unique(adh_comparison2$Outcome)))
+  ) %>%
+  select(Outcome, OutcomeGroup, Model, Estimate, lower, upper)
+
+# Reference lines
+ref_lines <- tibble(
+  OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
+  ref = c(1, 0, 0)
+)
+
+# Plot
+ggplot(forest_df, aes(x = Estimate, y = Outcome, shape = Model)) +
+  geom_vline(data = ref_lines,
+             aes(xintercept = ref),
+             linetype = "dashed",
+             inherit.aes = FALSE) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper),
+                 height = 0.18,
+                 position = position_dodge(width = 0.5)) +
+  geom_point(size = 2.3,
+             position = position_dodge(width = 0.5)) +
+  facet_wrap(~OutcomeGroup, scales = "free_x", ncol = 1) +
+  labs(
+    x = "Estimate (95% HDI)",
+    y = NULL,
+    shape = NULL,
+    title = "Effect of Baseline Hard Drug Use at Year 2\nModels With vs Without ADH"
+  ) +
+  theme_minimal()
+
 ```
 
 
