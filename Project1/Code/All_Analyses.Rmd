@@ -1270,6 +1270,9 @@ In other words, there is no statistically significant difference in viral load b
 For CD4+ T cell counts, we specified an vague Normal $(0, 10000)$ prior for the regression coefficients and a Half-Normal $(0, 100^2)$ prior for the residual variance.
 
 
+For CD4+ T cell counts, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
+
+
 ```{r, echo = F}
 # Read in data
 data <- read.csv("../Data/final_hiv_data.csv")
@@ -1583,7 +1586,7 @@ leu3n_fit_adh <- leu3n_mod_adh$sample(
 ```
 
 
-```{r, echo  F}
+```{r, echo = F, results='hide'}
 ###########################################################################
 # STEP 5: Summarize the posterior
 ###########################################################################
@@ -1610,7 +1613,7 @@ params_leu3n <- params_leu3n[!grepl("lp__|log_lik", params_leu3n)]
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, results = 'hide'}
 # Model WITH ADH
 
 leu3n_fit_adh$summary(variables=c("beta[1]", "beta[2]", 
@@ -1634,7 +1637,7 @@ params_leu3n_adh <- params_leu3n_adh[!grepl("lp__|log_lik", params_leu3n_adh)]
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, results = 'hide'}
 # Model without ADH
 # Build summary table
 summary_table_leu3n <- lapply(params_leu3n, function(p) {
@@ -1675,7 +1678,7 @@ summary(leu3n_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, results = 'hide'}
 # Model WITH ADH
 # Build summary table
 summary_table_leu3n_adh <- lapply(params_leu3n_adh, function(p) {
@@ -1831,7 +1834,7 @@ leu3n_params_adh <- c("beta[1]", "beta[2]",
 ```
 
 
-```{r, echo = F, results = 'hide'}
+```{r, echo = F, results = 'hide', eval = F}
 # Trace plots
 # Trace plots show whether chains are mixing well and exploring the parameter space.
 # Chains should mix well (lines overlap)
@@ -1845,7 +1848,7 @@ mcmc_trace(leu3n_draws, pars = leu3n_params)
 ```
 
 
-```{r, echo = F, results = 'hide'}
+```{r, echo = F, results = 'hide', eval = F}
 # Model WITH ADH
 mcmc_trace(leu3n_draws_adh, pars = leu3n_params_adh)
 ```
@@ -1861,14 +1864,14 @@ leu3n_fit$summary(variables = leu3n_params)
 # ESS should be around > 200*9 = 1800 and that seems to be the case for most
 ```
 
-```{r, echo = F}
+```{r, echo = F, results='hide'}
 # Model WITH ADH
 leu3n_fit_adh$summary(variables = leu3n_params_adh)
 
 ```
 
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Posterior Density Plots
 # Overlaid densities from multiple chains should match closely
 # If densities differ substantially between chains → poor mixing
@@ -1883,7 +1886,7 @@ mcmc_dens_overlay(draws_leu3n_adh, pars = leu3n_params_adh)
 ```
 
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Auto-correlation 
 # Autocorrelation should decay quickly
 # High autocorrelation → may need more iterations or thinning
@@ -1891,13 +1894,13 @@ mcmc_acf(draws_leu3n, pars = leu3n_params)
 
 ```
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Model WITH ADH
 mcmc_acf(draws_leu3n_adh, pars = leu3n_params_adh)
 ```
 
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Diagnostics from cmdstan
 leu3n_fit$cmdstan_diagnose()
 # Need to load actual leu3n and not leu3n .rds for this
@@ -1920,7 +1923,7 @@ leu3n_fit$cmdstan_diagnose()
 
 ```
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Model WITH ADH
 # Diagnostics from cmdstan
 leu3n_fit_adh$cmdstan_diagnose()
@@ -1958,6 +1961,705 @@ pdf('Output/P1_leu3n_MCMC_DiagnosticPlots.pdf')
 mcmc_trace(leu3n_draws, pars = leu3n_params)
 mcmc_dens_overlay(leu3n_draws, pars = leu3n_params)
 mcmc_acf(leu3n_draws, pars = leu3n_params)
+dev.off()
+
+```
+
+## AGG PHYS
+
+
+For aggregate physical quality of life scores, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
+
+
+```{r, echo = F}
+# Read in data
+data <- read.csv("../Data/final_hiv_data.csv")
+
+# Assessment of the data first
+# str(data)
+
+# Create categorical labels and variables 
+
+# Hard drugs
+data$hard_drugs_cat <- factor(data$hard_drugs,
+                              levels = c(0, 1),
+                              labels = c("No", "Yes"))
+
+# Move after hard drugs variable
+data <- data %>% 
+  relocate(hard_drugs_cat, .after = hard_drugs)
+
+# Convert collapse race to factor
+data$collapse_RACE <- factor(data$collapse_RACE)
+
+# Convert collapse educ to factor
+data$collapsed_EDUCBAS <- factor(data$collapsed_EDUCBAS)
+
+# Convert SMOKE cat to factor
+data$collapse_SMOKE <- factor(data$collapse_SMOKE)
+
+# Relabel the variables
+med_data <- apply_labels(data,
+                   hard_drugs = "Hard Drug Use at BL",
+                   ADH_yr2 = "HAART Adherence",
+                   VLOAD_yr2 = "VLOAD - yr2")
+```
+
+
+
+```{r, echo = F}
+################################################################################
+###                                AGG PHYS                                  ###
+################################################################################
+
+
+### Linear model WITHOUT ADHERENCE
+aggphys_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
+
+# sink("Output/P1_aggphys_Freq_Output.txt")
+# print(aggphys_linear)
+# summary(aggphys_linear)
+# confint(aggphys_linear)
+# anova(aggphys_linear)
+# sink()
+
+``` 
+
+```{r, echo = F}
+### Linear model WITH ADHERENCE
+aggphys_adh_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS
+                    + collapsed_ADH,
+                     data = data)
+
+```
+
+
+
+```{r, echo = F}
+### Bayesian Model
+
+# Linear model WITHOUT ADHERENCE
+
+###########################################################################
+# STEP 1: Define the model
+# Normal priors on the regression coefficients
+# Half normal priors on sigma
+###########################################################################
+
+
+stan_file_aggphys <- write_stan_file("data {
+  int<lower=0> N;                  // number of observations
+  int<lower=0> P;                  // number of predictors including intercept
+  matrix[N, P] X;                  // design matrix (first column = intercept)
+  vector[N] y;                     // outcome
+
+  vector[P] prior_mean;            // prior means for each beta
+  vector<lower=0>[P] prior_sd;     // prior SDs for each beta
+
+  real<lower=0> sigma_prior_sd;    // SD for half-normal prior on sigma
+}
+
+parameters {
+  vector[P] beta;                  // regression coefficients
+  real<lower=0> sigma;             // residual SD
+}
+
+model {
+  // Vectorized priors for regression coefficients
+  beta ~ normal(prior_mean, prior_sd);
+
+  // Half-normal prior for sigma
+  sigma ~ normal(0, sigma_prior_sd);
+
+  // Likelihood
+  y ~ normal(X * beta, sigma);
+  
+
+}
+
+generated quantities {
+  // log likelihood for each observation for calculating model fit stats
+  vector[N] log_lik;
+  for (n in 1:N) {
+    log_lik[n] = normal_lpdf(y[n] | X[n] * beta, sigma);}
+  }", dir="STAN", basename='aggphys_primary'
+)
+
+```
+
+```{r, echo = F}
+# Linear Model WITH ADHERENCE
+
+###########################################################################
+# STEP 1: Define the model
+# Normal priors on the regression coefficients
+# Half normal priors on sigma
+###########################################################################
+
+
+stan_file_aggphys_adh <- write_stan_file("data {
+  int<lower=0> N;                  // number of observations
+  int<lower=0> P;                  // number of predictors including intercept
+  matrix[N, P] X;                  // design matrix (first column = intercept)
+  vector[N] y;                     // outcome
+
+  vector[P] prior_mean;            // prior means for each beta
+  vector<lower=0>[P] prior_sd;     // prior SDs for each beta
+
+  real<lower=0> sigma_prior_sd;    // SD for half-normal prior on sigma
+}
+
+parameters {
+  vector[P] beta;                  // regression coefficients
+  real<lower=0> sigma;             // residual SD
+}
+
+model {
+  // Vectorized priors for regression coefficients
+  beta ~ normal(prior_mean, prior_sd);
+
+  // Half-normal prior for sigma
+  sigma ~ normal(0, sigma_prior_sd);
+
+  // Likelihood
+  y ~ normal(X * beta, sigma);
+  
+
+}
+
+generated quantities {
+  // log likelihood for each observation for calculating model fit stats
+  vector[N] log_lik;
+  for (n in 1:N) {
+    log_lik[n] = normal_lpdf(y[n] | X[n] * beta, sigma);}
+  }", dir="STAN", basename='aggphys_adh'
+)
+
+```
+
+
+```{r, echo = F, message = F, warning = F}
+###########################################################################
+# STEP 2: Compile the Stan program
+###########################################################################
+
+# Model WITHOUT adherence
+aggphys_mod <- cmdstan_model('STAN/aggphys_primary.stan')
+
+```
+
+```{r, echo = F, message = F, warning = F}
+# Model WITH adherence
+aggphys_mod_adh <- cmdstan_model('STAN/aggphys_adh.stan')
+
+```
+
+
+```{r, echo = F}
+###########################################################################
+# STEP 3: Prepare your data to pass to Stan
+###########################################################################
+
+# Model WITHOUT adherence
+# Outcome data
+y_aggphys <- data$AGG_PHYS_yr2
+
+# Design matrix in our linear regression
+X_aggphys <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+   + BMI + collapse_SMOKE
+   + age + collapse_RACE + collapsed_EDUCBAS,
+   data = data)
+
+# These are variables needed in Stan
+# N is the number of observations in your data set 
+# P is the number of columns in the design matrix
+N_aggphys <- nrow(X_aggphys)
+P_aggphys <- ncol(X_aggphys)
+
+# Hyper-parameters for prior distributions
+# Prior for regression coefficients is Normal(0, 10000)
+# Prior for model error SD (sigma) is Half-Normal(0, 100)
+
+# MVN mean (mean in the prior on the regression coefficients)
+m_aggphys <- c(1, rep(0, (P_aggphys - 1)))   
+
+# # SD in the prior on regression coefficients --> variance 100^2
+s_aggphys <- rep(1000, P_aggphys) 
+
+sigma_sd_aggphys <- 1000
+
+# create data list to pass to STAN
+data_list <- list(
+  N = N_aggphys,
+  P = P_aggphys,
+  X = X_aggphys,
+  y = y_aggphys,
+  prior_mean = m_aggphys,
+  prior_sd = s_aggphys,
+  sigma_prior_sd = sigma_sd_aggphys
+)
+```
+
+
+```{r, echo = F}
+# Model WITH adherence
+# Outcome data
+y_aggphys_adh <- data$AGG_PHYS_yr2
+
+# Design matrix in our linear regression
+X_aggphys_adh <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+   + BMI + collapse_SMOKE
+   + age + collapse_RACE + collapsed_EDUCBAS
+   + collapsed_ADH,
+   data = data)
+
+# These are variables needed in Stan
+# N is the number of observations in your data set 
+# P is the number of columns in the design matrix
+N_aggphys_adh <- nrow(X_aggphys_adh)
+P_aggphys_adh <- ncol(X_aggphys_adh)
+
+# Hyper-parameters for prior distributions
+# Prior for regression coefficients is Normal(0, 10000)
+# Prior for model error SD (sigma) is Half-Normal(0, 100)
+
+# MVN mean (mean in the prior on the regression coefficients)
+m_aggphys_adh <- c(1, rep(0, (P_aggphys_adh - 1)))   
+
+# # SD in the prior on regression coefficients --> variance 100^2
+s_aggphys_adh <- rep(1000, P_aggphys_adh) 
+
+sigma_sd_aggphys_adh <- 1000
+
+# create data list to pass to STAN
+data_list_adh <- list(
+  N = N_aggphys_adh,
+  P = P_aggphys_adh,
+  X = X_aggphys_adh,
+  y = y_aggphys_adh,
+  prior_mean = m_aggphys_adh,
+  prior_sd = s_aggphys_adh,
+  sigma_prior_sd = sigma_sd_aggphys_adh
+)
+```
+
+
+```{r, echo = F, message=F, warning = F, results = 'hide'}
+###########################################################################
+# STEP 4: Fit Model
+###########################################################################
+
+# Model WITHOUT adherence
+# Specify the warmup and sampling iterations
+aggphys_fit <- suppressMessages(
+  suppressWarnings(
+  aggphys_mod$sample(
+  data = data_list,
+  chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  seed = 235,
+  refresh = 0
+ )
+)
+)
+
+```
+
+```{r, echo = F, message=F, warning = F, results = 'hide'}
+# Model WITH adherence
+# Specify the warmup and sampling iterations
+aggphys_fit_adh <- aggphys_mod_adh$sample(
+  data = data_list_adh,
+  chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  seed = 456
+)
+```
+
+
+```{r, echo = F, results='hide'}
+###########################################################################
+# STEP 5: Summarize the posterior
+###########################################################################
+
+# Model without ADH
+aggphys_fit$summary(variables=c("beta[1]", "beta[2]", 
+                              "beta[3]",
+        # including extra betas to double check results with linear model
+                              "beta[4]", "beta[5]",
+                              "beta[6]", "beta[7]",
+                              "beta[8]", 
+                              "sigma"))
+
+
+# Fancier Table of Results of Interest from the Posterior
+# Extract posterior draws from cmdstanr fit
+draws_aggphys <- aggphys_fit$draws()  
+
+draws_mat_aggphys <- as_draws_matrix(draws_aggphys)
+params_aggphys <- colnames(draws_mat_aggphys)
+
+# Exclude non-parameter columns from summarization: lp__ and log_lik[n]
+params_aggphys <- params_aggphys[!grepl("lp__|log_lik", params_aggphys)]
+
+```
+
+```{r, echo = F, results = 'hide'}
+# Model WITH ADH
+
+aggphys_fit_adh$summary(variables=c("beta[1]", "beta[2]", 
+                              "beta[3]",
+        # including extra betas to double check results with linear model
+                              "beta[4]", "beta[5]",
+                              "beta[6]", "beta[7]",
+                              "beta[8]", 
+                              "sigma"))
+
+
+# Fancier Table of Results of Interest from the Posterior
+# Extract posterior draws from cmdstanr fit
+draws_aggphys_adh <- aggphys_fit_adh$draws()  
+
+draws_mat_aggphys_adh <- as_draws_matrix(draws_aggphys_adh)
+params_aggphys_adh <- colnames(draws_mat_aggphys_adh)
+
+# Exclude non-parameter columns from summarization: lp__ and log_lik[n]
+params_aggphys_adh <- params_aggphys_adh[!grepl("lp__|log_lik", params_aggphys_adh)]
+
+```
+
+```{r, echo = F, results = 'hide'}
+# Model without ADH
+# Build summary table
+summary_table_aggphys <- lapply(params_aggphys, function(p) {
+  vals <- as.numeric(draws_mat_aggphys[, p])
+  
+  # Monte Carlo standard error
+  # Used to determine if we have run enough iterations
+  # rule of thumb: MCSE should be less than 6.27% of the posterior standard deviation
+  mcse_val <- mcmcse::mcse(vals)$se
+  
+  # Effective sample size
+  ess_val <- ess_bulk(vals)
+  
+  # 95% HPDI
+  hpd <- hdi(vals, ci = 0.95)
+  
+  tibble(
+    Parameter = p,
+    Estimate  = mean(vals),
+    MCSE      = mcse_val,
+    Std_Dev   = sd(vals),
+    HPDI_2.5  = hpd$CI_low,
+    HPDI_97.5 = hpd$CI_high,
+    ESS       = ess_val
+  )}) %>% 
+  bind_rows()
+
+print(summary_table_aggphys)
+
+# Compare with linear fit
+summary(aggphys_linear)
+
+# check that mcmcse < 6% of posterior SD
+(100*summary_table_aggphys$MCSE/summary_table_aggphys$Std_Dev) < 6
+# All True
+
+
+```
+
+
+```{r, echo = F, results = 'hide'}
+# Model WITH ADH
+# Build summary table
+summary_table_aggphys_adh <- lapply(params_aggphys_adh, function(p) {
+  vals <- as.numeric(draws_mat_aggphys_adh[, p])
+  
+  # Monte Carlo standard error
+  # Used to determine if we have run enough iterations
+  # rule of thumb: MCSE should be less than 6.27% of the posterior standard deviation
+  mcse_val <- mcmcse::mcse(vals)$se
+  
+  # Effective sample size
+  ess_val <- ess_bulk(vals)
+  
+  # 95% HPDI
+  hpd <- hdi(vals, ci = 0.95)
+  
+  tibble(
+    Parameter = p,
+    Estimate  = mean(vals),
+    MCSE      = mcse_val,
+    Std_Dev   = sd(vals),
+    HPDI_2.5  = hpd$CI_low,
+    HPDI_97.5 = hpd$CI_high,
+    ESS       = ess_val
+  )}) %>% 
+  bind_rows()
+
+print(summary_table_aggphys_adh)
+
+# Compare with linear fit
+summary(aggphys_adh_linear)
+
+# check that mcmcse < 6% of posterior SD
+(100*summary_table_aggphys_adh$MCSE/summary_table_aggphys_adh$Std_Dev) < 6
+# All True
+
+```
+
+
+```{r, echo = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+aggphys_terms <- summary_table_aggphys[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggphys_terms <- subset(aggphys_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Model WITH ADH
+# Pull term for hard drugs variable
+aggphys_adh_terms <- summary_table_aggphys_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggphys_adh_terms <- subset(aggphys_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+comp_models_aggphys <- data.frame(Variable = "HD at Baseline (Yes)",
+                 Estimate = round(aggphys_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggphys_terms$HPDI_2.5, 3), 
+                                    round(aggphys_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 Estimate = round(aggphys_adh_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggphys_adh_terms$HPDI_2.5, 3),
+                                    round(aggphys_adh_terms$HPDI_97.5, 3),
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_aggphys,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+
+```
+
+
+```{r, echo = F}
+###########################################################################
+# STEP 6: Model fit statistics (you only need 1 of these, not all 3)
+###########################################################################
+# Extract the log likelihood info
+# For aggphys model without ADH
+loglik_mat_aggphys <- as_draws_matrix(aggphys_fit$draws("log_lik")) 
+# iterations x N
+
+# Get the LOO-CV
+loo_res_aggphys <- loo(loglik_mat_aggphys)
+# looic: 3223.6 
+
+```
+
+```{r, echo = F}
+# Model WITH ADH
+loglik_mat_aggphys_adh <- as_draws_matrix(aggphys_fit_adh$draws("log_lik")) 
+# iterations x N
+
+# Get the LOO-CV
+loo_res_aggphys_adh <- loo(loglik_mat_aggphys_adh)
+# print(loo_res_aggphys_adh)
+# 3222.5
+```
+
+
+```{r, echo = F}
+###########################################################################
+# STEP 6: MCMC Diagnostics
+###########################################################################
+
+# Model without ADH
+# Dimensions: iterations x chains x parameters
+aggphys_draws <- as_draws_array(aggphys_fit$draws())
+
+# Tidy format for bayesplot / ggplot
+aggphys_draws_df <- as_draws_df(aggphys_fit$draws())  
+
+# parameters
+aggphys_params <- c("beta[1]", "beta[2]", 
+            "beta[3]", "beta[4]",
+            "beta[5]", "beta[6]",
+            "beta[7]", "beta[8]",
+            "sigma")
+
+```
+
+```{r, echo = F}
+# Dimensions: iterations x chains x parameters
+aggphys_draws_adh <- as_draws_array(aggphys_fit_adh$draws())
+
+# Tidy format for bayesplot / ggplot
+aggphys_draws_df_adh <- as_draws_df(aggphys_fit_adh$draws())  
+
+# parameters
+aggphys_params_adh <- c("beta[1]", "beta[2]", 
+            "beta[3]", "beta[4]",
+            "beta[5]", "beta[6]",
+            "beta[7]", "beta[8]",
+            "sigma")
+```
+
+
+```{r, echo = F, results = 'hide', eval = F}
+# Trace plots
+# Trace plots show whether chains are mixing well and exploring the parameter space.
+# Chains should mix well (lines overlap)
+# No long trends (no “stickiness”)
+# Ideally all chains overlap around the same mean
+
+# Model without ADH
+mcmc_trace(aggphys_draws, pars = aggphys_params)
+# They look beautiful
+
+```
+
+
+```{r, echo = F, results = 'hide', eval = F}
+# Model WITH ADH
+mcmc_trace(aggphys_draws_adh, pars = aggphys_params_adh)
+```
+
+
+
+```{r, echo = F, results = 'hide'}
+# R-hat and ESS diagnostics
+# R-hat ≈ 1.00 → converged
+# ESS should be reasonably large (e.g., >100–200 per parameter)
+aggphys_fit$summary(variables = aggphys_params)
+# We see that rhats are all approx 1
+# ESS should be around > 200*9 = 1800 and that seems to be the case for most
+```
+
+```{r, echo = F, results='hide'}
+# Model WITH ADH
+aggphys_fit_adh$summary(variables = aggphys_params_adh)
+
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# Posterior Density Plots
+# Overlaid densities from multiple chains should match closely
+# If densities differ substantially between chains → poor mixing
+mcmc_dens_overlay(draws_aggphys, pars = aggphys_params)
+
+```
+
+```{r, echo = F, include = F, eval = F, results='hide'}
+# Posterior density plots
+# Model WITH ADH
+mcmc_dens_overlay(draws_aggphys_adh, pars = aggphys_params_adh)
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# Auto-correlation 
+# Autocorrelation should decay quickly
+# High autocorrelation → may need more iterations or thinning
+mcmc_acf(draws_aggphys, pars = aggphys_params)
+
+```
+
+```{r, echo = F, results='hide', eval = F}
+# Model WITH ADH
+mcmc_acf(draws_aggphys_adh, pars = aggphys_params_adh)
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# Diagnostics from cmdstan
+aggphys_fit$cmdstan_diagnose()
+# Need to load actual aggphys and not aggphys .rds for this
+
+### Output
+# Checking sampler transitions treedepth.
+# Treedepth satisfactory for all transitions.
+# 
+# Checking sampler transitions for divergences.
+# No divergent transitions found.
+# 
+# Checking E-BFMI - sampler transitions HMC potential energy.
+# E-BFMI satisfactory.
+# 
+# Rank-normalized split effective sample size satisfactory for all parameters.
+# 
+# Rank-normalized split R-hat values satisfactory for all parameters.
+# 
+# Processing complete, no problems detected
+
+```
+
+```{r, echo = F, results='hide', eval = F}
+# Model WITH ADH
+# Diagnostics from cmdstan
+aggphys_fit_adh$cmdstan_diagnose()
+
+### Output
+# Checking sampler transitions treedepth.
+# Treedepth satisfactory for all transitions.
+# 
+# Checking sampler transitions for divergences.
+# No divergent transitions found.
+# 
+# Checking E-BFMI - sampler transitions HMC potential energy.
+# E-BFMI satisfactory.
+# 
+# Rank-normalized split effective sample size satisfactory for all parameters.
+# 
+# Rank-normalized split R-hat values satisfactory for all parameters.
+# 
+# Processing complete, no problems detected.
+
+```
+
+
+```{r, echo = F, eval = F}
+## Save output if desired ###
+# MCMC Output
+sink("Output/P1_aggphys_MCMCOutput.txt")
+print(summary_table)
+print(loo_res)
+print(aggphys_fit$cmdstan_diagnose())
+print(aggphys_fit$summary(variables=aggphys_params))
+sink()
+
+# Diagnostic plots
+pdf('Output/P1_aggphys_MCMC_DiagnosticPlots.pdf')
+mcmc_trace(aggphys_draws, pars = aggphys_params)
+mcmc_dens_overlay(aggphys_draws, pars = aggphys_params)
+mcmc_acf(aggphys_draws, pars = aggphys_params)
 dev.off()
 
 ```
