@@ -80,6 +80,18 @@ summary(analysis_data)
 # We note some concerning values for BMI: -1 and 999
 summary(analysis_data$BMI)
 
+##################################### Table1 ###################################
+
+analysis_data %>% 
+  tbl_summary(include = c(VLOAD, LEU3N,
+                          AGG_MENT, AGG_PHYS, 
+                          BMI, SMOKE, age, 
+                          hard_drugs, collapse_RACE,
+                          collapsed_EDUCBAS),
+              statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
+  modify_header(label = "**Variable**") %>% 
+  bold_labels()
+
 ################################ Missingness ###################################
 
 #### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
