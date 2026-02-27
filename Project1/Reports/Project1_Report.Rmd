@@ -545,57 +545,6 @@ summary(vload_adh_linear)
 ```
 
 
-```{r, echo = F}
-# Compare estimates for models with and without adherence
-
-# Model without ADH
-vload_terms <- summary_table_vload[2, ]
-
-# Subset to Parameter, Estimate, HPDIs
-vload_terms <- subset(vload_terms,
-                      select = c("Parameter",
-                                 "Estimate",
-                                 "HPDI_2.5",
-                                 "HPDI_97.5"))
-
-# Model WITH ADH
-# Pull term for hard drugs variable
-vload_adh_terms <- summary_table_vload_adh[2, ]
-
-# Subset to Parameter, Estimate, HPDIs
-vload_adh_terms <- subset(vload_adh_terms,
-                    select = c("Parameter", 
-                               "Estimate",
-                               "HPDI_2.5",
-                               "HPDI_97.5"))
-
-# Display side by side like with frequentist models
-# Create data frame
-comp_models_vload <- data.frame(Variable = "HD at Baseline (Yes)",
-                 Estimate = round(vload_terms$Estimate, 3),
-                 `95% HDI` = paste(round(vload_terms$HPDI_2.5, 3), 
-                                    round(vload_terms$HPDI_97.5, 3), 
-                                    sep = ", "),
-                 Estimate = round(vload_adh_terms$Estimate, 3),
-                 `95% HDI` = paste(round(vload_adh_terms$HPDI_2.5, 3),
-                                    round(vload_adh_terms$HPDI_97.5, 3),
-                                    sep = ", "),
-                 check.names = FALSE)
-
-# Display with kable
-kable(
-  comp_models_vload,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
-  
-
-```
 
 In the model without taking HAART adherence into account, 
 on average, viral load is 14% lower for hard drug users vs non hard drug users, 2 years after being on HAART. 
@@ -1241,7 +1190,7 @@ summary(leu3n_adh_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, eval = F, results = 'hide'}
 # Compare estimates for models with and without adherence
 
 # Model without ADH
@@ -1494,7 +1443,7 @@ dev.off()
 For aggregate physical quality of life scores, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
 
 
-```{r, echo = F}
+```{r, echo = F, eval = F}
 # Read in data
 data <- read.csv("../Data/final_hiv_data.csv")
 
@@ -1894,8 +1843,6 @@ summary(aggphys_linear)
 # check that mcmcse < 6% of posterior SD
 (100*summary_table_aggphys$MCSE/summary_table_aggphys$Std_Dev) < 6
 # All True
-
-
 ```
 
 
@@ -1939,7 +1886,7 @@ summary(aggphys_adh_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, eval = F}
 # Compare estimates for models with and without adherence
 
 # Model without ADH
@@ -2187,10 +2134,957 @@ dev.off()
 
 ```
 
+## AGG MENT
+
+For aggregate mental quality of life scores, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
+
+
+```{r, echo = F}
+# Read in data
+data <- read.csv("../Data/final_hiv_data.csv")
+
+# Assessment of the data first
+# str(data)
+
+# Create categorical labels and variables 
+
+# Hard drugs
+data$hard_drugs_cat <- factor(data$hard_drugs,
+                              levels = c(0, 1),
+                              labels = c("No", "Yes"))
+
+# Move after hard drugs variable
+data <- data %>% 
+  relocate(hard_drugs_cat, .after = hard_drugs)
+
+# Convert collapse race to factor
+data$collapse_RACE <- factor(data$collapse_RACE)
+
+# Convert collapse educ to factor
+data$collapsed_EDUCBAS <- factor(data$collapsed_EDUCBAS)
+
+# Convert SMOKE cat to factor
+data$collapse_SMOKE <- factor(data$collapse_SMOKE)
+
+# Relabel the variables
+med_data <- apply_labels(data,
+                   hard_drugs = "Hard Drug Use at BL",
+                   ADH_yr2 = "HAART Adherence",
+                   VLOAD_yr2 = "VLOAD - yr2")
+```
 
 
 
-# Discussion & Summary
+```{r, echo = F}
+################################################################################
+###                                AGG MENT                                  ###
+################################################################################
+
+
+### Linear model WITHOUT ADHERENCE
+aggment_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS,
+                     data = data)
+
+# sink("Output/P1_aggment_Freq_Output.txt")
+# print(aggment_linear)
+# summary(aggment_linear)
+# confint(aggment_linear)
+# anova(aggment_linear)
+# sink()
+
+``` 
+
+```{r, echo = F}
+### Linear model WITH ADHERENCE
+aggment_adh_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+                    + BMI + collapse_SMOKE
+                    + age + collapse_RACE + collapsed_EDUCBAS
+                    + collapsed_ADH,
+                     data = data)
+
+```
+
+
+
+```{r, echo = F}
+### Bayesian Model
+
+# Linear model WITHOUT ADHERENCE
+
+###########################################################################
+# STEP 1: Define the model
+# Normal priors on the regression coefficients
+# Half normal priors on sigma
+###########################################################################
+
+
+stan_file_aggment <- write_stan_file("data {
+  int<lower=0> N;                  // number of observations
+  int<lower=0> P;                  // number of predictors including intercept
+  matrix[N, P] X;                  // design matrix (first column = intercept)
+  vector[N] y;                     // outcome
+
+  vector[P] prior_mean;            // prior means for each beta
+  vector<lower=0>[P] prior_sd;     // prior SDs for each beta
+
+  real<lower=0> sigma_prior_sd;    // SD for half-normal prior on sigma
+}
+
+parameters {
+  vector[P] beta;                  // regression coefficients
+  real<lower=0> sigma;             // residual SD
+}
+
+model {
+  // Vectorized priors for regression coefficients
+  beta ~ normal(prior_mean, prior_sd);
+
+  // Half-normal prior for sigma
+  sigma ~ normal(0, sigma_prior_sd);
+
+  // Likelihood
+  y ~ normal(X * beta, sigma);
+  
+
+}
+
+generated quantities {
+  // log likelihood for each observation for calculating model fit stats
+  vector[N] log_lik;
+  for (n in 1:N) {
+    log_lik[n] = normal_lpdf(y[n] | X[n] * beta, sigma);}
+  }", dir="STAN", basename='aggment_primary'
+)
+
+```
+
+```{r, echo = F}
+# Linear Model WITH ADHERENCE
+
+###########################################################################
+# STEP 1: Define the model
+# Normal priors on the regression coefficients
+# Half normal priors on sigma
+###########################################################################
+
+
+stan_file_aggment_adh <- write_stan_file("data {
+  int<lower=0> N;                  // number of observations
+  int<lower=0> P;                  // number of predictors including intercept
+  matrix[N, P] X;                  // design matrix (first column = intercept)
+  vector[N] y;                     // outcome
+
+  vector[P] prior_mean;            // prior means for each beta
+  vector<lower=0>[P] prior_sd;     // prior SDs for each beta
+
+  real<lower=0> sigma_prior_sd;    // SD for half-normal prior on sigma
+}
+
+parameters {
+  vector[P] beta;                  // regression coefficients
+  real<lower=0> sigma;             // residual SD
+}
+
+model {
+  // Vectorized priors for regression coefficients
+  beta ~ normal(prior_mean, prior_sd);
+
+  // Half-normal prior for sigma
+  sigma ~ normal(0, sigma_prior_sd);
+
+  // Likelihood
+  y ~ normal(X * beta, sigma);
+  
+
+}
+
+generated quantities {
+  // log likelihood for each observation for calculating model fit stats
+  vector[N] log_lik;
+  for (n in 1:N) {
+    log_lik[n] = normal_lpdf(y[n] | X[n] * beta, sigma);}
+  }", dir="STAN", basename='aggment_adh'
+)
+
+```
+
+
+```{r, echo = F, message = F, warning = F}
+###########################################################################
+# STEP 2: Compile the Stan program
+###########################################################################
+
+# Model WITHOUT adherence
+aggment_mod <- cmdstan_model('STAN/aggment_primary.stan')
+
+```
+
+```{r, echo = F, message = F, warning = F}
+# Model WITH adherence
+aggment_mod_adh <- cmdstan_model('STAN/aggment_adh.stan')
+
+```
+
+
+```{r, echo = F}
+###########################################################################
+# STEP 3: Prepare your data to pass to Stan
+###########################################################################
+
+# Model WITHOUT adherence
+# Outcome data
+y_aggment <- data$AGG_PHYS_yr2
+
+# Design matrix in our linear regression
+X_aggment <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+   + BMI + collapse_SMOKE
+   + age + collapse_RACE + collapsed_EDUCBAS,
+   data = data)
+
+# These are variables needed in Stan
+# N is the number of observations in your data set 
+# P is the number of columns in the design matrix
+N_aggment <- nrow(X_aggment)
+P_aggment <- ncol(X_aggment)
+
+# Hyper-parameters for prior distributions
+# Prior for regression coefficients is Normal(0, 10000)
+# Prior for model error SD (sigma) is Half-Normal(0, 100)
+
+# MVN mean (mean in the prior on the regression coefficients)
+m_aggment <- c(1, rep(0, (P_aggment - 1)))   
+
+# # SD in the prior on regression coefficients --> variance 100^2
+s_aggment <- rep(1000, P_aggment) 
+
+sigma_sd_aggment <- 1000
+
+# create data list to pass to STAN
+data_list <- list(
+  N = N_aggment,
+  P = P_aggment,
+  X = X_aggment,
+  y = y_aggment,
+  prior_mean = m_aggment,
+  prior_sd = s_aggment,
+  sigma_prior_sd = sigma_sd_aggment
+)
+```
+
+
+```{r, echo = F}
+# Model WITH adherence
+# Outcome data
+y_aggment_adh <- data$AGG_PHYS_yr2
+
+# Design matrix in our linear regression
+X_aggment_adh <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+   + BMI + collapse_SMOKE
+   + age + collapse_RACE + collapsed_EDUCBAS
+   + collapsed_ADH,
+   data = data)
+
+# These are variables needed in Stan
+# N is the number of observations in your data set 
+# P is the number of columns in the design matrix
+N_aggment_adh <- nrow(X_aggment_adh)
+P_aggment_adh <- ncol(X_aggment_adh)
+
+# Hyper-parameters for prior distributions
+# Prior for regression coefficients is Normal(0, 10000)
+# Prior for model error SD (sigma) is Half-Normal(0, 100)
+
+# MVN mean (mean in the prior on the regression coefficients)
+m_aggment_adh <- c(1, rep(0, (P_aggment_adh - 1)))   
+
+# # SD in the prior on regression coefficients --> variance 100^2
+s_aggment_adh <- rep(1000, P_aggment_adh) 
+
+sigma_sd_aggment_adh <- 1000
+
+# create data list to pass to STAN
+data_list_adh <- list(
+  N = N_aggment_adh,
+  P = P_aggment_adh,
+  X = X_aggment_adh,
+  y = y_aggment_adh,
+  prior_mean = m_aggment_adh,
+  prior_sd = s_aggment_adh,
+  sigma_prior_sd = sigma_sd_aggment_adh
+)
+```
+
+
+```{r, echo = F, message=F, warning = F, results = 'hide'}
+###########################################################################
+# STEP 4: Fit Model
+###########################################################################
+
+# Model WITHOUT adherence
+# Specify the warmup and sampling iterations
+aggment_fit <- suppressMessages(
+  suppressWarnings(
+  aggment_mod$sample(
+  data = data_list,
+  chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  seed = 789,
+  refresh = 0
+ )
+)
+)
+
+```
+
+```{r, echo = F, message=F, warning = F, results = 'hide'}
+# Model WITH adherence
+# Specify the warmup and sampling iterations
+aggment_fit_adh <- aggment_mod_adh$sample(
+  data = data_list_adh,
+  chains = 4,
+  iter_warmup = 1000,
+  iter_sampling = 2000,
+  seed = 798
+)
+```
+
+
+```{r, echo = F, results='hide'}
+###########################################################################
+# STEP 5: Summarize the posterior
+###########################################################################
+
+# Model without ADH
+aggment_fit$summary(variables=c("beta[1]", "beta[2]", 
+                              "beta[3]",
+        # including extra betas to double check results with linear model
+                              "beta[4]", "beta[5]",
+                              "beta[6]", "beta[7]",
+                              "beta[8]", 
+                              "sigma"))
+
+
+# Fancier Table of Results of Interest from the Posterior
+# Extract posterior draws from cmdstanr fit
+draws_aggment <- aggment_fit$draws()  
+
+draws_mat_aggment <- as_draws_matrix(draws_aggment)
+params_aggment <- colnames(draws_mat_aggment)
+
+# Exclude non-parameter columns from summarization: lp__ and log_lik[n]
+params_aggment <- params_aggment[!grepl("lp__|log_lik", params_aggment)]
+
+```
+
+```{r, echo = F, results = 'hide'}
+# Model WITH ADH
+
+aggment_fit_adh$summary(variables=c("beta[1]", "beta[2]", 
+                              "beta[3]",
+        # including extra betas to double check results with linear model
+                              "beta[4]", "beta[5]",
+                              "beta[6]", "beta[7]",
+                              "beta[8]", 
+                              "sigma"))
+
+
+# Fancier Table of Results of Interest from the Posterior
+# Extract posterior draws from cmdstanr fit
+draws_aggment_adh <- aggment_fit_adh$draws()  
+
+draws_mat_aggment_adh <- as_draws_matrix(draws_aggment_adh)
+params_aggment_adh <- colnames(draws_mat_aggment_adh)
+
+# Exclude non-parameter columns from summarization: lp__ and log_lik[n]
+params_aggment_adh <- params_aggment_adh[!grepl("lp__|log_lik", params_aggment_adh)]
+
+```
+
+```{r, echo = F, results = 'hide'}
+# Model without ADH
+# Build summary table
+summary_table_aggment <- lapply(params_aggment, function(p) {
+  vals <- as.numeric(draws_mat_aggment[, p])
+  
+  # Monte Carlo standard error
+  # Used to determine if we have run enough iterations
+  # rule of thumb: MCSE should be less than 6.27% of the posterior standard deviation
+  mcse_val <- mcmcse::mcse(vals)$se
+  
+  # Effective sample size
+  ess_val <- ess_bulk(vals)
+  
+  # 95% HPDI
+  hpd <- hdi(vals, ci = 0.95)
+  
+  tibble(
+    Parameter = p,
+    Estimate  = mean(vals),
+    MCSE      = mcse_val,
+    Std_Dev   = sd(vals),
+    HPDI_2.5  = hpd$CI_low,
+    HPDI_97.5 = hpd$CI_high,
+    ESS       = ess_val
+  )}) %>% 
+  bind_rows()
+
+print(summary_table_aggment)
+
+# Compare with linear fit
+summary(aggment_linear)
+
+# check that mcmcse < 6% of posterior SD
+(100*summary_table_aggment$MCSE/summary_table_aggment$Std_Dev) < 6
+# All True
+
+
+```
+
+
+```{r, echo = F, results = 'hide'}
+# Model WITH ADH
+# Build summary table
+summary_table_aggment_adh <- lapply(params_aggment_adh, function(p) {
+  vals <- as.numeric(draws_mat_aggment_adh[, p])
+  
+  # Monte Carlo standard error
+  # Used to determine if we have run enough iterations
+  # rule of thumb: MCSE should be less than 6.27% of the posterior standard deviation
+  mcse_val <- mcmcse::mcse(vals)$se
+  
+  # Effective sample size
+  ess_val <- ess_bulk(vals)
+  
+  # 95% HPDI
+  hpd <- hdi(vals, ci = 0.95)
+  
+  tibble(
+    Parameter = p,
+    Estimate  = mean(vals),
+    MCSE      = mcse_val,
+    Std_Dev   = sd(vals),
+    HPDI_2.5  = hpd$CI_low,
+    HPDI_97.5 = hpd$CI_high,
+    ESS       = ess_val
+  )}) %>% 
+  bind_rows()
+
+print(summary_table_aggment_adh)
+
+# Compare with linear fit
+summary(aggment_adh_linear)
+
+# check that mcmcse < 6% of posterior SD
+(100*summary_table_aggment_adh$MCSE/summary_table_aggment_adh$Std_Dev) < 6
+# All True
+
+```
+
+
+```{r, echo = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+aggment_terms <- summary_table_aggment[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggment_terms <- subset(aggment_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Model WITH ADH
+# Pull term for hard drugs variable
+aggment_adh_terms <- summary_table_aggment_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggment_adh_terms <- subset(aggment_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+comp_models_aggment <- data.frame(Variable = "HD at Baseline (Yes)",
+                 Estimate = round(aggment_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggment_terms$HPDI_2.5, 3), 
+                                    round(aggment_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 Estimate = round(aggment_adh_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggment_adh_terms$HPDI_2.5, 3),
+                                    round(aggment_adh_terms$HPDI_97.5, 3),
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_aggment,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+
+```
+
+
+```{r, echo = F}
+###########################################################################
+# STEP 6: Model fit statistics (you only need 1 of these, not all 3)
+###########################################################################
+# Extract the log likelihood info
+# For aggment model without ADH
+loglik_mat_aggment <- as_draws_matrix(aggment_fit$draws("log_lik")) 
+# iterations x N
+
+# Get the LOO-CV
+loo_res_aggment <- loo(loglik_mat_aggment)
+# looic: 3223.8  
+
+```
+
+```{r, echo = F}
+# Model WITH ADH
+loglik_mat_aggment_adh <- as_draws_matrix(aggment_fit_adh$draws("log_lik")) 
+# iterations x N
+
+# Get the LOO-CV
+loo_res_aggment_adh <- loo(loglik_mat_aggment_adh)
+# print(loo_res_aggment_adh)
+# 3222.1
+```
+
+
+```{r, echo = F}
+###########################################################################
+# STEP 6: MCMC Diagnostics
+###########################################################################
+
+# Model without ADH
+# Dimensions: iterations x chains x parameters
+aggment_draws <- as_draws_array(aggment_fit$draws())
+
+# Tidy format for bayesplot / ggplot
+aggment_draws_df <- as_draws_df(aggment_fit$draws())  
+
+# parameters
+aggment_params <- c("beta[1]", "beta[2]", 
+            "beta[3]", "beta[4]",
+            "beta[5]", "beta[6]",
+            "beta[7]", "beta[8]",
+            "sigma")
+
+```
+
+```{r, echo = F}
+# Dimensions: iterations x chains x parameters
+aggment_draws_adh <- as_draws_array(aggment_fit_adh$draws())
+
+# Tidy format for bayesplot / ggplot
+aggment_draws_df_adh <- as_draws_df(aggment_fit_adh$draws())  
+
+# parameters
+aggment_params_adh <- c("beta[1]", "beta[2]", 
+            "beta[3]", "beta[4]",
+            "beta[5]", "beta[6]",
+            "beta[7]", "beta[8]",
+            "sigma")
+```
+
+
+```{r, echo = F, results = 'hide', eval = F}
+# Trace plots
+# Trace plots show whether chains are mixing well and exploring the parameter space.
+# Chains should mix well (lines overlap)
+# No long trends (no “stickiness”)
+# Ideally all chains overlap around the same mean
+
+# Model without ADH
+mcmc_trace(aggment_draws, pars = aggment_params)
+# They look beautiful
+
+```
+
+
+```{r, echo = F, results = 'hide', eval = F}
+# Model WITH ADH
+mcmc_trace(aggment_draws_adh, pars = aggment_params_adh)
+```
+
+
+
+```{r, echo = F, results = 'hide'}
+# R-hat and ESS diagnostics
+# R-hat ≈ 1.00 → converged
+# ESS should be reasonably large (e.g., >100–200 per parameter)
+aggment_fit$summary(variables = aggment_params)
+# We see that rhats are all approx 1
+# ESS should be around > 200*9 = 1800 and that seems to be the case for most
+```
+
+```{r, echo = F, results='hide'}
+# Model WITH ADH
+aggment_fit_adh$summary(variables = aggment_params_adh)
+
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# Posterior Density Plots
+# Overlaid densities from multiple chains should match closely
+# If densities differ substantially between chains → poor mixing
+mcmc_dens_overlay(draws_aggment, pars = aggment_params)
+
+```
+
+```{r, echo = F, include = F, eval = F, results='hide'}
+# Posterior density plots
+# Model WITH ADH
+mcmc_dens_overlay(draws_aggment_adh, pars = aggment_params_adh)
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# Auto-correlation 
+# Autocorrelation should decay quickly
+# High autocorrelation → may need more iterations or thinning
+mcmc_acf(draws_aggment, pars = aggment_params)
+
+```
+
+```{r, echo = F, results='hide', eval = F}
+# Model WITH ADH
+mcmc_acf(draws_aggment_adh, pars = aggment_params_adh)
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# Diagnostics from cmdstan
+aggment_fit$cmdstan_diagnose()
+# Need to load actual aggment and not aggment .rds for this
+
+### Output
+# Checking sampler transitions treedepth.
+# Treedepth satisfactory for all transitions.
+# 
+# Checking sampler transitions for divergences.
+# No divergent transitions found.
+# 
+# Checking E-BFMI - sampler transitions HMC potential energy.
+# E-BFMI satisfactory.
+# 
+# Rank-normalized split effective sample size satisfactory for all parameters.
+# 
+# Rank-normalized split R-hat values satisfactory for all parameters.
+# 
+# Processing complete, no problems detected.
+
+```
+
+```{r, echo = F, results='hide', eval = F}
+# Model WITH ADH
+# Diagnostics from cmdstan
+aggment_fit_adh$cmdstan_diagnose()
+
+### Output
+# Checking sampler transitions treedepth.
+# Treedepth satisfactory for all transitions.
+# 
+# Checking sampler transitions for divergences.
+# No divergent transitions found.
+# 
+# Checking E-BFMI - sampler transitions HMC potential energy.
+# E-BFMI satisfactory.
+# 
+# Rank-normalized split effective sample size satisfactory for all parameters.
+# 
+# Rank-normalized split R-hat values satisfactory for all parameters.
+# 
+# Processing complete, no problems detected.
+
+```
+
+
+
+```{r, echo = F, eval = F}
+## Save output if desired ###
+# MCMC Output
+sink("Output/P1_aggment_MCMCOutput.txt")
+print(summary_table)
+print(loo_res)
+print(aggment_fit$cmdstan_diagnose())
+print(aggment_fit$summary(variables=aggment_params))
+sink()
+
+# Diagnostic plots
+pdf('Output/P1_aggment_MCMC_DiagnosticPlots.pdf')
+mcmc_trace(aggment_draws, pars = aggment_params)
+mcmc_dens_overlay(aggment_draws, pars = aggment_params)
+mcmc_acf(aggment_draws, pars = aggment_params)
+dev.off()
+
+```
+
+
+
+<!----------------------------------------------------------------------------->
+<!---                             Primary Outcomes                         ---->
+<!----------------------------------------------------------------------------->
+
+```{r, echo = F, eval = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+vload_terms <- summary_table_vload[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+vload_terms <- subset(vload_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+all_outcomes <- data.frame(Outcome = "Viral Load",
+                 Estimate = round(vload_terms$Estimate, 3),
+                 `95% HDI` = paste(round(vload_terms$HPDI_2.5, 3), 
+                                    round(vload_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_vload,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+```
+
+
+<!----------------------------------------------------------------------------->
+<!---                     Estimates With & Without ADH                     ---->
+<!----------------------------------------------------------------------------->
+
+
+
+```{r, echo = F, eval = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+vload_terms <- summary_table_vload[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+vload_terms <- subset(vload_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Model WITH ADH
+# Pull term for hard drugs variable
+vload_adh_terms <- summary_table_vload_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+vload_adh_terms <- subset(vload_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+comp_models_vload <- data.frame(Variable = "HD at Baseline (Yes)",
+                 Estimate = round(vload_terms$Estimate, 3),
+                 `95% HDI` = paste(round(vload_terms$HPDI_2.5, 3), 
+                                    round(vload_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 Estimate = round(vload_adh_terms$Estimate, 3),
+                 `95% HDI` = paste(round(vload_adh_terms$HPDI_2.5, 3),
+                                    round(vload_adh_terms$HPDI_97.5, 3),
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_vload,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+```
+
+```{r, echo = F, eval = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+leu3n_terms <- summary_table_leu3n[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+leu3n_terms <- subset(leu3n_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Model WITH ADH
+# Pull term for hard drugs variable
+leu3n_adh_terms <- summary_table_leu3n_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+leu3n_adh_terms <- subset(leu3n_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+comp_models_leu3n <- data.frame(Variable = "HD at Baseline (Yes)",
+                 Estimate = round(leu3n_terms$Estimate, 3),
+                 `95% HDI` = paste(round(leu3n_terms$HPDI_2.5, 3), 
+                                    round(leu3n_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 Estimate = round(leu3n_adh_terms$Estimate, 3),
+                 `95% HDI` = paste(round(leu3n_adh_terms$HPDI_2.5, 3),
+                                    round(leu3n_adh_terms$HPDI_97.5, 3),
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_leu3n,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+```
+
+```{r, echo = F, eval = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+aggphys_terms <- summary_table_aggphys[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggphys_terms <- subset(aggphys_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Model WITH ADH
+# Pull term for hard drugs variable
+aggphys_adh_terms <- summary_table_aggphys_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggphys_adh_terms <- subset(aggphys_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+comp_models_aggphys <- data.frame(Variable = "HD at Baseline (Yes)",
+                 Estimate = round(aggphys_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggphys_terms$HPDI_2.5, 3), 
+                                    round(aggphys_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 Estimate = round(aggphys_adh_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggphys_adh_terms$HPDI_2.5, 3),
+                                    round(aggphys_adh_terms$HPDI_97.5, 3),
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_aggphys,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+```
+
+```{r, echo = F, eval = F}
+# Compare estimates for models with and without adherence
+
+# Model without ADH
+aggment_terms <- summary_table_aggment[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggment_terms <- subset(aggment_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+# Model WITH ADH
+# Pull term for hard drugs variable
+aggment_adh_terms <- summary_table_aggment_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggment_adh_terms <- subset(aggment_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Display side by side like with frequentist models
+# Create data frame
+comp_models_aggment <- data.frame(Variable = "HD at Baseline (Yes)",
+                 Estimate = round(aggment_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggment_terms$HPDI_2.5, 3), 
+                                    round(aggment_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                 Estimate = round(aggment_adh_terms$Estimate, 3),
+                 `95% HDI` = paste(round(aggment_adh_terms$HPDI_2.5, 3),
+                                    round(aggment_adh_terms$HPDI_97.5, 3),
+                                    sep = ", "),
+                 check.names = FALSE)
+
+# Display with kable
+kable(
+  comp_models_aggment,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summary") |>
+  kable_styling(latex_options = c("striped", "hold_position")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2)) %>% 
+  footnote(general = "HPDI - Highest Density Interval ")
+```
+
+
+
+# Discussion
+
 
 
 
