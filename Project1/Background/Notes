@@ -88,9 +88,11 @@ We use the bootstrap approach from the meditation package.
 
 COME BACK TO: 
 - Fix the weird distributions with the QOL scores in the Table 1
+- Go back and make header fancier 
+  - https://rpubs.com/nomarpicasso/1159183
 - Go back and modify how we are testing significance with frequentist analyses
   - not p-values but with CIs
-  
+
 
 
 
