@@ -3364,26 +3364,27 @@ adh_comparison2 <- data.frame(Outcome =
 
 
 forest_df <- adh_comparison2 %>%
+  # Create a longer version of df to plot
   pivot_longer(
     cols = c(Estimate_No_ADH, Estimate_ADH),
     names_to = "Model",
-    values_to = "Estimate"
-  ) %>%
+    values_to = "Estimate") %>%
   mutate(
-    # Attach correct HDI column
+    # Relabel the HDI cols
     HDI = case_when(
       Model == "Estimate_No_ADH" ~ `95% HDI (No ADH)`,
       Model == "Estimate_ADH"    ~ `95% HDI (ADH)`
     ),
-    # Clean model labels
+    # Relabel the Model cols
     Model = case_when(
       Model == "Estimate_No_ADH" ~ "Without ADH",
       Model == "Estimate_ADH"    ~ "With ADH"
     ),
-    # Parse lower/upper from "lower, upper"
+    # Use stringr package to get the lower bounds of the HIDs
     lower = as.numeric(str_trim(str_extract(HDI, "^[^,]+"))),
+    # Get the upper bounds of the HDIs
     upper = as.numeric(str_trim(str_extract(HDI, "[^,]+$"))),
-    # Group outcomes for scaling
+    # Group the outcomes for scaling
     OutcomeGroup = case_when(
       str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
       str_detect(Outcome, "CD4")   ~ "CD4",
@@ -3391,7 +3392,7 @@ forest_df <- adh_comparison2 %>%
     Outcome = factor(Outcome, levels = rev(unique(adh_comparison2$Outcome)))) %>%
   select(Outcome, OutcomeGroup, Model, Estimate, lower, upper)
 
-# Reference lines
+# Reference lines for plot - 0 for significance
 ref_lines <- tibble(
   OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
   ref = c(0, 0, 0)
@@ -3423,8 +3424,28 @@ ggplot(forest_df, aes(x = Estimate,
     x = "Estimate (95% HDI)",
     y = NULL,
     shape = NULL,
-    title = "Effect of Baseline Hard Drug Use at Year 2\nModels With vs Without ADH") +
+    title = "Effects of Baseline Hard Drug Use On Treatment Response at Year 2\nModels With vs Without ADH",
+    subtitle = "Interpretations: Change in outcome for hard drug users compared to non-hard drug users") +
   theme_minimal()
+```
+
+
+```{r, echo = F, eval = F}
+library(emmeans)
+# Try to get the emmeans
+# https://discourse.mc-stan.org/t/computation-of-contrasts-using-emmeans-based-on-brms-input-in-r/33998
+# Fit the model with brm
+vload_brm <- brm(VLOAD_yr2 ~ VLOAD_yr0 + hard_drugs_cat + BMI
+                 + collapsed_EDUCBAS + collapse_SMOKE + 
+                   collapse_RACE,
+                 family = gaussian,
+                 chains = 4,
+                 iter = 2000,
+                 warmup = 1000,
+                 data = data)
+
+# Use emmeans on brm model
+emmeans(vload_brm)
 ```
 
 
