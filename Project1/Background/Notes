@@ -78,4 +78,20 @@ We will use this RPubs tutorial for Mediation analyses:
 
 We use the bootstrap approach from the meditation package. 
 
-A table 1 from the tutorial:
+
+2/27 OH: 
+- Table1 will be on the final data set
+-- Just describe and summarise missingness in writing
+- Fix Table title for Table1
+- Report results for BOTH Frequentist and Bayesian analysis
+- For forest plot, also add estimates for those who did not do drugs at baseline
+
+COME BACK TO: 
+- Fix the weird distributions with the QOL scores in the Table 1
+- Go back and modify how we are testing significance with frequentist analyses
+  - not p-values but with CIs
+  
+
+
+
+
