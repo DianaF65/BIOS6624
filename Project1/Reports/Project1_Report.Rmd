@@ -17,7 +17,7 @@ header-includes:
   - \usepackage{float}
   - \usepackage{caption}
   - \usepackage{titling}
-  - \setlength{\droptitle}{-2cm}
+  - \setlength{\droptitle}{-3cm}
   - \preauthor{\vspace{-0.6cm}}
   - \postauthor{\vspace{-3cm}}
 ---
@@ -57,6 +57,7 @@ library(mediation)
 library(bda)
 library(patchwork)
 library(purrr)
+library(stringr)
 
 # Libraries for Bayesian analysis
 # Dependencies 
@@ -109,17 +110,18 @@ med_data <- apply_labels(data,
 ```
 
 
-\vspace{-6mm}
+\vspace{-8mm}
 # Introduction
-\vspace{-6mm}
+\vspace{-8mm}
 
 The Multicenter AIDS Cohort Study is a prospective, observational, and longitudinal cohort of homosexual and bisexual men with Human Immunodeficiency Virus (HIV-1). 
 This study examines the effect of Highly Active Antiretroviral Treatment (HART), a standard treatment given to HIV-1 patients. Data was collected once annually for eight years and subjects were started on HART years 1 - 8.
 Data on important phenotypic characteristics such as age and race as well as clinical measurements including LDL Cholesterol were collected over the observation period. 
+This project aims to determine whether the use of hard drugs at baseline affects a patient's response to HART, particularly, in the time period from years 0 to 2. There is minimal evidence on the relationship between hard drugs and treatment response. If hard drugs negatively or positively affect a patient's response to HART, clinicians may be able to better assist patients by providing treatment that is better suited to patients based on past hard drug history. These analyses aims to investigate the following hypotheses: 
 
-This project aims to determine whether the use of hard drugs at baseline affects a patient's response to HART, particularly, in the time period from years 0 to 2. There is minimal evidence on the relationship between hard drugs and treatment response. If hard drugs negatively or positively affect a patient's response to HART, clinicians may be able to better assist patients by providing treatment that is better suited to patients based on past hard drug history. 
+Hypothesis 1: 
 
-\vspace{-6mm}
+\vspace{-10mm}
 # Methods
 \vspace{-6mm}
 
@@ -130,13 +132,12 @@ This project aims to determine whether the use of hard drugs at baseline affects
 The original 8-year longitudinal data set contained 3935 observations for 715 subjects. 
 Before subsetting the data to the years of interest for the analysis, we investigated missingness in the whole data set to ensure concerning missingness patterns were not present. We further ensured that there were no relationships or missingness patterns between any of the four primary outcomes and other variables in the data set. 
 With the exception of adherence, all other variables in the data set had no more than ~7% missingness.
-We then subset the data to information for years 0 and 2. Investigating this particular subset more closely, we filtered out individuals whose BMI did not fall in the range of (10, 60) as anything outside of this range is highly biologically implausible BMI values for adults in the population of interest.  
-Following this, we only kept subjects that contained information for both years 0 and 2. 
+We then subset the data to information for years 0 and 2. Investigating this particular subset more closely, we filtered out individuals whose BMI did not fall in the range of (10, 60) as anything outside of this range is highly biologically implausible BMI values for adults in the population of interest. Following this, we only kept subjects that contained information for both years 0 and 2. 
 In this step, we also created the variables necessary for analysis including viral load at year 2 and viral load at year 0, and so on for the three other outcomes. 
 With the exception of adherence to medication, the baseline values were retained for hard drug use, BMI, Age, Race, Education, and Smoking Status.
-At this state, missingness were highest for viral load and CD4+ T-Cell counts at ~3%. 
-We removed any missingness for any variables at this step which was a sum of ~10% for all variables. 
-We assessed distributions for all variables and from this determined that a log transformation of viral load is necessary.
+At this stage, missingness was highest for viral load and CD4+ T-Cell counts at ~3%. 
+We removed any missingness for any variables at this step ($\approx$ 10% missingness). 
+We assessed distributions for all variables and from this determined that a log transformation of viral load was necessary.
 Lastly, we collapsed categories for specific variables. 
 The original 8 race categories were collapsed to 'White' and 'Non-White',
 the original 3 smoking categories were reduced to 'Never/Former' and 'Current',
@@ -144,18 +145,16 @@ Education was collapsed to 'Less than College' and 'Completed College or Higher'
 and adherence to HAART was collapsed to '<95%' and '>95%'.
 Our final data set for analysis contained 463 subjects with complete data for years 0 and 2.
 
-\vspace{-6mm}
+\vspace{-8mm}
 ## Data Analysis
 \vspace{-6mm}
 
-To investigate differences in treatment response between subjects who did and did not report hard drug use at baseline, we employed linear regression and conducted analyses using both a Frequentist and a Bayesian framework.
-For each of the four measures of treatment response, we used the measurements in the second year as the outcome for our four models. 
-We adjusted for hard drug use, age, BMI, race, education at baseline, and measurements for the outcome at year 0. For example, the model for viral load:
+To investigate differences in treatment response between subjects who did and did not report hard drug use at baseline, we employed linear regression and conducted analyses using both a Frequentist and a Bayesian framework and compared results.
+For each of the four measures of treatment response, we used the measurements in the second year as the outcome for the four models. 
+We adjusted for hard drug use, age, BMI, race, education at baseline, and measurements for the outcome of interest at year 0. As an example, the model for viral load:
 $\text{Viral Load (Yr 2)} \sim \text{Viral Load (Yr 0)} + \text{Hard Drug Use} + \text{Age} + \ldots$ 
 Assumptions of linearity, homoscedasticity, and normality were confirmed with diagnostic plots.
-
 For the frequentist analyses, we used a significant threshold of $\alpha = 0.05$. 
-
 For the bayesian analyses, we specified prior distributions for each outcome.
 For viral load, we specified a vague Normal$(0, 1000)$ prior for the regression coefficients and a Halr-Normal$(0, 100^2)$ prior for the residual variance.
 For CD4+ T cell counts, we specified a vague Normal$(0, 1000^2)$ prior for the regression coefficients and a Half-Normal$(0, 1000^2)$ prior for the residual variance.
@@ -163,45 +162,76 @@ For both aggregate mental and physical quality of life scores,
 we specified a vague Normal$(0, 1000^2)$ prior for the regression coefficients and a Half-Normal$(0, 1000^2)$ prior for the residual variance.
 We used the Highest Density Interval (HDI) to determine significance. Variables were significant if their HDI \textit{excluded} 0. 
 
-We additionally assessed the impact subject's adherence to HAART had on the outcomes since there was a concern that subjects who report hard drug use have a higher probability of lower adherence to medication which in turn affects the measures of treatment response. 
+We additionally assessed the impact subject's adherence to HAART had on the outcomes due to the concern that subjects who report hard drug use have a higher probability of lower adherence to medication which in turn affects the measures of treatment response. 
 For each of the models described above, we created an additional model with adherence to HAART as an additional covariate. As an example: 
 $\text{Viral Load (Yr 2)} \sim \text{Viral Load (Yr 0)} + \text{Adherence} + \text{Hard Drug Use} + ...$
-This allowed us to quantify differences in the estimates when adherence is and is not taken into account and determine whether differences in any of the four outcomes could be explained by differences in adherence. 
-
+This allowed us to quantify differences in the estimates when adherence was and was not taken into account to determine whether differences in any of the four outcomes could be explained by differences in adherence. 
 A complete case analysis was used for each model. 
 The R Statistical Programming Language v. 4.4.1 was used for all analyses. 
 
-\vspace{-6mm}
+\vspace{-10mm}
 # Results
 \vspace{-6mm}
+
+Table 1 contains a description of the data used for all analyses. We note the highly unbalanced distribution of hard drug and non-hard drug users. 
+We observe higher viral load for both hard drug use groups, lower CD4+ T-Cell counts, and overall, similar (describe QOL scores).
+(Come back and elaborate more if needed on tab1.)
+
 
 <!------------------------------------ Table 1 -------------------------------->
 
 ```{r, echo = F}
-data %>% 
-  tbl_summary(include = c(VLOAD_yr2, LEU3N_yr2,
-                          AGG_MENT_yr2, AGG_PHYS_yr2, 
-                          BMI, SMOKE, age, collapse_RACE,
-                          collapsed_EDUCBAS),
+# Fix levels for categorical variables for Table1
+# Race
+data$RACE_tab1 <- factor(data$collapse_RACE,
+                         levels = c("Other", "White_NH"),
+                         labels = c("Other", "White Non-Hispanic"))
+# Education
+data$EDU_tab1 <- factor(data$collapsed_EDUCBAS,
+                        levels = c("Comp_Coll_Higher", "Less_Than_College"),
+                        labels = c("Complete College Or Higher",
+                                   "Less Than College"))
+# Adherence
+
+
+# Relabel the variables for the Table 1
+
+tab1_data <- apply_labels(data,
+                     VLOAD_yr2 = "Viral Load - (Yr 2)",
+                     VLOAD_yr0 = "Viral Load - (Yr 0)",
+                     LEU3N_yr2 = "CD4+ T-Cell Count (Yr 0)",
+                     LEU3N_yr0 = "CD4+ T-Cell Count (Yr 2)",
+                     AGG_MENT_yr2 = "Agg. Mental Quality of Life Score (Yr 2)",
+                     AGG_MENT_yr0 = "Agg. Mental Quality of Life Score (Yr 0)",
+                     AGG_PHYS_yr2 = "Agg. Physical Quality of Life Score (Yr 2)",
+                     AGG_PHYS_yr0 = "Agg. Physical Quality of Life Score (Yr 0)",
+                     collapse_SMOKE = "Smoking Status (Baseline)",
+                     EDU_tab1 = "Education (Baseline)",
+                     RACE_tab1 = "Race",
+                     age = "Age (Baseline)",
+                     hard_drugs_cat = "Hard Drug Use (Baseline)",
+                     collapsed_ADH = "HAART Adherence")
+
+# Display the modified Table1
+tab1_data %>% 
+  tbl_summary(include = c(VLOAD_yr2, VLOAD_yr0,
+                          LEU3N_yr2, LEU3N_yr0,
+                          AGG_MENT_yr2, AGG_MENT_yr0,
+                          AGG_PHYS_yr2, AGG_PHYS_yr0,
+                          BMI, collapse_SMOKE, 
+                          age, RACE_tab1,
+                          EDU_tab1,
+                          collapsed_ADH),
               by = hard_drugs_cat,
               statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
-  modify_header(label = "**Variable**") %>% 
-  bold_labels()
+  modify_header(label = "**Report of Hard Drug at Baseline**") %>% 
+  bold_labels() %>% 
+  modify_caption(caption = "**Table 1 - Patient Characteristics by Hard Drug Use at Baseline**")
 ```
-
-
-
 
 
 <!------------------------------------- VLOAD --------------------------------->
 
-
-
-Laboratory in vitro and animal studies have shown that the use of hard drugs has increases HIV replication. 
-However, since there are not any biologically plausible values that we could pick for an informative optimist prior, we will continue with a vague prior for our Bayesian models. 
-
-
-For viral load, we specified a Normal $(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
 
 ```{r, echo = F}
 ################################################################################
@@ -2881,12 +2911,17 @@ dev.off()
 <!---                             Primary Outcomes                         ---->
 <!----------------------------------------------------------------------------->
 
+<!----------------------------------------------------------------------------->
+<!---               Comparing Frequentist and Bayesian Estimates           ---->
+<!----------------------------------------------------------------------------->
+
 ```{r, echo = F}
 # Compare estimates for models with and without adherence
 
 ### VLOAD
+## Bayesian 
 # Model without ADH
-vload_terms <- summary_table_vload[2, ]
+vload_terms <- summary_table_vload[2, ] # Hard drugs beta
 
 # Subset to Parameter, Estimate, HPDIs
 vload_terms <- subset(vload_terms,
@@ -2895,7 +2930,17 @@ vload_terms <- subset(vload_terms,
                                  "HPDI_2.5",
                                  "HPDI_97.5"))
 
+## Frequentist
+vload_lin_terms <- tidy(vload_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+vload_lin_terms <- vload_lin_terms[2, ]
+# Subse to estimate and conf values
+vload_lin_terms <- subset(vload_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
+
+
 ### LEU3N
+## Bayesian
 # Model without ADH
 leu3n_terms <- summary_table_leu3n[2, ]
 
@@ -2905,8 +2950,17 @@ leu3n_terms <- subset(leu3n_terms,
                                  "Estimate",
                                  "HPDI_2.5",
                                  "HPDI_97.5"))
+## Frequentist
+leu3n_lin_terms <- tidy(leu3n_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+leu3n_lin_terms <- leu3n_lin_terms[2, ]
+# Subse to estimate and conf values
+leu3n_lin_terms <- subset(leu3n_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
+
 
 ### AGG PHYS
+## Bayesian
 # Model without ADH
 aggphys_terms <- summary_table_aggphys[2, ]
 
@@ -2916,9 +2970,16 @@ aggphys_terms <- subset(aggphys_terms,
                                  "Estimate",
                                  "HPDI_2.5",
                                  "HPDI_97.5"))
+aggphys_lin_terms <- tidy(aggphys_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+aggphys_lin_terms <- aggphys_lin_terms[2, ]
+# Subse to estimate and conf values
+aggphys_lin_terms <- subset(aggphys_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
 
 
 ### AGG MENT
+## Bayesian
 # Model without ADH
 aggment_terms <- summary_table_aggment[2, ]
 
@@ -2928,6 +2989,14 @@ aggment_terms <- subset(aggment_terms,
                                  "Estimate",
                                  "HPDI_2.5",
                                  "HPDI_97.5"))
+
+## Frequentist
+aggment_lin_terms <- tidy(aggment_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+aggment_lin_terms <- aggment_lin_terms[2, ]
+# Subse to estimate and conf values
+aggment_lin_terms <- subset(aggment_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
 
 
 
@@ -2942,6 +3011,7 @@ all_outcomes <- data.frame(Outcome =
                           "Agg. Mental QOL Score",
                           # AGG MENT
                           "Agg. Physical QOL Score"),
+                  # Bayesian Estimates
                  Estimate = 
                    # VLOAD
                    c(round(exp(vload_terms$Estimate), 3),
@@ -2951,6 +3021,7 @@ all_outcomes <- data.frame(Outcome =
                     round(aggphys_terms$Estimate, 3),
                    # AGG MENT
                    round(aggment_terms$Estimate, 3)),
+                 # Bayesian HDIs
                  `95% HDI` = c(
                    # VLOAD
                    paste(round(exp(vload_terms$HPDI_2.5), 3), 
@@ -2968,18 +3039,49 @@ all_outcomes <- data.frame(Outcome =
                    paste(round(aggment_terms$HPDI_2.5, 3), 
                                     round(aggment_terms$HPDI_97.5, 3), 
                                     sep = ", ")),
+                 # Frequentist estimates
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_lin_terms$estimate), 3),
+                   # LEU3N
+                    round(leu3n_lin_terms$estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_lin_terms$estimate, 3),
+                   # AGG MENT
+                   round(aggment_lin_terms$estimate, 3)),
+                 # Frequentist CIs
+                 `95% CI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_lin_terms$conf.low), 3), 
+                              round(exp(vload_lin_terms$conf.high), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_lin_terms$conf.low, 3), 
+                                round(leu3n_lin_terms$conf.high, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_lin_terms$conf.low, 3), 
+                               round(aggphys_lin_terms$conf.high, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_lin_terms$conf.low, 3), 
+                               round(aggment_lin_terms$conf.high, 3), 
+                                    sep = ", ")),
                  check.names = FALSE
 )
 
 # Display with kable
 kbl(
   all_outcomes,
-  # format = "latex",
   booktabs = TRUE,
   digits = 3,
-  caption = "Treatment Response 2 Years After Heart ") |>
+  caption = "Model Results for Bayesian and Frequentist Analyses") |>
+  # subcaption = "Meow" |>
   kable_styling(latex_options = c("striped", "hold_position")) |> 
-  footnote(general = "HDI - Highest Density Interval ")
+  add_header_above(c(" ", "Bayesian Model" = 2,
+                     "Frequentist Model" = 2)) |>
+  footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
+                      "Estimates interpreted as changes in outcome for hard drug users compared to non-hard drug users"))
 ```
 
 
@@ -3191,13 +3293,6 @@ kable(
 ```
 
 ```{r, echo = F}
-# parse_hdi <- function(x) {
-#   # expects "lower, upper"
-#   nums <- str_split_fixed(x, ",\\s*", 2)
-#   tibble(lower = as.numeric(nums[,1]), upper = as.numeric(nums[,2]))
-# }
-library(stringr)
-
 # Create data frame 
 adh_comparison2 <- data.frame(Outcome = 
                           # VLOAD
