@@ -3331,11 +3331,6 @@ adh_comparison2 <- data.frame(Outcome =
 )
 
 # Create data frame for plotting estimates with and without ADH
-library(dplyr)
-library(tidyr)
-library(stringr)
-library(ggplot2)
-
 forest_df <- adh_comparison2 %>%
   pivot_longer(
     cols = c(Estimate_No_ADH, Estimate_ADH),
@@ -3356,9 +3351,7 @@ forest_df <- adh_comparison2 %>%
     OutcomeGroup = case_when(
       str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
       str_detect(Outcome, "CD4")   ~ "CD4",
-      TRUE                         ~ "Quality of life"
-    )
-  ) %>%
+      TRUE                         ~ "Quality of life")) %>%
   group_by(OutcomeGroup) %>%
   mutate(Outcome_y = factor(Outcome, levels = rev(unique(Outcome)))) %>%
   ungroup()
@@ -3380,7 +3373,8 @@ p_cd4 <- forest_df %>%
                  height = 0.18,
                  position = position_dodge(width = 0.55)) +
   geom_point(size = 2.2, position = position_dodge(width = 0.55)) +
-  labs(x = NULL, y = NULL, col = "Model", title = "CD4") +
+  labs(x = NULL, y = NULL, 
+       col = NULL) +
   theme_minimal()
 
 p_other <- forest_df %>%
@@ -3390,30 +3384,41 @@ p_other <- forest_df %>%
     data = ref_lines %>% filter(OutcomeGroup != "CD4"),
     aes(xintercept = ref),
     linetype = "dashed",
-    inherit.aes = FALSE
-  ) +
+    inherit.aes = FALSE) +
   geom_errorbarh(aes(xmin = lower, xmax = upper),
                  height = 0.18,
                  position = position_dodge(width = 0.55)) +
   geom_point(size = 2.2, position = position_dodge(width = 0.55)) +
-  facet_grid(OutcomeGroup ~ ., scales = "free_y", space = "free_y") +
-  labs(x = "Estimate (95% HDI)", y = NULL, col = "Model", title = NULL) +
-  theme_minimal()
+  facet_grid(OutcomeGroup ~ ., 
+             scales = "free_y", space = "free_y") +
+  labs(x = "Estimate (95% HDI)", 
+       y = NULL, 
+       col = NULL) +
+    theme_minimal() +
+  theme(strip.text = element_blank(),
+    strip.background = element_blank())
 
 # Use patch work to lay these plots on top of each other
 p_cd4 / p_other + plot_layout(heights = c(1, 2))
-
-
 ```
 
- 
 
 \vspace{-6mm}
 # Discussion
 \vspace{-6mm}
 
+With the exception of viral load and the aggregate quality of life scores, our results suggest that there are statistically significant differences between hard drug and non-hard drug users in the other two measures of treatment response. 
+The differences in CD4+ T-Cell counts between the two hard drug use groups was > 50, surpassing the threshold for clinical significance. 
+There was a slight difference of around ~6 units when adherence was taken into account but this small value did not seem to suggest that medication adherence explains differences between the two hard drug use groups. 
+This evidence suggests that hard drug use can impact immunologic health and hard-drug use should be taken into consideration for alternative treatment strategies that incorporates hard drug use into account.
+Aggregate mental quality of life scores were lower for hard-drug users compared to non-hard drug users and adherence did not seem to explain differences between the hard drug use groups. We note that the change was >2, which indicates clinical significance.
+Perhaps base differences in mental health between hard drug and non-hard drug use may explain the differences observed. In particular, individuals with lower mental health may be more likely to do hard-drugs. 
+In the end, hypotheses 2 and the aggregate mental QOL score portion of hypothesis 3 were shown to be true. 
+Our findings suggest that there is potential evidence that hard-drug use impacts HAART treatment response and extra measures such as more aggressive treatment strategies or drug rehabilitation programs before HAART may increase the impacts of HAART. 
+One limitation of our analyses is the very unbalanced numbers of hard drug users and non-hard drug users. Further studies may aim to prioritize creating a more balanced distribution of hard drug use groups. 
 
 
-meow meow meow
+\newpage
+
 
 
