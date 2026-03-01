@@ -173,7 +173,9 @@ The R Statistical Programming Language v. 4.4.1 was used for all analyses.
 # Results
 \vspace{-6mm}
 
-Table 1 contains a description of the data used for all analyses. We note the highly unbalanced distribution of hard drug and non-hard drug users. 
+Table 1 contains a description of the data used for all analyses. 
+The mean and SD are displayed for the primary outcomes while the number and percentage of patients are displayed for the 5 covariates.
+We note the highly unbalanced distribution of hard drug and non-hard drug users.
 We observe higher viral load for both hard drug use groups, lower CD4+ T-Cell counts, and overall, similar (describe QOL scores).
 (Come back and elaborate more if needed on tab1.)
 
@@ -197,14 +199,14 @@ data$EDU_tab1 <- factor(data$collapsed_EDUCBAS,
 # Relabel the variables for the Table 1
 
 tab1_data <- apply_labels(data,
-                     VLOAD_yr2 = "Viral Load - (Yr 2)",
                      VLOAD_yr0 = "Viral Load - (Yr 0)",
-                     LEU3N_yr2 = "CD4+ T-Cell Count (Yr 0)",
-                     LEU3N_yr0 = "CD4+ T-Cell Count (Yr 2)",
-                     AGG_MENT_yr2 = "Agg. Mental Quality of Life Score (Yr 2)",
+                     VLOAD_yr2 = "Viral Load - (Yr 2)",
+                     LEU3N_yr0 = "CD4+ T-Cell Count (Yr 0)",
+                     LEU3N_yr2 = "CD4+ T-Cell Count (Yr 2)",
                      AGG_MENT_yr0 = "Agg. Mental Quality of Life Score (Yr 0)",
-                     AGG_PHYS_yr2 = "Agg. Physical Quality of Life Score (Yr 2)",
+                     AGG_MENT_yr2 = "Agg. Mental Quality of Life Score (Yr 2)",
                      AGG_PHYS_yr0 = "Agg. Physical Quality of Life Score (Yr 0)",
+                     AGG_PHYS_yr2 = "Agg. Physical Quality of Life Score (Yr 2)",
                      collapse_SMOKE = "Smoking Status (Baseline)",
                      EDU_tab1 = "Education (Baseline)",
                      RACE_tab1 = "Race",
@@ -224,7 +226,7 @@ tab1_data %>%
                           collapsed_ADH),
               by = hard_drugs_cat,
               statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
-  modify_header(label = "**Report of Hard Drug at Baseline**") %>% 
+  modify_header(label = "**Hard Drug Use at Baseline**") %>% 
   bold_labels() %>% 
   modify_caption(caption = "**Table 1 - Patient Characteristics by Hard Drug Use at Baseline**")
 ```
@@ -2254,7 +2256,7 @@ med_data <- apply_labels(data,
 
 
 ### Linear model WITHOUT ADHERENCE
-aggment_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+aggment_linear <- lm(AGG_MENT_yr2 ~ hard_drugs_cat + AGG_MENT_yr0
                     + BMI + collapse_SMOKE
                     + age + collapse_RACE + collapsed_EDUCBAS,
                      data = data)
@@ -2270,7 +2272,7 @@ aggment_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
 
 ```{r, echo = F}
 ### Linear model WITH ADHERENCE
-aggment_adh_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+aggment_adh_linear <- lm(AGG_MENT_yr2 ~ hard_drugs_cat + AGG_MENT_yr0
                     + BMI + collapse_SMOKE
                     + age + collapse_RACE + collapsed_EDUCBAS
                     + collapsed_ADH,
@@ -2407,10 +2409,10 @@ aggment_mod_adh <- cmdstan_model('STAN/aggment_adh.stan')
 
 # Model WITHOUT adherence
 # Outcome data
-y_aggment <- data$AGG_PHYS_yr2
+y_aggment <- data$AGG_MENT_yr2
 
 # Design matrix in our linear regression
-X_aggment <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+X_aggment <- model.matrix(~ hard_drugs_cat + AGG_MENT_yr0
    + BMI + collapse_SMOKE
    + age + collapse_RACE + collapsed_EDUCBAS,
    data = data)
@@ -2449,10 +2451,10 @@ data_list <- list(
 ```{r, echo = F}
 # Model WITH adherence
 # Outcome data
-y_aggment_adh <- data$AGG_PHYS_yr2
+y_aggment_adh <- data$AGG_MENT_yr2
 
 # Design matrix in our linear regression
-X_aggment_adh <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+X_aggment_adh <- model.matrix(~ hard_drugs_cat + AGG_MENT_yr0
    + BMI + collapse_SMOKE
    + age + collapse_RACE + collapsed_EDUCBAS
    + collapsed_ADH,
@@ -3081,75 +3083,28 @@ kbl(
   add_header_above(c(" ", "Bayesian Model" = 2,
                      "Frequentist Model" = 2)) |>
   footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
-                      "Estimates interpreted as changes in outcome for hard drug users compared to non-hard drug users"))
+                      "Estimates interpreted as changes in outcome for hard drug users compared to non-hard drug users",
+                      "Estimates for Viral Load are exponentiated"))
 ```
+<!-- Table 2 -->
+<!-- VLOAD: 13% lower for 95% HDI: 65% lower to 109% higher -->
+In Table 2 we compare estimates and measures of uncertainty for the estimates. Estimates with the frequentist and bayesian models yielded very similar results.
+Both the estimates and the 95% confidence interval and 95% highest density interval are quite similar.
+The frequentist analyses validates our findings with the Bayesian models. 
+Interpreting the findings with the Bayesian models, we found that
+after adjustment, the estimated viral load ratio comparing baseline hard drug users to non-users at 2 years was 0.87 (95% HDI: 0.35, 2.09). This corresponds to an estimated 13% lower viral load among drug users. We note that the interval was wide and included both substantial decreases and increases, indicating considerable uncertainty and no clear evidence of a difference. As HDI excluded 0, these findings are not significant.
+CD4+ T-Cell Counts were ~ -163 units lower (-223.956, -102.143) for hard-drug users compared to non-hard drug users at 2 years, after adjusting for covariates The difference between hard drug users and non-hard drug users is statistically significant as the HDI does not include 0. 
+The estimated difference in aggregate mental quality of life score was ~ -3 units lower (-6.147, -0.711) for hard-drug users compared to non-hard drug users after 2 years of HAART. Since the HDI excludes 0, the difference between the two hard drug use groups is statistically significant. 
+Lastly, aggregate mental quality of life score was estimated to be around -0.3 units lower (-3.565, 3.035) for non-hard drug users compared to hard-drug users after 2 years of HAART and after adjustment. However, this difference is not statistically significant as the HDI includes 0. 
 
-
-```{r, echo = F, eval = F}
-
-effects_df1 <- tibble(
-  Outcome = c("CD4+ T-Cell Count"),
-  Estimate = c(-163.420),
-  Lower = c( -223.956),
-  Upper = c(-102.143)
-)
-
-
-ggplot(effects_df1, 
-       aes(x = Estimate, 
-           y = reorder(Outcome, Estimate),
-           col = Outcome)) +
-  geom_point(size = 2) +
-  geom_errorbarh(aes(xmin = Lower, 
-                     xmax = Upper),
-                 width = 0.2) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  labs(x = "Adjusted Difference at Year 2",
-       y = "",
-       title = "Adjusted Effect of Baseline Hard Drug Use") +
-  scale_x_continuous(breaks = seq(-250, 50, by = 50)) + 
-  theme_lucid()
-```
-
-```{r, echo = F, eval= F}
-effects_df2 <- tibble(
-  Outcome = c("Log(Viral Load)",
-              "Mental QOL", "Physical QOL"),
-  Estimate = c(-0.140, -3.347, -3.343),
-  Lower = c(-1.057,  -6.147, -6.221),
-  Upper = c(0.738,  -0.711, -0.675)
-)
-
-ggplot(effects_df2, 
-       aes(x = Estimate, 
-           y = reorder(Outcome, Estimate),
-           col = Outcome)) +
-  geom_point(size = 2) +
-  geom_errorbarh(aes(xmin = Lower, 
-                     xmax = Upper),
-                 width = 0.2) +
-  geom_vline(xintercept = 0, linetype = "dashed") +
-  labs(x = "Adjusted Difference at Year 2",
-       y = "",
-       title = "Adjusted Effect of Baseline Hard Drug Use") +
-  scale_x_continuous(breaks = seq(-7, 2, by = 1)) + 
-  theme_lucid()
-```
-
-
-<!-- VLOAD -->
-
-We have that on average, the number of HIV copies in a mL of blood 2 years after HAART is 0.14 units lower for subjects who report hard drug use at baseline compared to subjects who report no hard drug use at baseline. However, this is not statistically significant (P=0.77). 
-In other words, there is no statistically significant difference in viral load between subjects who report hard drug use and subjects who did not report hard drug use at baseline. 
-
-
-<!-- LEUEN -->
-
-
-<!-- AGG PHYS -->
-
-<!-- AGG MENT -->
-
+<!-- Table 3  -->
+In Table 3 we compare estimates between the Bayesian models that did and did not include adherence for each outcome. 
+In Figure 1, we visualize the differences in the estimates between the models with and without ADH. Since CD4+ T-Cell counts was on a different scale compared to the other three outcomes, we created two separate panels to better illustrate differences.
+Estimates for exponentiated viral load and aggregate mental quality of life score differed by ~0.1 or so and HDIs shared overlap. 
+As estimates and HDIs for the models with and without adherence yielded similar results, it does not appear to be that adherence to HAART explains differences between hard drug and non-hard drug users. 
+For CD4+ T-Cell Count, estimates differed by around 6 points and HDIs were about 10 points higher for the low and high interval points for the model with ADH.
+Estimates varied slightly when including and exluding ADH, however, the small difference in the model estimates suggests that differences in medication adherence does not explain differences in CD4+ T-Cell Counts between hard drug and non-hard drug users. 
+Models with and without ADH were noticeably different for aggregate physical quality of life score. This suggests that HAART adherence may influence differences in aggregate physical quality of life scores between the two hard drug use groups. However, we mentioned above that differences between the hard drug use groups for this quality of life score was not significant. 
 
 
 <!----------------------------------------------------------------------------->
@@ -3289,10 +3244,12 @@ kable(
   kable_styling(latex_options = c("striped", "hold_position")) |>
   add_header_above(c(" ", "Model Without ADH" = 2, 
                      "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
+  footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
+                      "Estimates interpreted as changes in outcome for hard drug users compared to non-hard drug users",
+                      "Estimates for viral load are exponentiated"))
 ```
 
-```{r, echo = F}
+```{r, echo = F, warning = F, message = F}
 # Create data frame 
 adh_comparison2 <- data.frame(Outcome = 
                           # VLOAD
@@ -3386,21 +3343,20 @@ forest_df <- adh_comparison2 %>%
     upper = as.numeric(str_trim(str_extract(HDI, "[^,]+$"))),
     # Group the outcomes for scaling
     OutcomeGroup = case_when(
-      str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
-      str_detect(Outcome, "CD4")   ~ "CD4",
-      TRUE                         ~ "Quality of life"),
+  str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
+  TRUE                         ~ "Other outcomes"),
     Outcome = factor(Outcome, levels = rev(unique(adh_comparison2$Outcome)))) %>%
   select(Outcome, OutcomeGroup, Model, Estimate, lower, upper)
 
 # Reference lines for plot - 0 for significance
 ref_lines <- tibble(
   OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
-  ref = c(0, 0, 0)
+  ref = c(1, 0)
 )
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, warning = F, message = F, caption = "Figure 1 - Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant."}
 # Plot
 ggplot(forest_df, aes(x = Estimate, 
                       y = Outcome, 
@@ -3429,34 +3385,7 @@ ggplot(forest_df, aes(x = Estimate,
   theme_minimal()
 ```
 
-
-```{r, echo = F, eval = F}
-library(emmeans)
-# Try to get the emmeans
-# https://discourse.mc-stan.org/t/computation-of-contrasts-using-emmeans-based-on-brms-input-in-r/33998
-# Fit the model with brm
-vload_brm <- brm(VLOAD_yr2 ~ VLOAD_yr0 + hard_drugs_cat + BMI
-                 + collapsed_EDUCBAS + collapse_SMOKE + 
-                   collapse_RACE,
-                 family = gaussian,
-                 chains = 4,
-                 iter = 2000,
-                 warmup = 1000,
-                 data = data)
-
-# Use emmeans on brm model
-emmeans(vload_brm)
-```
-
-
-In the model without taking HAART adherence into account, 
-on average, viral load is 14% lower for hard drug users vs non hard drug users, 2 years after being on HAART. 
-The HDI does not contain 0 which indicates that this difference is not significant.
-When HAART adherence is taken into account, viral load is on average, 2.8% lower for hard-drug users compared to non-hard drug users, 2 years after HAART. 
-The HDI excludes 0 and we have that this difference is not significant.
-There is a noticeable difference in 
-
-
+ 
 
 \vspace{-6mm}
 # Discussion
