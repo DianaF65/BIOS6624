@@ -115,11 +115,14 @@ med_data <- apply_labels(data,
 \vspace{-8mm}
 
 The Multicenter AIDS Cohort Study is a prospective, observational, and longitudinal cohort of homosexual and bisexual men with Human Immunodeficiency Virus (HIV-1). 
-This study examines the effect of Highly Active Antiretroviral Treatment (HART), a standard treatment given to HIV-1 patients. Data was collected once annually for eight years and subjects were started on HART years 1 - 8.
-Data on important phenotypic characteristics such as age and race as well as clinical measurements including LDL Cholesterol were collected over the observation period. 
-This project aims to determine whether the use of hard drugs at baseline affects a patient's response to HART, particularly, in the time period from years 0 to 2. There is minimal evidence on the relationship between hard drugs and treatment response. If hard drugs negatively or positively affect a patient's response to HART, clinicians may be able to better assist patients by providing treatment that is better suited to patients based on past hard drug history. These analyses aims to investigate the following hypotheses: 
-
-Hypothesis 1: 
+This study examines the effect of Highly Active Antiretroviral Treatment (HAART), a standard treatment given to HIV-1 patients. Data was collected once annually for eight years and subjects were started on HART years 1 - 8.
+This project aims to determine whether the use of hard drugs at baseline affects a patient's treatment response 2 years after HAART.
+There is minimal evidence on the relationship between hard drugs and treatment response. These analyses aims to investigate the following hypotheses: 
+Hypothesis 1: Viral load is higher for hard-drug users compared to non-hard drug users after 2 years of HAART.
+Hypothesis 2: CD4+ T-Cell Counts are higher for hard-drug users compared to non-hard drug users after 2 years of HAART.
+Hypothesis 3: Aggregate and physical quality of life scores are lower for hard-drug users compared to non-hard drug users after 2 years of HAART.
+Hypothesis 4: Differences in the four measures of treatment response between hard drug and non-hard drug users can be explained by differences in adherence to medication. 
+<!-- If hard drugs negatively or positively affect a patient's response to HART, clinicians may be able to better assist patients by providing treatment that is better suited to patients based on past hard drug history. -->
 
 \vspace{-10mm}
 # Methods
@@ -130,8 +133,7 @@ Hypothesis 1:
 \vspace{-6mm}
 
 The original 8-year longitudinal data set contained 3935 observations for 715 subjects. 
-Before subsetting the data to the years of interest for the analysis, we investigated missingness in the whole data set to ensure concerning missingness patterns were not present. We further ensured that there were no relationships or missingness patterns between any of the four primary outcomes and other variables in the data set. 
-With the exception of adherence, all other variables in the data set had no more than ~7% missingness.
+Before filtering the data to the years of interest for the analysis, we investigated missingness in the whole data set to ensure concerning missingness patterns were not present. There were not any relationships or missingness patterns between any of the four primary outcomes and other variables in the data set. 
 We then subset the data to information for years 0 and 2. Investigating this particular subset more closely, we filtered out individuals whose BMI did not fall in the range of (10, 60) as anything outside of this range is highly biologically implausible BMI values for adults in the population of interest. Following this, we only kept subjects that contained information for both years 0 and 2. 
 In this step, we also created the variables necessary for analysis including viral load at year 2 and viral load at year 0, and so on for the three other outcomes. 
 With the exception of adherence to medication, the baseline values were retained for hard drug use, BMI, Age, Race, Education, and Smoking Status.
@@ -145,22 +147,24 @@ Education was collapsed to 'Less than College' and 'Completed College or Higher'
 and adherence to HAART was collapsed to '<95%' and '>95%'.
 Our final data set for analysis contained 463 subjects with complete data for years 0 and 2.
 
+<!-- Extras -->
+<!-- With the exception of adherence, all other variables in the data set had no more than ~7% missingness. -->
+
 \vspace{-8mm}
 ## Data Analysis
 \vspace{-6mm}
 
-To investigate differences in treatment response between subjects who did and did not report hard drug use at baseline, we employed linear regression and conducted analyses using both a Frequentist and a Bayesian framework and compared results.
+To investigate differences in treatment response between subjects who did and did not report hard drug use at baseline, we used linear regression and conducted analyses using both a Frequentist and a Bayesian framework.
 For each of the four measures of treatment response, we used the measurements in the second year as the outcome for the four models. 
 We adjusted for hard drug use, age, BMI, race, education at baseline, and measurements for the outcome of interest at year 0. As an example, the model for viral load:
 $\text{Viral Load (Yr 2)} \sim \text{Viral Load (Yr 0)} + \text{Hard Drug Use} + \text{Age} + \ldots$ 
 Assumptions of linearity, homoscedasticity, and normality were confirmed with diagnostic plots.
-For the frequentist analyses, we used a significant threshold of $\alpha = 0.05$. 
 For the bayesian analyses, we specified prior distributions for each outcome.
-For viral load, we specified a vague Normal$(0, 1000)$ prior for the regression coefficients and a Halr-Normal$(0, 100^2)$ prior for the residual variance.
-For CD4+ T cell counts, we specified a vague Normal$(0, 1000^2)$ prior for the regression coefficients and a Half-Normal$(0, 1000^2)$ prior for the residual variance.
-For both aggregate mental and physical quality of life scores, 
-we specified a vague Normal$(0, 1000^2)$ prior for the regression coefficients and a Half-Normal$(0, 1000^2)$ prior for the residual variance.
-We used the Highest Density Interval (HDI) to determine significance. Variables were significant if their HDI \textit{excluded} 0. 
+Because prior information on effect sizes was limited, we used weakly informative priors for regression coefficients and the residual standard deviation. 
+For viral load, we specified a vague Normal$(0, 100)$ prior for the regression coefficients and a Half-Normal$(0, 100)$ prior for the residual variance.
+For the other three outcomes, we specified a vague Normal$(0, 1000)$ prior for the regression coefficients and a Half-Normal$(0, 1000)$ prior for the residual variance.
+We used 4 chains with 1000 warmup iterations and 2000 sampling iterations for each model.
+We used the 95% Highest Density Interval (HDI) and the 95% Confidence Interval (CI) to determine significance. Variables were significant if the intervals \textit{excluded} 0. 
 
 We additionally assessed the impact subject's adherence to HAART had on the outcomes due to the concern that subjects who report hard drug use have a higher probability of lower adherence to medication which in turn affects the measures of treatment response. 
 For each of the models described above, we created an additional model with adherence to HAART as an additional covariate. As an example: 
@@ -168,6 +172,9 @@ $\text{Viral Load (Yr 2)} \sim \text{Viral Load (Yr 0)} + \text{Adherence} + \te
 This allowed us to quantify differences in the estimates when adherence was and was not taken into account to determine whether differences in any of the four outcomes could be explained by differences in adherence. 
 A complete case analysis was used for each model. 
 The R Statistical Programming Language v. 4.4.1 was used for all analyses. 
+<!-- Extras  -->
+<!-- For the frequentist analyses, estimates were significant if the 95% confidence intervals excluded 0. -->
+<!-- For the bayesian analyses, estimates were significant if the 95% highest density intervals (HDIs) did not include 0. -->
 
 \vspace{-10mm}
 # Results
@@ -177,8 +184,6 @@ Table 1 contains a description of the data used for all analyses.
 The mean and SD are displayed for the primary outcomes while the number and percentage of patients are displayed for the 5 covariates.
 We note the highly unbalanced distribution of hard drug and non-hard drug users.
 We observe higher viral load for both hard drug use groups, lower CD4+ T-Cell counts, and overall, similar (describe QOL scores).
-(Come back and elaborate more if needed on tab1.)
-
 
 <!------------------------------------ Table 1 -------------------------------->
 
@@ -3089,6 +3094,7 @@ kbl(
 <!-- Table 2 -->
 <!-- VLOAD: 13% lower for 95% HDI: 65% lower to 109% higher -->
 In Table 2 we compare estimates and measures of uncertainty for the estimates. Estimates with the frequentist and bayesian models yielded very similar results.
+We confirmed that with weak priors, Bayesian estimates were consistent with frequentist results.
 Both the estimates and the 95% confidence interval and 95% highest density interval are quite similar.
 The frequentist analyses validates our findings with the Bayesian models. 
 Interpreting the findings with the Bayesian models, we found that
@@ -3240,8 +3246,9 @@ kable(
   # format = "latex",
   booktabs = TRUE,
   digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
+  caption = "Model Summaries Without and With Medication Adherence Taken into Account") |>
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) |>
   add_header_above(c(" ", "Model Without ADH" = 2, 
                      "Model With ADH" = 2)) %>% 
   footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
@@ -3343,14 +3350,16 @@ forest_df <- adh_comparison2 %>%
     upper = as.numeric(str_trim(str_extract(HDI, "[^,]+$"))),
     # Group the outcomes for scaling
     OutcomeGroup = case_when(
-  str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
+  str_detect(Outcome, "CD4") ~ "CD4+ T-Cell Counts",
   TRUE                         ~ "Other outcomes"),
-    Outcome = factor(Outcome, levels = rev(unique(adh_comparison2$Outcome)))) %>%
+    Outcome = factor(Outcome, 
+                     levels = rev(unique(adh_comparison2$Outcome)))) %>%
   select(Outcome, OutcomeGroup, Model, Estimate, lower, upper)
 
 # Reference lines for plot - 0 for significance
 ref_lines <- tibble(
-  OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
+  OutcomeGroup = c("CD4+ T-Cell Cou ts", 
+                   "Viral Load (Ratio) & Quality of Life Scores"),
   ref = c(1, 0)
 )
 
@@ -3380,8 +3389,7 @@ ggplot(forest_df, aes(x = Estimate,
     x = "Estimate (95% HDI)",
     y = NULL,
     shape = NULL,
-    title = "Effects of Baseline Hard Drug Use On Treatment Response at Year 2\nModels With vs Without ADH",
-    subtitle = "Interpretations: Change in outcome for hard drug users compared to non-hard drug users") +
+    title = "Effects of Baseline Hard Drug Use On Treatment Response at Year 2\nModels With vs Without ADH") +
   theme_minimal()
 ```
 
