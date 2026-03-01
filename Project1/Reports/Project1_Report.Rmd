@@ -163,7 +163,8 @@ For the bayesian analyses, we specified prior distributions for each outcome.
 Because prior information on effect sizes was limited, we used weakly informative priors for regression coefficients and the residual standard deviation. 
 For viral load, we specified a vague Normal$(0, 100)$ prior for the regression coefficients and a Half-Normal$(0, 100)$ prior for the residual variance.
 For the other three outcomes, we specified a vague Normal$(0, 1000)$ prior for the regression coefficients and a Half-Normal$(0, 1000)$ prior for the residual variance.
-We used 4 chains with 1000 warmup iterations and 2000 sampling iterations for each model.
+We used 4 chains with 1000 warm-up iterations and 2000 sampling iterations for each model and the Hamiltonian Monte Carlo-No U-Turn Sampler MCMC sampler was used.
+Diagnostic checks for the models included assessment of the trace plots, autocorrelation plots, the Gelman-Rubin statistic, the Effective sample size, and lastly, special diagnostics reported by Stan. We used DIC for model comparison.
 We used the 95% Highest Density Interval (HDI) and the 95% Confidence Interval (CI) to determine significance. Variables were significant if the intervals \textit{excluded} 0. 
 
 We additionally assessed the impact subject's adherence to HAART had on the outcomes due to the concern that subjects who report hard drug use have a higher probability of lower adherence to medication which in turn affects the measures of treatment response. 
@@ -181,9 +182,9 @@ The R Statistical Programming Language v. 4.4.1 was used for all analyses.
 \vspace{-6mm}
 
 Table 1 contains a description of the data used for all analyses. 
-The mean and SD are displayed for the primary outcomes while the number and percentage of patients are displayed for the 5 covariates.
+The mean and SD are displayed for viral load and CD+ T-Cell counts, the distributions for the quality of life scores and age, and the number and percentage of patients for the 4 other covariates.
 We note the highly unbalanced distribution of hard drug and non-hard drug users.
-We observe higher viral load for both hard drug use groups, lower CD4+ T-Cell counts, and overall, similar (describe QOL scores).
+This descriptive table allows us to observe initial differences between year 0 and year. Viral load decreases for both drug use groups, CD4+ T-Cell counts increase for both drug use groups, and the quality of life scores appear to remain relatively constant for both years. 
 
 <!------------------------------------ Table 1 -------------------------------->
 
@@ -221,16 +222,19 @@ tab1_data <- apply_labels(data,
 
 # Display the modified Table1
 tab1_data %>% 
-  tbl_summary(include = c(VLOAD_yr2, VLOAD_yr0,
-                          LEU3N_yr2, LEU3N_yr0,
-                          AGG_MENT_yr2, AGG_MENT_yr0,
-                          AGG_PHYS_yr2, AGG_PHYS_yr0,
+  tbl_summary(include = c(VLOAD_yr0, VLOAD_yr2,
+                          LEU3N_yr0, LEU3N_yr2,
+                          AGG_MENT_yr0, AGG_MENT_yr2,
+                          AGG_PHYS_yr0, AGG_PHYS_yr2,
                           BMI, collapse_SMOKE, 
                           age, RACE_tab1,
                           EDU_tab1,
                           collapsed_ADH),
               by = hard_drugs_cat,
-              statistic = list(all_continuous() ~ "{mean}{sd}")) %>% 
+              statistic = list(c("VLOAD_yr2", "VLOAD_yr0",
+                          "LEU3N_yr2", "LEU3N_yr0",
+                          "BMI") 
+                               ~ "{mean}{sd}")) %>% 
   modify_header(label = "**Hard Drug Use at Baseline**") %>% 
   bold_labels() %>% 
   modify_caption(caption = "**Table 1 - Patient Characteristics by Hard Drug Use at Baseline**")
@@ -3326,71 +3330,80 @@ adh_comparison2 <- data.frame(Outcome =
                  check.names = FALSE
 )
 
+# Create data frame for plotting estimates with and without ADH
+library(dplyr)
+library(tidyr)
+library(stringr)
+library(ggplot2)
 
 forest_df <- adh_comparison2 %>%
-  # Create a longer version of df to plot
   pivot_longer(
     cols = c(Estimate_No_ADH, Estimate_ADH),
     names_to = "Model",
-    values_to = "Estimate") %>%
+    values_to = "Estimate"
+  ) %>%
   mutate(
-    # Relabel the HDI cols
     HDI = case_when(
       Model == "Estimate_No_ADH" ~ `95% HDI (No ADH)`,
       Model == "Estimate_ADH"    ~ `95% HDI (ADH)`
     ),
-    # Relabel the Model cols
     Model = case_when(
       Model == "Estimate_No_ADH" ~ "Without ADH",
       Model == "Estimate_ADH"    ~ "With ADH"
     ),
-    # Use stringr package to get the lower bounds of the HIDs
     lower = as.numeric(str_trim(str_extract(HDI, "^[^,]+"))),
-    # Get the upper bounds of the HDIs
     upper = as.numeric(str_trim(str_extract(HDI, "[^,]+$"))),
-    # Group the outcomes for scaling
     OutcomeGroup = case_when(
-  str_detect(Outcome, "CD4") ~ "CD4+ T-Cell Counts",
-  TRUE                         ~ "Other outcomes"),
-    Outcome = factor(Outcome, 
-                     levels = rev(unique(adh_comparison2$Outcome)))) %>%
-  select(Outcome, OutcomeGroup, Model, Estimate, lower, upper)
+      str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
+      str_detect(Outcome, "CD4")   ~ "CD4",
+      TRUE                         ~ "Quality of life"
+    )
+  ) %>%
+  group_by(OutcomeGroup) %>%
+  mutate(Outcome_y = factor(Outcome, levels = rev(unique(Outcome)))) %>%
+  ungroup()
 
-# Reference lines for plot - 0 for significance
 ref_lines <- tibble(
-  OutcomeGroup = c("CD4+ T-Cell Cou ts", 
-                   "Viral Load (Ratio) & Quality of Life Scores"),
-  ref = c(1, 0)
+  OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
+  ref = c(1, 0, 0)
 )
 
 ```
 
 ```{r, echo = F, warning = F, message = F, caption = "Figure 1 - Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant."}
 # Plot
-ggplot(forest_df, aes(x = Estimate, 
-                      y = Outcome, 
-                      # shape = Model,
-                      col = Model)) +
-  geom_vline(data = ref_lines,
-             aes(xintercept = ref),
-             linetype = "dashed",
-             inherit.aes = FALSE) +
+p_cd4 <- forest_df %>%
+  filter(OutcomeGroup == "CD4") %>%
+  ggplot(aes(x = Estimate, y = Outcome_y, col = Model)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
   geom_errorbarh(aes(xmin = lower, xmax = upper),
-                 width = 0.1,
-                 position = position_dodge(width = 0.5),
-                 orientation = "y") +
-  geom_point(size = 2,
-             position = position_dodge(width = 0.5),
-             show.legend = FALSE) +
-  facet_wrap(~OutcomeGroup, 
-             scales = "free_x",
-             ncol = 1) +
-  labs(
-    x = "Estimate (95% HDI)",
-    y = NULL,
-    shape = NULL,
-    title = "Effects of Baseline Hard Drug Use On Treatment Response at Year 2\nModels With vs Without ADH") +
+                 height = 0.18,
+                 position = position_dodge(width = 0.55)) +
+  geom_point(size = 2.2, position = position_dodge(width = 0.55)) +
+  labs(x = NULL, y = NULL, col = "Model", title = "CD4") +
   theme_minimal()
+
+p_other <- forest_df %>%
+  filter(OutcomeGroup != "CD4") %>%
+  ggplot(aes(x = Estimate, y = Outcome_y, col = Model)) +
+  geom_vline(
+    data = ref_lines %>% filter(OutcomeGroup != "CD4"),
+    aes(xintercept = ref),
+    linetype = "dashed",
+    inherit.aes = FALSE
+  ) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper),
+                 height = 0.18,
+                 position = position_dodge(width = 0.55)) +
+  geom_point(size = 2.2, position = position_dodge(width = 0.55)) +
+  facet_grid(OutcomeGroup ~ ., scales = "free_y", space = "free_y") +
+  labs(x = "Estimate (95% HDI)", y = NULL, col = "Model", title = NULL) +
+  theme_minimal()
+
+# Use patch work to lay these plots on top of each other
+p_cd4 / p_other + plot_layout(heights = c(1, 2))
+
+
 ```
 
  
