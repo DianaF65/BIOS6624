@@ -1,5 +1,5 @@
 ---
-title: The Effectiveness of HART
+title: The Effects of Hard Drug Use on HAART Treatment Response
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -118,9 +118,9 @@ The Multicenter AIDS Cohort Study is a prospective, observational, and longitudi
 This study examines the effect of Highly Active Antiretroviral Treatment (HAART), a standard treatment given to HIV-1 patients. Data was collected once annually for eight years and subjects were started on HART years 1 - 8.
 This project aims to determine whether the use of hard drugs at baseline affects a patient's treatment response 2 years after HAART.
 There is minimal evidence on the relationship between hard drugs and treatment response. These analyses aims to investigate the following hypotheses: 
-Hypothesis 1: Viral load is higher for hard-drug users compared to non-hard drug users after 2 years of HAART.
-Hypothesis 2: CD4+ T-Cell Counts are higher for hard-drug users compared to non-hard drug users after 2 years of HAART.
-Hypothesis 3: Aggregate and physical quality of life scores are lower for hard-drug users compared to non-hard drug users after 2 years of HAART.
+Hypothesis 1: Viral load is \textit{higher} for hard-drug users compared to non-hard drug users after 2 years of HAART.
+Hypothesis 2: CD4+ T-Cell Counts are \textit{lower} for hard-drug users compared to non-hard drug users after 2 years of HAART.
+Hypothesis 3: Both aggregate and physical quality of life scores are lower for hard-drug users compared to non-hard drug users after 2 years of HAART.
 Hypothesis 4: Differences in the four measures of treatment response between hard drug and non-hard drug users can be explained by differences in adherence to medication. 
 <!-- If hard drugs negatively or positively affect a patient's response to HART, clinicians may be able to better assist patients by providing treatment that is better suited to patients based on past hard drug history. -->
 
@@ -2926,7 +2926,7 @@ dev.off()
 <!---               Comparing Frequentist and Bayesian Estimates           ---->
 <!----------------------------------------------------------------------------->
 
-```{r, echo = F}
+```{r, echo = F, results='hide'}
 # Compare estimates for models with and without adherence
 
 ### VLOAD
@@ -3099,8 +3099,7 @@ kbl(
 <!-- VLOAD: 13% lower for 95% HDI: 65% lower to 109% higher -->
 In Table 2 we compare estimates and measures of uncertainty for the estimates. Estimates with the frequentist and bayesian models yielded very similar results.
 We confirmed that with weak priors, Bayesian estimates were consistent with frequentist results.
-Both the estimates and the 95% confidence interval and 95% highest density interval are quite similar.
-The frequentist analyses validates our findings with the Bayesian models. 
+Comparing the bayesian and frequentist analyses, estimates and the 95% confidence interval with 95% highest density interval were quite similar.
 Interpreting the findings with the Bayesian models, we found that
 after adjustment, the estimated viral load ratio comparing baseline hard drug users to non-users at 2 years was 0.87 (95% HDI: 0.35, 2.09). This corresponds to an estimated 13% lower viral load among drug users. We note that the interval was wide and included both substantial decreases and increases, indicating considerable uncertainty and no clear evidence of a difference. As HDI excluded 0, these findings are not significant.
 CD4+ T-Cell Counts were ~ -163 units lower (-223.956, -102.143) for hard-drug users compared to non-hard drug users at 2 years, after adjusting for covariates The difference between hard drug users and non-hard drug users is statistically significant as the HDI does not include 0. 
@@ -3363,7 +3362,7 @@ ref_lines <- tibble(
 
 ```
 
-```{r, echo = F, warning = F, message = F, caption = "Figure 1 - Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant."}
+```{r, echo = F, warning = F, message = F, fig.cap="Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant."}
 # Plot
 p_cd4 <- forest_df %>%
   filter(OutcomeGroup == "CD4") %>%
@@ -3399,7 +3398,7 @@ p_other <- forest_df %>%
     strip.background = element_blank())
 
 # Use patch work to lay these plots on top of each other
-p_cd4 / p_other + plot_layout(heights = c(1, 2))
+# p_cd4 / p_other + plot_layout(heights = c(1, 2))
 ```
 
 
@@ -3407,16 +3406,11 @@ p_cd4 / p_other + plot_layout(heights = c(1, 2))
 # Discussion
 \vspace{-6mm}
 
-With the exception of viral load and the aggregate quality of life scores, our results suggest that there are statistically significant differences between hard drug and non-hard drug users in the other two measures of treatment response. 
-The differences in CD4+ T-Cell counts between the two hard drug use groups was > 50, surpassing the threshold for clinical significance. 
-There was a slight difference of around ~6 units when adherence was taken into account but this small value did not seem to suggest that medication adherence explains differences between the two hard drug use groups. 
-This evidence suggests that hard drug use can impact immunologic health and hard-drug use should be taken into consideration for alternative treatment strategies that incorporates hard drug use into account.
-Aggregate mental quality of life scores were lower for hard-drug users compared to non-hard drug users and adherence did not seem to explain differences between the hard drug use groups. We note that the change was >2, which indicates clinical significance.
-Perhaps base differences in mental health between hard drug and non-hard drug use may explain the differences observed. In particular, individuals with lower mental health may be more likely to do hard-drugs. 
-In the end, hypotheses 2 and the aggregate mental QOL score portion of hypothesis 3 were shown to be true. 
-Our findings suggest that there is potential evidence that hard-drug use impacts HAART treatment response and extra measures such as more aggressive treatment strategies or drug rehabilitation programs before HAART may increase the impacts of HAART. 
-One limitation of our analyses is the very unbalanced numbers of hard drug users and non-hard drug users. Further studies may aim to prioritize creating a more balanced distribution of hard drug use groups. 
-
+With the exception of viral load, our results suggest that there are statistically significant differences between hard drug and non–hard drug users in measures of treatment response at two years. In particular, CD4+ T-cell counts were substantially lower among participants who reported hard drug use at baseline. The estimated difference exceeded 50 cells, which the common threshold used to determine clinical significance. When medication adherence was included in the model, the difference changed by ~ 6 cells. This small change suggests that adherence alone does not explain the observed differences between the two groups. Overall, these findings indicate that baseline hard drug use may negatively impact immunologic recovery following HAART initiation and should be considered when developing treatment strategies.
+Aggregate mental quality of life scores were also lower among hard drug users compared to non-users. This difference remained after adjusting for adherence, again suggesting that medication adherence does not fully account for the disparity. The estimated difference exceeded 2 points, which meets commonly referenced criteria for clinical significance in QOL measures. It is possible that baseline differences in mental health contribute to these findings. For example, individuals with lower mental health may be more likely to do hard drugs, which could explain the association observed at follow-up.
+In contrast, we did not find clear evidence of a difference in viral load at two years, as the interval estimate included 0. Taken together, these results provide partial support for our hypotheses. Specifically, the findings for CD4+ T-cell count and aggregate mental QOL are consistent with the expectation that hard drug use may adversely affect aspects of HAART treatment response.
+Our findings suggest that hard drug use may play an important role in treatment outcomes beyond medication adherence alone. Additional interventions, such as  drug rehabilitation services or providing more aggressive treatment, may help improve immunologic and quality of life outcomes among patients initiating HAART.
+One important limitation of this analysis is the highly unbalanced distribution of hard drug use at baseline. The relatively small number of hard drug users limits precision and may contribute to wider interval estimates, particularly for viral load. Future studies with a more balanced sample or larger numbers of exposed participants would allow for more precise estimation of these effects.
 
 \newpage
 
