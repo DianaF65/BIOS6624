@@ -3,6 +3,7 @@ title: The Effects of Hard Drug Use on HAART Treatment Response
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
+    urlcolor: magenta
     toc: false
     number_sections: false
     latex_engine: xelatex
@@ -158,7 +159,7 @@ To investigate differences in treatment response between subjects who did and di
 For each of the four measures of treatment response, we used the measurements in the second year as the outcome for the four models. 
 We adjusted for hard drug use, age, BMI, race, education at baseline, and measurements for the outcome of interest at year 0. As an example, the model for viral load:
 $\text{Viral Load (Yr 2)} \sim \text{Viral Load (Yr 0)} + \text{Hard Drug Use} + \text{Age} + \ldots$ 
-Assumptions of linearity, homoscedasticity, and normality were confirmed with diagnostic plots.
+Assumptions of linearity, homoscedasticity, and normality were confirmed with standardized residual plots and Quantile-Quantile plots.
 For the bayesian analyses, we specified prior distributions for each outcome.
 Because prior information on effect sizes was limited, we used weakly informative priors for regression coefficients and the residual standard deviation. 
 For viral load, we specified a vague Normal$(0, 100)$ prior for the regression coefficients and a Half-Normal$(0, 100)$ prior for the residual variance.
@@ -2926,7 +2927,7 @@ dev.off()
 <!---               Comparing Frequentist and Bayesian Estimates           ---->
 <!----------------------------------------------------------------------------->
 
-```{r, echo = F, results='hide'}
+```{r, echo = F}
 # Compare estimates for models with and without adherence
 
 ### VLOAD
@@ -3088,7 +3089,8 @@ kbl(
   digits = 3,
   caption = "Model Results for Bayesian and Frequentist Analyses") |>
   # subcaption = "Meow" |>
-  kable_styling(latex_options = c("striped", "hold_position")) |> 
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) |> 
   add_header_above(c(" ", "Bayesian Model" = 2,
                      "Frequentist Model" = 2)) |>
   footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
@@ -3107,8 +3109,8 @@ The estimated difference in aggregate mental quality of life score was ~ -3 unit
 Lastly, aggregate mental quality of life score was estimated to be around -0.3 units lower (-3.565, 3.035) for non-hard drug users compared to hard-drug users after 2 years of HAART and after adjustment. However, this difference is not statistically significant as the HDI includes 0. 
 
 <!-- Table 3  -->
-In Table 3 we compare estimates between the Bayesian models that did and did not include adherence for each outcome. 
-In Figure 1, we visualize the differences in the estimates between the models with and without ADH. Since CD4+ T-Cell counts was on a different scale compared to the other three outcomes, we created two separate panels to better illustrate differences.
+In Table 3 (p. 7) we compare estimates between the Bayesian models that did and did not include adherence for each outcome. 
+In Figure 1 (p. 7), we visualize the differences in the estimates between the models with and without ADH. Since CD4+ T-Cell counts was on a different scale compared to the other three outcomes, we created two separate panels to better illustrate differences.
 Estimates for exponentiated viral load and aggregate mental quality of life score differed by ~0.1 or so and HDIs shared overlap. 
 As estimates and HDIs for the models with and without adherence yielded similar results, it does not appear to be that adherence to HAART explains differences between hard drug and non-hard drug users. 
 For CD4+ T-Cell Count, estimates differed by around 6 points and HDIs were about 10 points higher for the low and high interval points for the model with ADH.
@@ -3121,7 +3123,10 @@ Models with and without ADH were noticeably different for aggregate physical qua
 <!----------------------------------------------------------------------------->
 
 
-```{r, echo = F}
+
+
+```{r, echo = F, warning = F, message = F}
+
 #### Compare estimates for models with and without adherence
 ### VLOAD
 # Pull term for hard drugs variable
@@ -3171,95 +3176,6 @@ aggment_adh_terms <- subset(aggment_adh_terms,
                                "HPDI_2.5",
                                "HPDI_97.5"))
 
-# Display side by side like with frequentist models
-# Create data frame
-# Display side by side like with frequentist models
-# Create data frame
-adh_comparison <- data.frame(Outcome = 
-                          # VLOAD
-                          c("Log(Viral Load)",
-                          # LEU3N
-                          "CD4+ T-Cell Count",
-                          # AGG PHYS
-                          "Agg. Mental QOL Score",
-                          # AGG MENT
-                          "Agg. Physical QOL Score"),
-                  ## WITHOUT ADH
-                 Estimate = 
-                   # VLOAD
-                   c(round(exp(vload_terms$Estimate), 3),
-                   # LEU3N
-                    round(leu3n_terms$Estimate, 3),
-                   # AGG PHYS
-                    round(aggphys_terms$Estimate, 3),
-                   # AGG MENT
-                   round(aggment_terms$Estimate, 3)),
-                 ## WITHOUT ADH
-                 `95% HDI` = c(
-                   # VLOAD
-                   paste(round(exp(vload_terms$HPDI_2.5), 3), 
-                                    round(exp(vload_terms$HPDI_97.5), 3), 
-                                    sep = ", "),
-                   # LEU3N
-                   paste(round(leu3n_terms$HPDI_2.5, 3), 
-                                    round(leu3n_terms$HPDI_97.5, 3), 
-                                    sep = ", "),
-                   # AGG PHYS
-                   paste(round(aggphys_terms$HPDI_2.5, 3), 
-                                    round(aggphys_terms$HPDI_97.5, 3), 
-                                    sep = ", "),
-                   # AGG MENT
-                   paste(round(aggment_terms$HPDI_2.5, 3), 
-                                    round(aggment_terms$HPDI_97.5, 3), 
-                                    sep = ", ")),
-                 ## WITH ADH
-                 Estimate = 
-                   # VLOAD
-                   c(round(exp(vload_adh_terms$Estimate), 3),
-                   # LEU3N
-                    round(leu3n_adh_terms$Estimate, 3),
-                   # AGG PHYS
-                    round(aggphys_adh_terms$Estimate, 3),
-                   # AGG MENT
-                   round(aggment_adh_terms$Estimate, 3)),
-                 # WITH ADH
-                 `95% HDI` = c(
-                   # VLOAD
-                   paste(round(exp(vload_adh_terms$HPDI_2.5), 3), 
-                                    round(exp(vload_adh_terms$HPDI_97.5), 3), 
-                                    sep = ", "),
-                   # LEU3N
-                   paste(round(leu3n_adh_terms$HPDI_2.5, 3), 
-                                    round(leu3n_adh_terms$HPDI_97.5, 3), 
-                                    sep = ", "),
-                   # AGG PHYS
-                   paste(round(aggphys_adh_terms$HPDI_2.5, 3), 
-                                    round(aggphys_adh_terms$HPDI_97.5, 3), 
-                                    sep = ", "),
-                   # AGG MENT
-                   paste(round(aggment_adh_terms$HPDI_2.5, 3), 
-                                    round(aggment_adh_terms$HPDI_97.5, 3), 
-                                    sep = ", ")),
-                 check.names = FALSE
-)
-
-# Display with kable
-kable(
-  adh_comparison,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summaries Without and With Medication Adherence Taken into Account") |>
-  kable_styling(latex_options = c("striped", "hold_position",
-                                  "scale_down")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
-                      "Estimates interpreted as changes in outcome for hard drug users compared to non-hard drug users",
-                      "Estimates for viral load are exponentiated"))
-```
-
-```{r, echo = F, warning = F, message = F}
 # Create data frame 
 adh_comparison2 <- data.frame(Outcome = 
                           # VLOAD
@@ -3362,7 +3278,107 @@ ref_lines <- tibble(
 
 ```
 
-```{r, echo = F, warning = F, message = F, fig.cap="Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant."}
+\vspace{-6mm}
+# Discussion
+\vspace{-6mm}
+
+With the exception of viral load, our results suggest that there are statistically significant differences between hard drug and non–hard drug users in measures of treatment response at two years. In particular, CD4+ T-cell counts were substantially lower among participants who reported hard drug use at baseline. The estimated difference exceeded 50 cells, which the common threshold used to determine clinical significance. When medication adherence was included in the model, the difference changed by ~ 6 cells. This small change suggests that adherence alone does not explain the observed differences between the two groups. Overall, these findings indicate that baseline hard drug use may negatively impact immunologic recovery following HAART initiation and should be considered when developing treatment strategies.
+Aggregate mental quality of life scores were also lower among hard drug users compared to non-users. This difference remained after adjusting for adherence, again suggesting that medication adherence does not fully 
+
+\newpage
+```{r, echo = F, fig.pos="H"}
+# Display side by side like with frequentist models
+# Create data frame
+# Display side by side like with frequentist models
+# Create data frame
+adh_comparison <- data.frame(Outcome = 
+                          # VLOAD
+                          c("Exp(Log(Viral Load))",
+                          # LEU3N
+                          "CD4+ T-Cell Count",
+                          # AGG PHYS
+                          "Agg. Mental QOL Score",
+                          # AGG MENT
+                          "Agg. Physical QOL Score"),
+                  ## WITHOUT ADH
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_terms$Estimate), 2),
+                   # LEU3N
+                    round(leu3n_terms$Estimate, 2),
+                   # AGG PHYS
+                    round(aggphys_terms$Estimate, 2),
+                   # AGG MENT
+                   round(aggment_terms$Estimate, 2)),
+                 ## WITHOUT ADH
+                 `95% HDI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_terms$HPDI_2.5), 2), 
+                                    round(exp(vload_terms$HPDI_97.5), 2), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_terms$HPDI_2.5, 2), 
+                                    round(leu3n_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_terms$HPDI_2.5, 2), 
+                                    round(aggphys_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_terms$HPDI_2.5, 2), 
+                                    round(aggment_terms$HPDI_97.5, 2), 
+                                    sep = ", ")),
+                 ## WITH ADH
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_adh_terms$Estimate), 2),
+                   # LEU3N
+                    round(leu3n_adh_terms$Estimate, 2),
+                   # AGG PHYS
+                    round(aggphys_adh_terms$Estimate, 2),
+                   # AGG MENT
+                   round(aggment_adh_terms$Estimate, 2)),
+                 # WITH ADH
+                 `95% HDI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_adh_terms$HPDI_2.5), 2), 
+                                    round(exp(vload_adh_terms$HPDI_97.5), 2), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_adh_terms$HPDI_2.5, 2), 
+                                    round(leu3n_adh_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_adh_terms$HPDI_2.5, 2), 
+                                    round(aggphys_adh_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_adh_terms$HPDI_2.5, 2), 
+                                    round(aggment_adh_terms$HPDI_97.5, 2), 
+                                    sep = ", ")),
+                 `|Δ|` = c(0.1, 6.18, 0.21, 0.21),
+                 check.names = FALSE
+)
+
+# Display with kable
+kable(
+  adh_comparison,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summaries Without and With Medication Adherence Taken into Account") |>
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2,
+                     " ")) %>% 
+  footnote(number = c("|Δ| = The Absolute Difference Between Model Estimates"))
+```
+
+
+
+
+```{r, echo = F, warning = F, message = F, fig.cap="Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant.", out.width="100%", fig.align='center', fig.pos="H"}
 # Plot
 p_cd4 <- forest_df %>%
   filter(OutcomeGroup == "CD4") %>%
@@ -3398,21 +3414,37 @@ p_other <- forest_df %>%
     strip.background = element_blank())
 
 # Use patch work to lay these plots on top of each other
-# p_cd4 / p_other + plot_layout(heights = c(1, 2))
+p_cd4 / p_other + plot_layout(heights = c(1, 2))
 ```
 
+\newpage
 
-\vspace{-6mm}
-# Discussion
-\vspace{-6mm}
-
-With the exception of viral load, our results suggest that there are statistically significant differences between hard drug and non–hard drug users in measures of treatment response at two years. In particular, CD4+ T-cell counts were substantially lower among participants who reported hard drug use at baseline. The estimated difference exceeded 50 cells, which the common threshold used to determine clinical significance. When medication adherence was included in the model, the difference changed by ~ 6 cells. This small change suggests that adherence alone does not explain the observed differences between the two groups. Overall, these findings indicate that baseline hard drug use may negatively impact immunologic recovery following HAART initiation and should be considered when developing treatment strategies.
-Aggregate mental quality of life scores were also lower among hard drug users compared to non-users. This difference remained after adjusting for adherence, again suggesting that medication adherence does not fully account for the disparity. The estimated difference exceeded 2 points, which meets commonly referenced criteria for clinical significance in QOL measures. It is possible that baseline differences in mental health contribute to these findings. For example, individuals with lower mental health may be more likely to do hard drugs, which could explain the association observed at follow-up.
+account for the disparity. The estimated difference exceeded 2 points, which meets commonly referenced criteria for clinical significance in QOL measures. It is possible that baseline differences in mental health contribute to these findings. For example, individuals with lower mental health may be more likely to do hard drugs, which could explain the association observed at follow-up.
 In contrast, we did not find clear evidence of a difference in viral load at two years, as the interval estimate included 0. Taken together, these results provide partial support for our hypotheses. Specifically, the findings for CD4+ T-cell count and aggregate mental QOL are consistent with the expectation that hard drug use may adversely affect aspects of HAART treatment response.
 Our findings suggest that hard drug use may play an important role in treatment outcomes beyond medication adherence alone. Additional interventions, such as  drug rehabilitation services or providing more aggressive treatment, may help improve immunologic and quality of life outcomes among patients initiating HAART.
 One important limitation of this analysis is the highly unbalanced distribution of hard drug use at baseline. The relatively small number of hard drug users limits precision and may contribute to wider interval estimates, particularly for viral load. Future studies with a more balanced sample or larger numbers of exposed participants would allow for more precise estimation of these effects.
 
 \newpage
 
+# Data and Code Availability
+
+The data and statistical code used to generate the results and figures in this report are available in the following GitHub repository:
+
+- GitHub repository: [https://github.com/DianaF65/BIOS6624](https://github.com/DianaF65/BIOS6624)
+
+Directory structure:
+
+- Background/ - A description of the background of the project.
+
+- Code/ - A R Markdown file consisting of code for exploratory and an initial report
+draft as well as as a .R file of code for the complete analysis.
+
+- RawData/ – Raw data files. Because this data is not publicly available, it is not available on GitHub. The raw data was originally obtained from the BIOS 6624 P1 module. The raw and processed datasets to generate these results are available on my local computer at this file path: 
+"/Users/dianafelipe/Desktop/BIOS 6624/BIOS6624/Project1/Data/hiv_6624_final.csv"
+
+- Reports/ R Markdown file used to generate this report
+
+All analyses and figures were generated using the R statistical programming language v. 4.4.1, and the repository contains the R scripts
+and R Markdown files used to produce this report
 
 
