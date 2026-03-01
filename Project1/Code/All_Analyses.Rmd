@@ -1,6 +1,6 @@
 ---
 title: The Effects of Hard-Drug Use at Baseline on HAART Response & Outcomes
-subtitle: Frequentist Analysis
+subtitle: Code for Frequentist and Bayesian Analyses
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -26,6 +26,9 @@ header-includes:
 ```{r, echo = F, message=F, warning = F}
 knitr::opts_chunk$set(echo = FALSE)
 library(readr)
+library(tidyr)
+library(tidyverse)
+library(dplyr)
 library(knitr)
 library(ggplot2)
 library(MASS)
@@ -55,6 +58,7 @@ library(broom)
 library(expss)
 library(mediation)
 library(bda)
+library(patchwork)
 
 # Libraries for Bayesian analysis
 # Dependencies 
@@ -76,13 +80,6 @@ opts_chunk$set(tidy = F)
 data <- read.csv("../Data/final_hiv_data.csv")
 
 # Examine the data and data types
-# str(data)
-
-
-```
-
-```{r, echo = F}
-# Assessment of the data first
 # str(data)
 
 # Create categorical labels and variables 
@@ -112,8 +109,7 @@ med_data <- apply_labels(data,
                    VLOAD_yr2 = "VLOAD - yr2")
 ```
 
-
-A table1 separating by hard drug use at baseline: 
+A preliminary table1 separating by hard drug use at baseline: 
 
 ```{r, echo = F}
 med_data %>% 
@@ -128,7 +124,7 @@ med_data %>%
   bold_labels()
 ```
 
-
+\newpage
 
 # Frequentist Analysis
 
@@ -148,7 +144,7 @@ The number of HIV copies in a mL of blood.
 Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
 
 
-### Mediation Analysis
+### Models with ADH and Without ADH
 
 ```{r, echo = F}
 ### Parametric Approach
@@ -172,7 +168,7 @@ vload_adh <- lm(log_VLOAD_yr2 ~ hard_drugs_cat + log_VLOAD_yr0
 
 Comparison of estimates between models with and without adherence: 
 
-```{r, echo = F}
+```{r, echo = F, fig.cap="Differences in Estimates Between Models with and Withtou ADH for Viral Load", fig.pos="H"}
 # Compare betas 
 t1 <- tbl_regression(vload_no_adh,
                      # exponentiate = TRUE,
@@ -187,24 +183,15 @@ t2 <- tbl_regression(vload_adh,
                      estimate_fun = ~ style_number(.x, digits = 3))
 
 
-tbl_merge(
+merged <- tbl_merge(
   tbls = list(t1, t2),
   tab_spanner = c("**Model Without ADH**", 
-                  "**Model With ADH**")
-)
+                  "**Model With ADH**")) %>% 
+  modify_caption("**Table 1. Differences in Estimates Between Models with and Withtou ADH for Viral Load**")
+merged
 ```
 
-We observe a difference of 0.119 units between the estimate for the two models. 
-The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
-We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
-In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
-The differences that we observe in the estimates can be explained by differences in adherence. 
-Due to these findings, we included adherence in the VLOAD model. 
-
-
-### Primary Analysis
-
-Model diagnostics: 
+\newpage
 
 ```{r, echo = F, out.width="80%", fig.align='center', include=FALSE}
 ### Model diagnostics
@@ -233,28 +220,22 @@ augment(vload_primary) |>
 
 ```
 
-Interpreting the results: 
+\newpage
 
 ```{r, echo = F, include=FALSE, eval = F, results = 'hide'}
 summary(vload_primary)
 ```
 
-After controlling for covariates, there is not significant difference (p = 0.970) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
-
-<!-- REMEMBER TO INTERPRET ON LOG SCALE -->
-
-\newpage
 
 ## LEU3N
 
-### Mediation Analysis
 
 The number of CD4+ T cell counts which is a measure of immunologic health.
 With treatment, we expect CD4+ T Cll counts to increase.
 
 Hypothesis: CD4+ T cell counts are significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
 
-### Mediation Analysis
+### Models with ADH and Without ADH
 
 ```{r, echo = F}
 ### Parametric Approach
@@ -278,7 +259,7 @@ leu3n_adh <- lm(LEU3N_yr2 ~ hard_drugs_cat + LEU3N_yr0
 
 Comparison of estimates between models with and without adherence: 
 
-```{r, echo = F}
+```{r, echo = F, fig.cap="Differences in Estimates Between Models with and Withtou ADH for CD4+ T-Cell Counts", fig.pos="H"}
 # Compare betas 
 t1_leu3n <- tbl_regression(leu3n_no_adh,
                      include = c("hard_drugs_cat"),
@@ -291,16 +272,15 @@ t2_leu3n <- tbl_regression(leu3n_adh,
                      estimate_fun = ~ style_number(.x, digits = 3))
 
 
-tbl_merge(
+tbl_merged <- tbl_merge(
   tbls = list(t1_leu3n, t2_leu3n),
-  tab_spanner = c("**Model Without ADH**", 
-                  "**Model With ADH**")
-)
+  tab_spanner = c("**Model Without ADH**", "**Model With ADH**")
+) %>%
+  modify_caption("**Differences in estimates between models with and without ADH for viral load.**")
+
+tbl_merged
 ```
 
-meow meow meow
-
-### Primary Analysis
 
 Model diagnostics: 
 
@@ -331,13 +311,10 @@ augment(leu3n_primary) |>
 
 ```
 
-Interpreting the results: 
 
 ```{r, echo = F, include=FALSE, results = 'hide', eval = F}
 summary(leu3n_primary)
 ```
-
-After controlling for covariates, there is not significant difference (p = 0.970) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
 
 \newpage
 
@@ -348,7 +325,7 @@ The number of HIV copies in a mL of blood.
 Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
 
 
-### Mediation Analysis
+### Models with ADH and Without ADH
 
 ```{r, echo = F}
 ### Parametric Approach
@@ -372,7 +349,7 @@ aggphys_adh <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
 
 Comparison of estimates between models with and without adherence: 
 
-```{r, echo = F}
+```{r, echo = F, fig.cap="Differences in Estimates Between Models with and Withtou ADH for Aggregate Physical Quality of Life Score", fig.pos="H"}
 # Compare betas 
 t1_aggphs <- tbl_regression(aggphys_no_adh,
                      # exponentiate = TRUE,
@@ -387,22 +364,17 @@ t2_aggphs <- tbl_regression(aggphys_adh,
                      estimate_fun = ~ style_number(.x, digits = 3))
 
 
-tbl_merge(
+tb2_merged <- tbl_merge(
   tbls = list(t1_aggphs, t2_aggphs),
   tab_spanner = c("**Model Without ADH**", 
-                  "**Model With ADH**")
-)
+                  "**Model With ADH**")) %>% 
+  modify_caption("**Table 1. Differences in Estimates Between Models with and Withtou ADH for Viral Load**")
+
+tb2_merged
 ```
 
-We observe a difference of 0.119 units between the estimate for the two models. 
-The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
-We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
-In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
-The differences that we observe in the estimates can be explained by differences in adherence. 
-Due to these findings, we included adherence in the VLOAD model. 
 
-
-### Primary Analysis
+\newpage
 
 Model diagnostics: 
 
@@ -433,15 +405,10 @@ augment(aggphys_primary) |>
 
 ```
 
-Interpreting the results: 
 
 ```{r, echo = F}
 summary(aggphys_primary)
 ```
-
-After controlling for covariates, there is not significant difference (p = 0.970) in VLOAD 2 years after initiating HART between those who reported hard-drug use at baseline vs. those who did. 
-
-<!-- REMEMBER TO INTERPRET ON LOG SCALE -->
 
 \newpage
 
@@ -453,7 +420,7 @@ The number of HIV copies in a mL of blood.
 Hypothesis: VLOAD is significantly higher 2 years after HART for subjects who reported hard drug use at baseline. 
 
 
-### Mediation Analysis
+### Models with ADH and Without ADH
 
 ```{r, echo = F}
 ### Parametric Approach
@@ -477,7 +444,7 @@ aggment_adh <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
 
 Comparison of estimates between models with and without adherence: 
 
-```{r, echo = F}
+```{r, echo = F, fig.cap="Differences in Estimates Between Models with and Withtou ADH for Aggregate Mental Quality of Life Score", fig.pos="H"}
 # Compare betas 
 t1 <- tbl_regression(aggment_no_adh,
                      # exponentiate = TRUE,
@@ -492,22 +459,15 @@ t2 <- tbl_regression(aggment_adh,
                      estimate_fun = ~ style_number(.x, digits = 3))
 
 
-tbl_merge(
+tb3_merged <- tbl_merge(
   tbls = list(t1, t2),
   tab_spanner = c("**Model Without ADH**", 
-                  "**Model With ADH**")
-)
+                  "**Model With ADH**")) %>% 
+  modify_caption("**Table 1. Differences in Estimates Between Models with and Withtou ADH for Viral Load**")
+tb3_merged
 ```
 
-We observe a difference of 0.119 units between the estimate for the two models. 
-The proportion mediated by adherence is $\frac{-0.136 - (-0.017)}{-0.136} = 85\%$.
-We have that 85% of the effect of hard drug use on copies of viral load is mediated through or can be explained by adherence to HAART. 
-In other words, there is a difference between whether subjects adhered to HAART for those that did and did not report hard-drug use at baseline. 
-The differences that we observe in the estimates can be explained by differences in adherence. 
-Due to these findings, we included adherence in the VLOAD model. 
-
-
-### Primary Analysis
+\newpage
 
 Model diagnostics: 
 
@@ -538,7 +498,6 @@ augment(aggment_primary) |>
 
 ```
 
-Interpreting the results: 
 
 ```{r, echo = F}
 summary(aggment_primary)
@@ -549,52 +508,12 @@ summary(aggment_primary)
 
 # Bayesian Analysis
 
-```{r, echo = F}
-# Read in data
-data <- read.csv("../Data/final_hiv_data.csv")
+<!------------------------------------- VLOAD --------------------------------->
 
-# Assessment of the data first
-# str(data)
-
-# Create categorical labels and variables 
-
-# Hard drugs
-data$hard_drugs_cat <- factor(data$hard_drugs,
-                              levels = c(0, 1),
-                              labels = c("No", "Yes"))
-
-# Move after hard drugs variable
-data <- data %>% 
-  relocate(hard_drugs_cat, .after = hard_drugs)
-
-# Convert collapse race to factor
-data$collapse_RACE <- factor(data$collapse_RACE)
-
-# Convert collapse educ to factor
-data$collapsed_EDUCBAS <- factor(data$collapsed_EDUCBAS)
-
-# Convert SMOKE cat to factor
-data$collapse_SMOKE <- factor(data$collapse_SMOKE)
-
-# Relabel the variables
-med_data <- apply_labels(data,
-                   hard_drugs = "Hard Drug Use at BL",
-                   ADH_yr2 = "HAART Adherence",
-                   VLOAD_yr2 = "VLOAD - yr2")
-```
-
-
-## VLOAD
-
-Laboratory in vitro and animal studies have shown that the use of hard drugs has increases HIV replication. 
-However, since there are not any biologically plausible values that we could pick for an informative optimist prior, we will continue with a vague prior for our Bayesian models. 
-
-
-For viral load, we specified a Normal $(0, 10000)$ prior for the regression coefficients and a Half-Normal $(0, 100^2)$ prior for the residual variance.
 
 ```{r, echo = F}
 ################################################################################
-###                                 VLOAD                                    ###
+###                                   VLOAD                                  ###
 ################################################################################
 
 
@@ -625,7 +544,7 @@ vload_adh_linear <- lm(log_VLOAD_yr2 ~ hard_drugs_cat + log_VLOAD_yr0
 
 
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 ### Bayesian Model
 
 # Linear model WITHOUT ADHERENCE
@@ -677,7 +596,7 @@ generated quantities {
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 # Linear Model WITH ADHERENCE
 
 ###########################################################################
@@ -728,7 +647,7 @@ generated quantities {
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 ###########################################################################
 # STEP 2: Compile the Stan program
 ###########################################################################
@@ -738,7 +657,7 @@ vload_mod <- cmdstan_model('STAN/VLOAD_primary.stan')
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 # Model WITH adherence
 vload_mod_adh <- cmdstan_model('STAN/VLOAD_adh.stan')
 
@@ -835,7 +754,7 @@ data_list_adh <- list(
 ```
 
 
-```{r, echo = F, message=F, warning = F, results = 'hide'}
+```{r, echo = F, message=F, warning = F, results='hide'}
 ###########################################################################
 # STEP 4: Fit Model
 ###########################################################################
@@ -870,7 +789,7 @@ vload_fit_adh <- vload_mod_adh$sample(
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, results='hide'}
 ###########################################################################
 # STEP 5: Summarize the posterior
 ###########################################################################
@@ -897,7 +816,7 @@ params_vload <- params_vload[!grepl("lp__|log_lik", params_vload)]
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE, results='hide'}
 # Model WITH ADH
 
 vload_fit_adh$summary(variables=c("beta[1]", "beta[2]", 
@@ -921,7 +840,7 @@ params_vload_adh <- params_vload_adh[!grepl("lp__|log_lik", params_vload_adh)]
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, results='hide', cache = TRUE}
 # Model WITH ADH
 # Build summary table
 summary_table_vload <- lapply(params_vload, function(p) {
@@ -962,7 +881,7 @@ summary(vload_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, results='hide', cache = TRUE}
 # Model WITH ADH
 # Build summary table
 summary_table_vload_adh <- lapply(params_vload_adh, function(p) {
@@ -1002,68 +921,8 @@ summary(vload_adh_linear)
 ```
 
 
-```{r, echo = F}
-# Compare estimates for models with and without adherence
 
-# Model without ADH
-vload_terms <- summary_table_vload[2, ]
-
-# Subset to Parameter, Estimate, HPDIs
-vload_terms <- subset(vload_terms,
-                      select = c("Parameter",
-                                 "Estimate",
-                                 "HPDI_2.5",
-                                 "HPDI_97.5"))
-
-# Model WITH ADH
-# Pull term for hard drugs variable
-vload_adh_terms <- summary_table_vload_adh[2, ]
-
-# Subset to Parameter, Estimate, HPDIs
-vload_adh_terms <- subset(vload_adh_terms,
-                    select = c("Parameter", 
-                               "Estimate",
-                               "HPDI_2.5",
-                               "HPDI_97.5"))
-
-# Display side by side like with frequentist models
-# Create data frame
-comp_models_vload <- data.frame(Variable = "HD at Baseline (Yes)",
-                 Estimate = round(vload_terms$Estimate, 3),
-                 `95% HDI` = paste(round(vload_terms$HPDI_2.5, 3), 
-                                    round(vload_terms$HPDI_97.5, 3), 
-                                    sep = ", "),
-                 Estimate = round(vload_adh_terms$Estimate, 3),
-                 `95% HDI` = paste(round(vload_adh_terms$HPDI_2.5, 3),
-                                    round(vload_adh_terms$HPDI_97.5, 3),
-                                    sep = ", "),
-                 check.names = FALSE)
-
-# Display with kable
-kable(
-  comp_models_vload,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
-  
-
-```
-
-In the model without taking HAART adherence into account, 
-on average, viral load is 14% lower for hard drug users vs non hard drug users, 2 years after being on HAART. 
-The HDI does not contain 0 which indicates that this difference is not significant.
-When HAART adherence is taken into account, viral load is on average, 2.8% lower for hard-drug users compared to non-hard drug users, 2 years after HAART. 
-The HDI excludes 0 and we have that this difference is not significant.
-There is a noticeable difference in 
-
-
-
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 ###########################################################################
 # STEP 6: Model fit statistics (you only need 1 of these, not all 3)
 ###########################################################################
@@ -1078,7 +937,7 @@ loo_res <- loo(loglik_mat_vload)
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 # Model WITH ADH
 loglik_mat_vload_adh <- as_draws_matrix(vload_fit_adh$draws("log_lik")) 
 # iterations x N
@@ -1090,7 +949,7 @@ loo_res_vload_adh <- loo(loglik_mat_vload_adh)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 ###########################################################################
 # STEP 6: MCMC Diagnostics
 ###########################################################################
@@ -1111,7 +970,7 @@ vload_params <- c("beta[1]", "beta[2]",
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE}
 # Dimensions: iterations x chains x parameters
 vload_draws_adh <- as_draws_array(vload_fit_adh$draws())
 
@@ -1127,7 +986,7 @@ vload_params_adh <- c("beta[1]", "beta[2]",
 ```
 
 
-```{r, echo = F, results = 'hide'}
+```{r, echo = F, results = 'hide', eval = F}
 # Trace plots
 # Trace plots show whether chains are mixing well and exploring the parameter space.
 # Chains should mix well (lines overlap)
@@ -1141,16 +1000,14 @@ mcmc_trace(vload_draws, pars = vload_params)
 ```
 
 
-```{r, echo = F, results = 'hide'}
+```{r, echo = F, results = 'hide', eval = F}
 # Model WITH ADH
 mcmc_trace(vload_draws_adh, pars = vload_params_adh)
-
-
 ```
 
 
 
-```{r, echo = F, results = 'hide'}
+```{r, echo = F, results = 'hide', cache = TRUE}
 # R-hat and ESS diagnostics
 # R-hat ≈ 1.00 → converged
 # ESS should be reasonably large (e.g., >100–200 per parameter)
@@ -1159,14 +1016,14 @@ vload_fit$summary(variables = vload_params)
 # ESS should be around > 200*9 = 1800 and that seems to be the case for most
 ```
 
-```{r, echo = F}
+```{r, echo = F, cache = TRUE, results='hide'}
 
 vload_fit_adh$summary(variables = vload_params_adh)
 
 ```
 
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Posterior Density Plots
 # Overlaid densities from multiple chains should match closely
 # If densities differ substantially between chains → poor mixing
@@ -1174,7 +1031,7 @@ mcmc_dens_overlay(draws_vload, pars = vload_params)
 
 ```
 
-```{r, echo = F, include = F, eval = F, results='hide'}
+```{r, echo = F, eval = F, results='hide'}
 # Posterior density plots
 # Model WITH ADH
 
@@ -1182,7 +1039,7 @@ mcmc_dens_overlay(draws_vload_adh, pars = vload_params_adh)
 ```
 
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Auto-correlation 
 # Autocorrelation should decay quickly
 # High autocorrelation → may need more iterations or thinning
@@ -1190,13 +1047,13 @@ mcmc_acf(draws_vload, pars = vload_params)
 
 ```
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Model WITH ADH
 mcmc_acf(draws_vload_adh, pars = vload_params_adh)
 ```
 
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Diagnostics from cmdstan
 vload_fit$cmdstan_diagnose()
 # Need to load actual vload and not vload .rds for this
@@ -1221,7 +1078,7 @@ vload_fit$cmdstan_diagnose()
 
 ```
 
-```{r, echo = F, results='hide'}
+```{r, echo = F, results='hide', eval = F}
 # Model WITH ADH
 # Diagnostics from cmdstan
 vload_fit_adh$cmdstan_diagnose()
@@ -1246,21 +1103,9 @@ mcmc_acf(vload_draws, pars = vload_params)
 dev.off()
 ```
 
-We have that on average, the number of HIV copies in a mL of blood 2 years after HAART is 0.14 units lower for subjects who report hard drug use at baseline compared to subjects who report no hard drug use at baseline. However, this is not statistically significant (P=0.77). 
-In other words, there is no statistically significant difference in viral load between subjects who report hard drug use and subjects who did not report hard drug use at baseline. 
 
 
-\newpage
-
-## LEU3N
-
-For CD4+ T cell counts, we specified an vague Normal $(0, 10000)$ prior for the regression coefficients and a Half-Normal $(0, 100^2)$ prior for the residual variance.
-
-
-For CD4+ T cell counts, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
-
-
-```{r, echo = F}
+```{r, echo = F, eval = F}
 # Read in data
 data <- read.csv("../Data/final_hiv_data.csv")
 
@@ -1705,7 +1550,7 @@ summary(leu3n_adh_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, eval = F, results = 'hide'}
 # Compare estimates for models with and without adherence
 
 # Model without ADH
@@ -1952,12 +1797,8 @@ dev.off()
 
 ```
 
-## AGG PHYS
 
-For aggregate physical quality of life scores, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
-
-
-```{r, echo = F}
+```{r, echo = F, eval = F}
 # Read in data
 data <- read.csv("../Data/final_hiv_data.csv")
 
@@ -2023,7 +1864,6 @@ aggphys_adh_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
                      data = data)
 
 ```
-
 
 
 ```{r, echo = F}
@@ -2357,8 +2197,6 @@ summary(aggphys_linear)
 # check that mcmcse < 6% of posterior SD
 (100*summary_table_aggphys$MCSE/summary_table_aggphys$Std_Dev) < 6
 # All True
-
-
 ```
 
 
@@ -2402,7 +2240,7 @@ summary(aggphys_adh_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, eval = F, results = 'hide'}
 # Compare estimates for models with and without adherence
 
 # Model without ADH
@@ -2440,16 +2278,16 @@ comp_models_aggphys <- data.frame(Variable = "HD at Baseline (Yes)",
                  check.names = FALSE)
 
 # Display with kable
-kable(
-  comp_models_aggphys,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
+# kable(
+#   comp_models_aggphys,
+#   # format = "latex",
+#   booktabs = TRUE,
+#   digits = 3,
+#   caption = "Model Summary") |>
+#   kable_styling(latex_options = c("striped", "hold_position")) |>
+#   add_header_above(c(" ", "Model Without ADH" = 2, 
+#                      "Model With ADH" = 2)) %>% 
+#   footnote(general = "HPDI - Highest Density Interval ")
 
 ```
 
@@ -2650,10 +2488,6 @@ dev.off()
 
 ```
 
-## AGG MENT
-
-For aggregate mental quality of life scores, we specified an vague Normal$(0, 10000)$ prior for the regression coefficients and a Half-Normal$(0, 100^2)$ prior for the residual variance.
-
 
 ```{r, echo = F}
 # Read in data
@@ -2698,7 +2532,7 @@ med_data <- apply_labels(data,
 
 
 ### Linear model WITHOUT ADHERENCE
-aggment_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+aggment_linear <- lm(AGG_MENT_yr2 ~ hard_drugs_cat + AGG_MENT_yr0
                     + BMI + collapse_SMOKE
                     + age + collapse_RACE + collapsed_EDUCBAS,
                      data = data)
@@ -2714,7 +2548,7 @@ aggment_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
 
 ```{r, echo = F}
 ### Linear model WITH ADHERENCE
-aggment_adh_linear <- lm(AGG_PHYS_yr2 ~ hard_drugs_cat + AGG_PHYS_yr0
+aggment_adh_linear <- lm(AGG_MENT_yr2 ~ hard_drugs_cat + AGG_MENT_yr0
                     + BMI + collapse_SMOKE
                     + age + collapse_RACE + collapsed_EDUCBAS
                     + collapsed_ADH,
@@ -2851,10 +2685,10 @@ aggment_mod_adh <- cmdstan_model('STAN/aggment_adh.stan')
 
 # Model WITHOUT adherence
 # Outcome data
-y_aggment <- data$AGG_PHYS_yr2
+y_aggment <- data$AGG_MENT_yr2
 
 # Design matrix in our linear regression
-X_aggment <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+X_aggment <- model.matrix(~ hard_drugs_cat + AGG_MENT_yr0
    + BMI + collapse_SMOKE
    + age + collapse_RACE + collapsed_EDUCBAS,
    data = data)
@@ -2893,10 +2727,10 @@ data_list <- list(
 ```{r, echo = F}
 # Model WITH adherence
 # Outcome data
-y_aggment_adh <- data$AGG_PHYS_yr2
+y_aggment_adh <- data$AGG_MENT_yr2
 
 # Design matrix in our linear regression
-X_aggment_adh <- model.matrix(~ hard_drugs_cat + AGG_PHYS_yr0
+X_aggment_adh <- model.matrix(~ hard_drugs_cat + AGG_MENT_yr0
    + BMI + collapse_SMOKE
    + age + collapse_RACE + collapsed_EDUCBAS
    + collapsed_ADH,
@@ -3100,7 +2934,7 @@ summary(aggment_adh_linear)
 ```
 
 
-```{r, echo = F}
+```{r, echo = F, results = 'hide'}
 # Compare estimates for models with and without adherence
 
 # Model without ADH
@@ -3138,16 +2972,16 @@ comp_models_aggment <- data.frame(Variable = "HD at Baseline (Yes)",
                  check.names = FALSE)
 
 # Display with kable
-kable(
-  comp_models_aggment,
-  # format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Model Summary") |>
-  kable_styling(latex_options = c("striped", "hold_position")) |>
-  add_header_above(c(" ", "Model Without ADH" = 2, 
-                     "Model With ADH" = 2)) %>% 
-  footnote(general = "HPDI - Highest Density Interval ")
+# kable(
+#   comp_models_aggment,
+#   # format = "latex",
+#   booktabs = TRUE,
+#   digits = 3,
+#   caption = "Model Summary") |>
+#   kable_styling(latex_options = c("striped", "hold_position")) |>
+#   add_header_above(c(" ", "Model Without ADH" = 2, 
+#                      "Model With ADH" = 2)) %>% 
+#   footnote(general = "HPDI - Highest Density Interval ")
 
 ```
 
@@ -3329,6 +3163,7 @@ aggment_fit_adh$cmdstan_diagnose()
 ```
 
 
+
 ```{r, echo = F, eval = F}
 ## Save output if desired ###
 # MCMC Output
@@ -3350,5 +3185,479 @@ dev.off()
 
 
 
+<!----------------------------------------------------------------------------->
+<!---                             Primary Outcomes                         ---->
+<!----------------------------------------------------------------------------->
+
+<!----------------------------------------------------------------------------->
+<!---               Comparing Frequentist and Bayesian Estimates           ---->
+<!----------------------------------------------------------------------------->
+
+```{r, echo = F}
+# Compare estimates for models with and without adherence
+
+### VLOAD
+## Bayesian 
+# Model without ADH
+vload_terms <- summary_table_vload[2, ] # Hard drugs beta
+
+# Subset to Parameter, Estimate, HPDIs
+vload_terms <- subset(vload_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+## Frequentist
+vload_lin_terms <- tidy(vload_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+vload_lin_terms <- vload_lin_terms[2, ]
+# Subse to estimate and conf values
+vload_lin_terms <- subset(vload_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
+
+
+### LEU3N
+## Bayesian
+# Model without ADH
+leu3n_terms <- summary_table_leu3n[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+leu3n_terms <- subset(leu3n_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+## Frequentist
+leu3n_lin_terms <- tidy(leu3n_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+leu3n_lin_terms <- leu3n_lin_terms[2, ]
+# Subse to estimate and conf values
+leu3n_lin_terms <- subset(leu3n_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
+
+
+### AGG PHYS
+## Bayesian
+# Model without ADH
+aggphys_terms <- summary_table_aggphys[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggphys_terms <- subset(aggphys_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+aggphys_lin_terms <- tidy(aggphys_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+aggphys_lin_terms <- aggphys_lin_terms[2, ]
+# Subse to estimate and conf values
+aggphys_lin_terms <- subset(aggphys_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
+
+
+### AGG MENT
+## Bayesian
+# Model without ADH
+aggment_terms <- summary_table_aggment[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggment_terms <- subset(aggment_terms,
+                      select = c("Parameter",
+                                 "Estimate",
+                                 "HPDI_2.5",
+                                 "HPDI_97.5"))
+
+## Frequentist
+aggment_lin_terms <- tidy(aggment_linear, conf.int = TRUE)
+# Subset to hard drugs beta
+aggment_lin_terms <- aggment_lin_terms[2, ]
+# Subse to estimate and conf values
+aggment_lin_terms <- subset(aggment_lin_terms,
+             select = c("estimate", "conf.low", "conf.high"))
+
+
+
+# Display side by side like with frequentist models
+# Create data frame
+all_outcomes <- data.frame(Outcome = 
+                          # VLOAD
+                          c("Log(Viral Load)",
+                          # LEU3N
+                          "CD4+ T-Cell Count",
+                          # AGG PHYS
+                          "Agg. Mental QOL Score",
+                          # AGG MENT
+                          "Agg. Physical QOL Score"),
+                  # Bayesian Estimates
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_terms$Estimate), 3),
+                   # LEU3N
+                    round(leu3n_terms$Estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_terms$Estimate, 3),
+                   # AGG MENT
+                   round(aggment_terms$Estimate, 3)),
+                 # Bayesian HDIs
+                 `95% HDI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_terms$HPDI_2.5), 3), 
+                                    round(exp(vload_terms$HPDI_97.5), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_terms$HPDI_2.5, 3), 
+                                    round(leu3n_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_terms$HPDI_2.5, 3), 
+                                    round(aggphys_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_terms$HPDI_2.5, 3), 
+                                    round(aggment_terms$HPDI_97.5, 3), 
+                                    sep = ", ")),
+                 # Frequentist estimates
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_lin_terms$estimate), 3),
+                   # LEU3N
+                    round(leu3n_lin_terms$estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_lin_terms$estimate, 3),
+                   # AGG MENT
+                   round(aggment_lin_terms$estimate, 3)),
+                 # Frequentist CIs
+                 `95% CI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_lin_terms$conf.low), 3), 
+                              round(exp(vload_lin_terms$conf.high), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_lin_terms$conf.low, 3), 
+                                round(leu3n_lin_terms$conf.high, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_lin_terms$conf.low, 3), 
+                               round(aggphys_lin_terms$conf.high, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_lin_terms$conf.low, 3), 
+                               round(aggment_lin_terms$conf.high, 3), 
+                                    sep = ", ")),
+                 check.names = FALSE
+)
+
+# Display with kable
+kbl(
+  all_outcomes,
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Results for Bayesian and Frequentist Analyses") |>
+  # subcaption = "Meow" |>
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) |> 
+  add_header_above(c(" ", "Bayesian Model" = 2,
+                     "Frequentist Model" = 2)) |>
+  footnote(number = c("HDI = Highest Density Interval & CI = Confidence Interval",
+                      "Estimates interpreted as changes in outcome for hard drug users compared to non-hard drug users",
+                      "Estimates for Viral Load are exponentiated"))
+```
+<!-- Table 2 -->
+
+
+<!----------------------------------------------------------------------------->
+<!---                     Estimates With & Without ADH                     ---->
+<!----------------------------------------------------------------------------->
+
+
+
+
+```{r, echo = F, warning = F, message = F}
+
+#### Compare estimates for models with and without adherence
+### VLOAD
+# Pull term for hard drugs variable
+vload_adh_terms <- summary_table_vload_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+vload_adh_terms <- subset(vload_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+
+### LEU3N
+# Model WITH ADH
+# Pull term for hard drugs variable
+leu3n_adh_terms <- summary_table_leu3n_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+leu3n_adh_terms <- subset(leu3n_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+### AGG PHYS
+# Model WITH ADH
+# Pull term for hard drugs variable
+aggphys_adh_terms <- summary_table_aggphys_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggphys_adh_terms <- subset(aggphys_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+### AGG MENT
+# Model WITH ADH
+# Pull term for hard drugs variable
+aggment_adh_terms <- summary_table_aggment_adh[2, ]
+
+# Subset to Parameter, Estimate, HPDIs
+aggment_adh_terms <- subset(aggment_adh_terms,
+                    select = c("Parameter", 
+                               "Estimate",
+                               "HPDI_2.5",
+                               "HPDI_97.5"))
+
+# Create data frame 
+adh_comparison2 <- data.frame(Outcome = 
+                          # VLOAD
+                          c("Log(Viral Load)",
+                          # LEU3N
+                          "CD4+ T-Cell Count",
+                          # AGG PHYS
+                          "Agg. Mental QOL Score",
+                          # AGG MENT
+                          "Agg. Physical QOL Score"),
+                  ## WITHOUT ADH
+                 Estimate_No_ADH = 
+                   # VLOAD
+                   c(round(exp(vload_terms$Estimate), 3),
+                   # LEU3N
+                    round(leu3n_terms$Estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_terms$Estimate, 3),
+                   # AGG MENT
+                   round(aggment_terms$Estimate, 3)),
+                 ## WITHOUT ADH
+                 `95% HDI (No ADH)` = c(
+                   # VLOAD
+                   paste(round(exp(vload_terms$HPDI_2.5), 3), 
+                                    round(exp(vload_terms$HPDI_97.5), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_terms$HPDI_2.5, 3), 
+                                    round(leu3n_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_terms$HPDI_2.5, 3), 
+                                    round(aggphys_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_terms$HPDI_2.5, 3), 
+                                    round(aggment_terms$HPDI_97.5, 3), 
+                                    sep = ", ")),
+                 ## WITH ADH
+                 Estimate_ADH = 
+                   # VLOAD
+                   c(round(exp(vload_adh_terms$Estimate), 3),
+                   # LEU3N
+                    round(leu3n_adh_terms$Estimate, 3),
+                   # AGG PHYS
+                    round(aggphys_adh_terms$Estimate, 3),
+                   # AGG MENT
+                   round(aggment_adh_terms$Estimate, 3)),
+                 # WITH ADH
+                 `95% HDI (ADH)` = c(
+                   # VLOAD
+                   paste(round(exp(vload_adh_terms$HPDI_2.5), 3), 
+                                    round(exp(vload_adh_terms$HPDI_97.5), 3), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_adh_terms$HPDI_2.5, 3), 
+                                    round(leu3n_adh_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_adh_terms$HPDI_2.5, 3), 
+                                    round(aggphys_adh_terms$HPDI_97.5, 3), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_adh_terms$HPDI_2.5, 3), 
+                                    round(aggment_adh_terms$HPDI_97.5, 3), 
+                                    sep = ", ")),
+                 check.names = FALSE
+)
+
+# Create data frame for plotting estimates with and without ADH
+forest_df <- adh_comparison2 %>%
+  pivot_longer(
+    cols = c(Estimate_No_ADH, Estimate_ADH),
+    names_to = "Model",
+    values_to = "Estimate"
+  ) %>%
+  mutate(
+    HDI = case_when(
+      Model == "Estimate_No_ADH" ~ `95% HDI (No ADH)`,
+      Model == "Estimate_ADH"    ~ `95% HDI (ADH)`
+    ),
+    Model = case_when(
+      Model == "Estimate_No_ADH" ~ "Without ADH",
+      Model == "Estimate_ADH"    ~ "With ADH"
+    ),
+    lower = as.numeric(str_trim(str_extract(HDI, "^[^,]+"))),
+    upper = as.numeric(str_trim(str_extract(HDI, "[^,]+$"))),
+    OutcomeGroup = case_when(
+      str_detect(Outcome, "Viral") ~ "Viral load (ratio)",
+      str_detect(Outcome, "CD4")   ~ "CD4",
+      TRUE                         ~ "Quality of life")) %>%
+  group_by(OutcomeGroup) %>%
+  mutate(Outcome_y = factor(Outcome, levels = rev(unique(Outcome)))) %>%
+  ungroup()
+
+ref_lines <- tibble(
+  OutcomeGroup = c("Viral load (ratio)", "CD4", "Quality of life"),
+  ref = c(1, 0, 0)
+)
+
+```
+
+<!-- Figures on Page 7 of Final Report -->
+
+
+```{r, echo = F, fig.pos="H"}
+# Display side by side like with frequentist models
+# Create data frame
+# Display side by side like with frequentist models
+# Create data frame
+adh_comparison <- data.frame(Outcome = 
+                          # VLOAD
+                          c("Exp(Log(Viral Load))",
+                          # LEU3N
+                          "CD4+ T-Cell Count",
+                          # AGG PHYS
+                          "Agg. Mental QOL Score",
+                          # AGG MENT
+                          "Agg. Physical QOL Score"),
+                  ## WITHOUT ADH
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_terms$Estimate), 2),
+                   # LEU3N
+                    round(leu3n_terms$Estimate, 2),
+                   # AGG PHYS
+                    round(aggphys_terms$Estimate, 2),
+                   # AGG MENT
+                   round(aggment_terms$Estimate, 2)),
+                 ## WITHOUT ADH
+                 `95% HDI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_terms$HPDI_2.5), 2), 
+                                    round(exp(vload_terms$HPDI_97.5), 2), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_terms$HPDI_2.5, 2), 
+                                    round(leu3n_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_terms$HPDI_2.5, 2), 
+                                    round(aggphys_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_terms$HPDI_2.5, 2), 
+                                    round(aggment_terms$HPDI_97.5, 2), 
+                                    sep = ", ")),
+                 ## WITH ADH
+                 Estimate = 
+                   # VLOAD
+                   c(round(exp(vload_adh_terms$Estimate), 2),
+                   # LEU3N
+                    round(leu3n_adh_terms$Estimate, 2),
+                   # AGG PHYS
+                    round(aggphys_adh_terms$Estimate, 2),
+                   # AGG MENT
+                   round(aggment_adh_terms$Estimate, 2)),
+                 # WITH ADH
+                 `95% HDI` = c(
+                   # VLOAD
+                   paste(round(exp(vload_adh_terms$HPDI_2.5), 2), 
+                                    round(exp(vload_adh_terms$HPDI_97.5), 2), 
+                                    sep = ", "),
+                   # LEU3N
+                   paste(round(leu3n_adh_terms$HPDI_2.5, 2), 
+                                    round(leu3n_adh_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG PHYS
+                   paste(round(aggphys_adh_terms$HPDI_2.5, 2), 
+                                    round(aggphys_adh_terms$HPDI_97.5, 2), 
+                                    sep = ", "),
+                   # AGG MENT
+                   paste(round(aggment_adh_terms$HPDI_2.5, 2), 
+                                    round(aggment_adh_terms$HPDI_97.5, 2), 
+                                    sep = ", ")),
+                 `|Δ|` = c(0.1, 6.18, 0.21, 0.21),
+                 check.names = FALSE
+)
+
+# Display with kable
+kable(
+  adh_comparison,
+  # format = "latex",
+  booktabs = TRUE,
+  digits = 3,
+  caption = "Model Summaries Without and With Medication Adherence Taken into Account") |>
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) |>
+  add_header_above(c(" ", "Model Without ADH" = 2, 
+                     "Model With ADH" = 2,
+                     " ")) %>% 
+  footnote(number = c("|Δ| = The Absolute Difference Between Model Estimates"))
+```
+
+
+
+
+```{r, echo = F, warning = F, message = F, fig.cap="Differences in estimates between models with (red) and without (blue) taking medication adherence into account. The points are the estimates and the bars are the HDIs. HDIs that cross the dashed line at 1 (for exponentiated viral load) or 0 (for the other three outcomes) indicate that the differences in the outcome between hard drug and non-hard drug users is statistically significant.", out.width="100%", fig.align='center', fig.pos="H"}
+# Plot
+p_cd4 <- forest_df %>%
+  filter(OutcomeGroup == "CD4") %>%
+  ggplot(aes(x = Estimate, y = Outcome_y, col = Model)) +
+  geom_vline(xintercept = 0, linetype = "dashed") +
+  geom_errorbarh(aes(xmin = lower, xmax = upper),
+                 height = 0.18,
+                 position = position_dodge(width = 0.55)) +
+  geom_point(size = 2.2, position = position_dodge(width = 0.55)) +
+  labs(x = NULL, y = NULL, 
+       col = NULL) +
+  theme_minimal()
+
+p_other <- forest_df %>%
+  filter(OutcomeGroup != "CD4") %>%
+  ggplot(aes(x = Estimate, y = Outcome_y, col = Model)) +
+  geom_vline(
+    data = ref_lines %>% filter(OutcomeGroup != "CD4"),
+    aes(xintercept = ref),
+    linetype = "dashed",
+    inherit.aes = FALSE) +
+  geom_errorbarh(aes(xmin = lower, xmax = upper),
+                 height = 0.18,
+                 position = position_dodge(width = 0.55)) +
+  geom_point(size = 2.2, position = position_dodge(width = 0.55)) +
+  facet_grid(OutcomeGroup ~ ., 
+             scales = "free_y", space = "free_y") +
+  labs(x = "Estimate (95% HDI)", 
+       y = NULL, 
+       col = NULL) +
+    theme_minimal() +
+  theme(strip.text = element_blank(),
+    strip.background = element_blank())
+
+# Use patch work to lay these plots on top of each other
+p_cd4 / p_other + plot_layout(heights = c(1, 2))
+```
 
 
