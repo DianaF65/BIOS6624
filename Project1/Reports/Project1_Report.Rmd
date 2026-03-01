@@ -3436,13 +3436,14 @@ Directory structure:
 
 - Background/ - A description of the background of the project.
 
-- Code/ - A R Markdown file consisting of code for exploratory and an initial report
-draft as well as as a .R file of code for the complete analysis.
+- Code/ 
+  - The "Project1_ExploratoryAnalysis.R" file contains initial data exploration as well as code for construction of the final data set used for all analyses.
+  - The R Markdown file 'All_Analyses.Rmd' consists of all Code used for the Frequentist and Bayesian analyses.
 
 - RawData/ – Raw data files. Because this data is not publicly available, it is not available on GitHub. The raw data was originally obtained from the BIOS 6624 P1 module. The raw and processed datasets to generate these results are available on my local computer at this file path: 
 "/Users/dianafelipe/Desktop/BIOS 6624/BIOS6624/Project1/Data/hiv_6624_final.csv"
 
-- Reports/ R Markdown file used to generate this report
+- Reports/ The "Project1_Report.Rmd" R Markdown file was used to generate this final report of analyses.
 
 All analyses and figures were generated using the R statistical programming language v. 4.4.1, and the repository contains the R scripts
 and R Markdown files used to produce this report
