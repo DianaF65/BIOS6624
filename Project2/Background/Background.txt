@@ -1,1 +1,41 @@
-Background Information
+################################################################################
+###                                 Project 2                                ### 
+################################################################################
+
+############################## Background Information ##########################
+
+The purpose of this project is to develop the analysis and sample size sections 
+for a grant application.  The grant provided for this project has been graciously 
+shared by Dr. Brianne Bettcher via Dr. Nichole Carlson.  Dr. Bettcher is a 
+neuropsychologist and works on Alzheimer’s disease (AD) and aging.  
+Please do not share this research strategy document with others nor upload it to
+any AI software as it is her actual research grant.
+
+The goal of this research grant is to understand the relationship between 
+inflammation, AD pathology, and cognitive decline.  
+The research strategy for this grant application has been uploaded into Canvas. 
+In that document, we have highlighted in blue the aims and in green areas that 
+need filling in.  The green sections have thoughts shared to you from the 
+investigator.  They will not provide you will all the information you need to
+complete this project, but should provide a starting point for further 
+communication.
+
+You will work on an analysis plan and sample size justification for Aims 1 and 2
+ONLY.  
+
+The write up for this project will be different from the other projects in the 
+course.  You will provide the text and tables/figures for the analysis plan and 
+sample size/power justification sections that are currently in "green" as noted 
+above. The analysis plan should be written in future tense.  In class notes, 
+we will go over the elements that must be included in a power calculation/sample 
+size justification.  I expect your write up for the sample size and analysis 
+plan to be 2 pages or less, not including tables and/or figures.  
+Clearly delineate Aims 1 and 2, but Aim 2 may refer to Aim 1 as appropriate.  
+This project will require terse but dense writing to include all the elements 
+needed for the analysis plan and sample size/power justification.  
+
+Please conduct your power analyses in R using the same reproducible research 
+criteria and processes as with other projects.  We will go over a package in 
+class that will provide all the functionality you will need for the project, 
+but you are free to use other packages.    
+
