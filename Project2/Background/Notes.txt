@@ -1,0 +1,47 @@
+################################################################################
+###                                 Project 2                                ### 
+################################################################################
+
+##################################### Notes ####################################
+
+##### 3/4 Class Notes
+# Notes on presentations
+- 
+
+##### 3/6 Office Hours 
+--- Make sure to look at correlations between related variables such as the 
+chemokines and cytokines
+  - For analysis plan, understand the correlations between variables and how to address
+  - Be extremely brief in analysis plan
+  - Misleading to put two correlated variables in the same model
+
+--- Delta might not be needed to do the correct power analysis but there is
+other helpful information to help with power analysis
+
+--- I have that there are 9 memory consolidation variables
+  - Cannot reduce the memory consolidation variables, each can be indicative of
+  cognitive decline
+  - Should be 9 variables unless something different is said in class on Monday 
+  but make sure to double read grant
+  
+--- For Aim 2, what is signifcant or elevated? 
+  - The more deposition there will be worse but there is no absolute threshold.
+  
+--- For all the covariates we are considering, try to differentiate between confounding
+or a precision variable
+  - Sample sizes aren't always sufficient to get all the covariates and the PI
+  needs help determining which ones are relevant, they need a good way to be able
+  to describe to colleagues and present in a paper
+  - APOE is of particular interest
+    - Binary: Carrier or not
+  
+--- No power calculation for secondary analyses
+
+--- For Aim 2, amyloid depostion and inflammatory marker interaction
+  - Since these are both continuous variables, look into interpretations for 
+  continuous interactions
+  - Intepretation of estimate itself is usually not very useful 
+  
+
+
+
