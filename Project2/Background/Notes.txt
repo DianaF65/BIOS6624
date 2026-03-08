@@ -46,5 +46,13 @@ or a precision variable
 ***(?) No power calculation for secondary analyses
   - Check this
 
+####### 3/9 Class:
+
+
+### Questions: 
+- In C.4, it is mentioned that diagnostic information is available but no particular
+variables. Is this something we should consider/incorporate in our analyses?
+
+
 
 
