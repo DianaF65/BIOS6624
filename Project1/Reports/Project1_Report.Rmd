@@ -238,7 +238,7 @@ tab1_data %>%
                                ~ "{mean}{sd}")) %>% 
   modify_header(label = "**Hard Drug Use at Baseline**") %>% 
   bold_labels() %>% 
-  modify_caption(caption = "**Table 1 - Patient Characteristics by Hard Drug Use at Baseline**")
+  modify_caption(caption = "**Patient Characteristics by Hard Drug Use at Baseline**")
 ```
 
 
@@ -3106,7 +3106,7 @@ Interpreting the findings with the Bayesian models, we found that
 after adjustment, the estimated viral load ratio comparing baseline hard drug users to non-users at 2 years was 0.87 (95% HDI: 0.35, 2.09). This corresponds to an estimated 13% lower viral load among drug users. We note that the interval was wide and included both substantial decreases and increases, indicating considerable uncertainty and no clear evidence of a difference. As HDI excluded 0, these findings are not significant.
 CD4+ T-Cell Counts were ~ -163 units lower (-223.956, -102.143) for hard-drug users compared to non-hard drug users at 2 years, after adjusting for covariates The difference between hard drug users and non-hard drug users is statistically significant as the HDI does not include 0. 
 The estimated difference in aggregate mental quality of life score was ~ -3 units lower (-6.147, -0.711) for hard-drug users compared to non-hard drug users after 2 years of HAART. Since the HDI excludes 0, the difference between the two hard drug use groups is statistically significant. 
-Lastly, aggregate mental quality of life score was estimated to be around -0.3 units lower (-3.565, 3.035) for non-hard drug users compared to hard-drug users after 2 years of HAART and after adjustment. However, this difference is not statistically significant as the HDI includes 0. 
+Lastly, aggregate physical quality of life score was estimated to be around -0.3 units lower (-3.565, 3.035) for non-hard drug users compared to hard-drug users after 2 years of HAART and after adjustment. However, this difference is not statistically significant as the HDI includes 0. 
 
 <!-- Table 3  -->
 In Table 3 (p. 7) we compare estimates between the Bayesian models that did and did not include adherence for each outcome. 
