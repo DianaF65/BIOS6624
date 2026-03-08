@@ -35,13 +35,16 @@ or a precision variable
   - APOE is of particular interest
     - Binary: Carrier or not
   
---- No power calculation for secondary analyses
-
 --- For Aim 2, amyloid depostion and inflammatory marker interaction
   - Since these are both continuous variables, look into interpretations for 
   continuous interactions
   - Intepretation of estimate itself is usually not very useful 
   
+--- Overall F-test was mentioned.
+  - I believe to assess covariates and their significance
+  
+***(?) No power calculation for secondary analyses
+  - Check this
 
 
 
