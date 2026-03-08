@@ -1,5 +1,101 @@
 ---
-title: "Project2_DataAnalysisPlan"
-output: html_document
+title: Project 1 Data Analysis Plan
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-4cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
 ---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(MASS)
+library(emmeans)
+library(multcomp)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+opts_chunk$set(tidy = F)
+```
+
+\vspace{-6mm}
+# Introduction
+\vspace{-6mm}
+
+For Aim 1, we will be testing the hypothesis that memory consolidation and AD-signature corticol thickness can be predicted by higher baseline cytokine and chemokine levels.
+We will additionally assess whether decreases in episodic memory and corticol thickness over a one year period are associated with increases in cytokine and chemokine levels. 
+ 
+For Aim 2, 
+
+\vspace{-10mm}
+# Methods
+
+\vspace{-6mm}
+## Data Cleaning
+\vspace{-6mm}
+
+
+\vspace{-8mm}
+## Data Analysis
+\vspace{-6mm}
+
+
+For these analyses, we will use a longitudinal linear mixed effects model for each outcome of interest. 
+The primary outcomes of interest are IL-6, TNF-$\alpha$, MCD-1, and Eotaxin-1. 
+The primary explanatory variables (PEVs) of interest consist of the 9 memory consolidation variables and the measure of gray matter corticol thickness. 
+We will adjust for age and sex in these models. 
+Additional variables that are available include education, BMI, blood presure, history of hypercholesterolemia, APOE genotype,
+Clinical Dementia Rating, Geriartric Depression Scale, the use of Non-Steroidal Anti-Inflammatory drugs,
+cognitive measurements including MoCA and a neurophysioogical assessment, 
+information on recent infections and illnesses, surgical procedures in the past year, autoimmune conditions, 
+and lastly, diagnostic information.
+The number of all possible covariates sums to approximately 25. 
+As this is a large number of variables, we will first focus on the 9 memory consolidation variables and determine if the number can be reduced. For this, we will create a correlation matrix of all 9 variables. 
+We will then assess if a reduction of these variables results in a more simple and homogeneous (COME BACK FOROGOT THIS WORD) model by conducting Partial F-Tests to identify if the addition of consolidation variables are meaningful. 
+After we reduce the PEVs, we will repeat the same process for the 14 additional variables. 
+These tests will allow us to identify the most parsimonious and simple model for
+the research questions of interest.
+
+## Power Analysis
+
+We note that although, the planned primary analysis uses a longitudinal model to estimate mean change from baseline to 1 year, we will use a baseline-adjusted multiple linear regression model for power analyses. 
+This model closely mirrors the longitudinal change analysis as there are only two time points that are observed. 
+
+
 
