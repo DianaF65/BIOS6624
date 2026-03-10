@@ -47,11 +47,24 @@ or a precision variable
   - Check this
 
 ####### 3/9 Class:
-
+- There are 5 consolidation memory variables
+- The more amyloid deposition, the worst the memory 
+- Amyloid deposition is a continuous variable
+- As amyloid deposition and inflammatory markers increase, there is a greater
+decline in memory and AD corticol thickness
+- Really focused on that one year difference
+- We don't need to exactly have what we are going to do for power, simplified 
+version is okay
+- Include interaction and main effects for Aim 2
+- Look at Aim 1b
+- If change in Aim 1 is not important than less inclined to look at change in Aim 2
+- Primary is the baseline
 
 ### Questions: 
 - In C.4, it is mentioned that diagnostic information is available but no particular
 variables. Is this something we should consider/incorporate in our analyses?
+- In Aim 1a, memory consolidation is mentioned but in Aim 1b, episodic memory is 
+mentioned. Are these referring to the same or separate things?
 
 
 
