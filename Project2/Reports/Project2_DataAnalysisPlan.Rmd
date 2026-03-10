@@ -1,5 +1,5 @@
 ---
-title: Project 1 Data Analysis Plan
+title: Project 2 Interim Data Analysis Plan
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -59,43 +59,51 @@ opts_chunk$set(tidy = F)
 \vspace{-6mm}
 
 For Aim 1, we will be testing the hypothesis that memory consolidation and AD-signature corticol thickness can be predicted by higher baseline cytokine and chemokine levels.
-We will additionally assess whether decreases in episodic memory and corticol thickness over a one year period are associated with increases in cytokine and chemokine levels. 
- 
+We will also assess whether decreases in episodic memory and corticol thickness over a one year period are associated with increases in cytokine and chemokine levels. 
 For Aim 2, 
 
 \vspace{-10mm}
 # Methods
 
-\vspace{-6mm}
-## Data Cleaning
-\vspace{-6mm}
-
-
 \vspace{-8mm}
 ## Data Analysis
 \vspace{-6mm}
 
+For these analyses, we will use general multiple linear regression models for each outcome of interest. 
+For both Aim 1 and Aim 2, 
+the primary outcomes of interest consist of the 5 memory consolidation variables as well as gray matter corticol thickness.
+The primary explanatory variables (PEVs) of interest are the 4 chemokine/cytokine variables: IL-6, TNF-$\alpha$, MCD-1, and Eotaxin-1. 
+We will adjust for age and sex in these models with additional covariates as necessary. 
 
-For these analyses, we will use a longitudinal linear mixed effects model for each outcome of interest. 
-The primary outcomes of interest are IL-6, TNF-$\alpha$, MCD-1, and Eotaxin-1. 
-The primary explanatory variables (PEVs) of interest consist of the 9 memory consolidation variables and the measure of gray matter corticol thickness. 
-We will adjust for age and sex in these models. 
-Additional variables that are available include education, BMI, blood presure, history of hypercholesterolemia, APOE genotype,
-Clinical Dementia Rating, Geriartric Depression Scale, the use of Non-Steroidal Anti-Inflammatory drugs,
-cognitive measurements including MoCA and a neurophysioogical assessment, 
-information on recent infections and illnesses, surgical procedures in the past year, autoimmune conditions, 
-and lastly, diagnostic information.
-The number of all possible covariates sums to approximately 25. 
-As this is a large number of variables, we will first focus on the 9 memory consolidation variables and determine if the number can be reduced. For this, we will create a correlation matrix of all 9 variables. 
-We will then assess if a reduction of these variables results in a more simple and homogeneous (COME BACK FOROGOT THIS WORD) model by conducting Partial F-Tests to identify if the addition of consolidation variables are meaningful. 
-After we reduce the PEVs, we will repeat the same process for the 14 additional variables. 
-These tests will allow us to identify the most parsimonious and simple model for
-the research questions of interest.
+For Aim 1a, we will use a general linear model for each of the 6 primary outcomes.
+For each model, the outcome will be the value of the outcome at Year 1 and we will adjust for baseline values of the outcome as well as baseline values of the 4 chemokine/cytokine variables. 
+This model will allow us to determine if increases in baseline levels of the chemokine/cytokine markers are associated with changes in memory consolidation or corticol thickness after 1 year.
+<!-- Memory consolidation in this case is Long Term Consoidation I believe! -->
+For Aim 1b, we will also use general linear regression where the outcome will be the given outcome of interest at year 1. 
+We will adjust for baseline levels of the outcome as well as baseline levels of both chemokines and cytokines. The PEVs will be the difference in Year 1 from baseline for each of the four chemokines/cytokines. 
+These particular variables will allow us to determine whether greater increases in the chemokines/cytokines are associated with greater declines in episodic memory and corticol thickness.
+For Aim 2, the model will be exactly as the model used for Aim 1b with the difference that we will additinally include baseline levels of Amyloid deposition as well as an interaction between the change in Amyloid Deposition from Year 1 to baseline with the change in the chemokine/cytokine levels from Year 1 to baseline. 
+We will create 4 models for the each of the 4 possible chemokine/cytokine variables with the amyloid deposition variable. 
+These interactions will allow us to determine if the change in Amyloid Deposition with memory consolidtion/AD-corticol thickness differs depending on the levels of chemokine/cytokine levels. 
+
+We will additionally adjust for education, cardiovascular markers, 
+<!-- (BMI, blood pressure, history of hypercholesterolemia),  -->
+immune health history variables,
+Clinical Dementia Rating, Geriartric Depression Scale, use of Non-Steroidal Anti-Inflammatory drugs, 
+<!-- (recent infections and illnesses, surgical procedures in the past year, and auto-immune conditions),  -->
+routinely collected cognitive measures,
+<!-- (MoCA and neuropsychological assessment), -->
+and APOE genotype as necessary.
+Because the potential number of covariates is quite large, we will assess the relationships that the variables have with each other to determine if two variables are strongly correlated to reduce the number of covariates. 
+<!-- Correlation matrix -->
+We will check if any variables are associated with both the outcome and the primary explanatory variable, also known as a confounder.
+Lastly, we will check if precision variables exist which are variables that are only associated with the outcome and not the PEV. 
+Including precision variables will allow us to get more precise estimates of the exposure-outcome association.
+With the remaining variables, we will conduct iterative Partial-F-Tests to assess if a reduction of these variables results in a more simple and parismonious model. 
 
 ## Power Analysis
 
-We note that although, the planned primary analysis uses a longitudinal model to estimate mean change from baseline to 1 year, we will use a baseline-adjusted multiple linear regression model for power analyses. 
-This model closely mirrors the longitudinal change analysis as there are only two time points that are observed. 
+ 
 
 
 
