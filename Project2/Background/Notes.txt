@@ -65,6 +65,25 @@ version is okay
 variables. Is this something we should consider/incorporate in our analyses?
 - In Aim 1a, memory consolidation is mentioned but in Aim 1b, episodic memory is 
 mentioned. Are these referring to the same or separate things?
+- For change score models, when do we know to adjust for baseline values?
+
+
+####### 3/11 Class:
+- Project 1 Notes in P1_Notes.pdf on canvas
+### Interim presentation notes
+- See if the memory consolidation variables can be reduced - correlation 
+- Aim 2 has two separate sub aims - one concerned with baseline and one 
+concerned with changes over one year
+- Power calculation for correlation (Jacob)
+  - Not much in aim regarding this
+  - Use preliminary data to get a sense of the range of correlations
+- Mostly everyone using change as their outcome
+- For aim 1a and 1b, the change over one year is the outcome of interest
+- Dichotomization for amyloid depo (?), consider this for simpler power analysis
+- PI wants at least 80% power
+- 
+
+
 
 
 
