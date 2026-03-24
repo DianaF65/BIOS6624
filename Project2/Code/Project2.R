@@ -2,76 +2,44 @@
 
 # Libraries
 library(powertools)
+library(here)
+library(readr)
 
-##### Worksheet 3 - Study Design Module
+# Read in the data
+dat <- read_csv(here("Project2", "Data", "PrelimData.csv"))
 
-# Question 1 part b
-W3_Q1_partb <- ttest.2samp(n1 = 65,
-            n.ratio = 35/65,
-            delta = 0.5,
-            sd1 = 1,
-            sd.ratio = 1,
-            df.method = c("welch"),
-            alpha = 0.05,
-            power = NULL,
-            sides = 2,
-            v = FALSE)
-W3_Q1_partb
+colnames(dat)
+# CVLT_CNG3 - Measure of episodic memory
+#   - Recall/Recognition cognitive outcome variable
+# CORT_CNG3 - Measure of corticol thickness
+# IL_6 - A novel Cytokine/chemokine of interest
+# MCP_1 - A tested cytokine/chemokine of interest
 
-# Question 2 part b
-W3_Q2_partb <- ttest.2samp(n1 = 65,
-                           # exposed / unexposed
-                           n.ratio = 35/65,
-                           delta = 0.5,
-                           # exposed / unexposed
-                           sd1 = 1.5,
-                           sd.ratio = 1.5,
-                           df.method = c("welch"),
-                           alpha = 0.05,
-                           power = NULL,
-                           sides = 2,
-                           v = FALSE)
-W3_Q2_partb
+#### Aim 1
+# Correlation between IL6 and episodic memory
+cor(dat$IL_6, dat$CVLT_CNG3)
+# -0.2585617
 
-W3_Q3_partb <- ttest.2samp(n1 = 65,
-                           # exposed / unexposed
-                           n.ratio = 35/65,
-                           delta = 0.5,
-                           # exposed / unexposed
-                           sd1 = 1.5,
-                           sd.ratio = 1/1.5,
-                           alpha = 0.05,
-                           power = NULL,
-                           sides = 2,
-                           v = FALSE)
-W3_Q2_partb
+# Correlation between MCP1 and episodic memory
+cor(dat$MCP_1, dat$CVLT_CNG3)
+# -0.3183585
 
-#### Worksheet 4
+# Correlation between IL6 and corticol thickness
+cor(dat$IL_6, dat$CORT_CNG3)
+# -0.5993366
 
-# Question 5
-W4_Q5 <- ttest.2samp(n1 = NULL,
-                     n.ratio = 1,
-                     delta = 8.7-5.3,
-                     sd1 = 8.6,
-                     sd.ratio = 1,
-                      alpha = 0.05,
-                      power = 0.8,
-                      sides = 2
-                      )
-W4_Q5
+# Correlation between MCP1 and corticol thickness
+cor(dat$MCP_1, dat$CORT_CNG3)
+# -0.685273
 
-# Question 6
-W4_Q6 <- ttest.2samp(n1 = 25,
-                     n.ratio = 75/25,
-                     delta = 8.7-5.3,
-                     sd1 = 8.6,
-                     sd.ratio = 1,
-                     alpha = 0.05,
-                     power = NULL,
-                     sides = 2
-)
-W4_Q6
+#### Correlation between cytokines/chemokines
+# Correlation between IL6 and MCP1
+cor(dat$IL_6, dat$MCP_1)
+# 0.9335558
+# - Pretty highly correlated so perhaps we can reduce the number of chemokines/
+#cytokines to just 1 instead of examining all 4 which will also address the
+# multiple testing issue
 
-
+### Pre power analysis calculations
 
 
