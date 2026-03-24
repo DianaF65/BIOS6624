@@ -8,6 +8,11 @@ library(readr)
 # Read in the data
 dat <- read_csv(here("Project2", "Data", "PrelimData.csv"))
 
+### Calculating correlations for power analyses
+# Correlations are used in power calculations when measuring the strength
+# and direction of a relationship between two continuous variables instead of
+# comparing group means
+
 colnames(dat)
 # CVLT_CNG3 - Measure of episodic memory
 #   - Recall/Recognition cognitive outcome variable
@@ -40,6 +45,31 @@ cor(dat$IL_6, dat$MCP_1)
 #cytokines to just 1 instead of examining all 4 which will also address the
 # multiple testing issue
 
+### OR JUST DO THIS
+cor(dat)
+
 ### Pre power analysis calculations
+# For Aim 1, correlations range from -0.26 to -0.69
+# We will use the corr.1samp() function
+# NOTE: The correlation coefficient becomes an effect size when squared
+# AKA the r-squared value
+test1 <- corr.1samp(N = 175,
+                    rho0 = 0,
+                    rhoA = (0.26)^2,
+                    alpha = 0.05,
+                    power = NULL,
+                    sides = 1)
+
+test1
+
+test2 <- corr.1samp(N = 175,
+                    rho0 = 0,
+                    rhoA = 0.7,
+                    alpha = 0.05,
+                    power = NULL,
+                    sides = 1)
+
+test2
+
 
 
