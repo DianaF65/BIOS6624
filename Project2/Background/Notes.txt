@@ -4,6 +4,30 @@
 
 ##################################### Notes ####################################
 
+### Questions: 
+
+- I am thinking about dichotmizing the amyloid deposition variable which was something
+that the writers also considered. From literature, a cutoff of 1.01 amyloid deposition
+had a high sensitivity and specifity for identifying indicivuals with signficant
+amyloid pathology. 
+  - The interaction effect is then: Amyloid Deposition (Y/N) x Chemokine/Cytokine
+  - The investigators hypotheisze that this interaction will be the strongest 
+  predictor of the outcomes of interest. 
+  - Can I assume that all subjects will have significant Amyloid deposition (Y)
+  so this interaction is equivalent to the change in IL-6 (or MCP-1) and 
+  the correlation is also equal to the range of correlations for IL-6 or MCP-1?
+  
+- I am currently only planning on doing one power analysis for the aims but
+  since there are two outcomes of interest, should we be doing two power analyes
+  for each aim? I am wondering based on comments
+   made from the interim analysis plan annoucement. I was thinking one power
+   analysis but using the range of correlations from both outcomes with the variables
+   of interest. 
+   
+- Since we only have IL-6 and MCP-1, can we assume that the other two chemokines/
+cytokines are also highly correlated?
+- Ask if we should power or sample size or both
+
 ##### 3/4 Class Notes
 # Notes on presentations
 - 
@@ -42,9 +66,6 @@ or a precision variable
   
 --- Overall F-test was mentioned.
   - I believe to assess covariates and their significance
-  
-***(?) No power calculation for secondary analyses
-  - Check this
 
 ####### 3/9 Class:
 - There are 5 consolidation memory variables
@@ -59,13 +80,6 @@ version is okay
 - Look at Aim 1b
 - If change in Aim 1 is not important than less inclined to look at change in Aim 2
 - Primary is the baseline
-
-### Questions: 
-- In C.4, it is mentioned that diagnostic information is available but no particular
-variables. Is this something we should consider/incorporate in our analyses?
-- In Aim 1a, memory consolidation is mentioned but in Aim 1b, episodic memory is 
-mentioned. Are these referring to the same or separate things?
-- For change score models, when do we know to adjust for baseline values?
 
 
 ####### 3/11 Class:
@@ -84,7 +98,31 @@ concerned with changes over one year
 - 
 
 
+######## P2 Interim Plan Comments
+- The power analysis section will be in PAST tense and everything else in future 
+tense
 
+- Include how you will go from raw data obtained from investigator to the 
+final data set
+- Include how you will assess any impact of the differences between the whole data set
+and the one used for analysis
+
+- Just providing the section on data analysis and power -- NO need to restate
+the hypothesis or background section
+
+- Will any other amyloid deposition variables be inluded in the model for Aim 2?
+
+- For power analysis, mlr.partial() does not seem to be the most efficient choice
+  - We should be able to get a range of expected correlatinos from preliminary data 
+  between outcomes and predictors
+  - Specify the r package, function, and all of the parameters we assumed for
+  
+- Power for Aim 2 will be slightly different from that of Aim 1 - similar too thogh
+- Authors note that: "A potential barrier to any study involing participants
+  with aMCI is that they may ultimately not have elevated levels of amyloid depo."
+
+####### 3/25 Class:
+- 
 
 
 
