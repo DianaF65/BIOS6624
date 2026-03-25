@@ -1,5 +1,70 @@
 ---
-title: "Project0_Report"
-output: html_document
+title: Project 2 Interim Data Analysis Plan
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-4cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
 ---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(MASS)
+library(emmeans)
+library(multcomp)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+library(here)
+library(readr)
+opts_chunk$set(tidy = F)
+```
+
+```{r, echo = F}
+# Read in data
+data <- read_csv(here("Project2", "Data", "PrelimData.csv"))
+
+
+```
+
+
+
+
+
 
