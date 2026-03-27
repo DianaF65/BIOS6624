@@ -6,8 +6,9 @@
 
 ### Questions: 
 
-- Is the correlation squared to get the effect size
-- 
+
+------
+- Are you guys doing 1-sided test for Aim 1?
 
 ##### 3/4 Class Notes
 # Notes on presentations
@@ -102,8 +103,38 @@ the hypothesis or background section
 - Authors note that: "A potential barrier to any study involing participants
   with aMCI is that they may ultimately not have elevated levels of amyloid depo."
 
-####### 3/25 Class:
-- 
+####### 3/28 Notes:
+- If we have enough power for a simplified version, we should have sufficient
+power for the more complicated version?
+
+- Use different ratios for corr.2samp() - for those with low and high AD
+
+- Don't forget about corrections for multiple testing!!
+
+- Discuss alpha level corrections in the analysis section
+
+- ****Depending on how you structured your analysis for Aim 1, you can either: 
+  - 1.) Use mlr.Foverall followed by corr.1samp()
+  - 2.) Use corr1.samp()
+    - Use this if you say that you are going to assess each predictor separately
+    
+- Primary analysis based on the key covariates
+  - Secondary analysis with the additional covariates
+    
+- Consider a range of correlationsand see what power looks like 
+  - they don't need to see the smaller ones that are unnecessary but just a range 
+  that makes sense
+- Consider a range of sample sizes
+
+- Don't forget to mention that the other 6 chemokines/cytokines for the 
+secondary analysis
+
+
+- **These analyses are exploratory and will be interpreted with caution
+  
+
+  
+  
 
 
 
