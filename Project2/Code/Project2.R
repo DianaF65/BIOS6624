@@ -179,35 +179,17 @@ aim1_power_df <- data.frame(`Effect Size` = aim1_r2,
 aim2_r <- seq(0.1, 0.3, by = 0.1)
 # Vector of correlations for AD + group
 # Testing for changes of 0.1 - 0.5
-aim2_r2 <- seq(0.2, 0.5, by = 0.1)
+aim2_r2 <- seq(0.2, 0.6, by = 0.1)
 
 # Get the rsqaured values
 # aim2_rsquared <- aim2_r^2
-
-##### WAY 1
-aim2_power <- vapply(aim2_r, function(k) {
-  vapply(aim2_r2, function(i) {
-    corr.2samp(
-      n1 = 175,
-      n.ratio = 1,
-      rho1 = k,
-      rho2 = i,
-      alpha = 0.05,
-      power = NULL,
-      sides = 2
-    )
-  }, numeric(1))
-}, numeric(length(aim2_r2)))
-
-rownames(aim2_power) <- paste0("rho2_", aim2_r2)
-colnames(aim2_power) <- paste0("rho1_", aim2_r)
   
 #### WAY 2
-# Obtain the diffrent combinations of rho1 and rho2
-grid <- expand.grid(rho1 = aim2_r, rho2 = aim2_r2)
+# Obtain the different combinations of rho1 and rho2
+aim2_powerdf <- expand.grid(rho1 = aim2_r, rho2 = aim2_r2)
 
 # Calculate power
-grid$power <- mapply(function(k, i) {
+aim2_powerdf$power <- mapply(function(k, i) {
   corr.2samp(
     n1 = 175,
     n.ratio = 1,
@@ -217,13 +199,18 @@ grid$power <- mapply(function(k, i) {
     power = NULL,
     sides = 2
   )
-}, grid$rho1, grid$rho2)
+}, aim2_powerdf$rho1, aim2_powerdf$rho2)
 
 # Add a column with differences
-grid$change <- (grid$rho1 - grid$rho2)
+aim2_powerdf$change <- aim2_powerdf$rho1 - aim2_powerdf$rho2
+
+aim2_powerdf$change <- abs(round(aim2_powerdf$change, 2))
+
+# Round power
+aim2_powerdf$power <- round(aim2_powerdf$power, 4)
 
 # Arrange by change
-grid <- grid %>% 
+aim2_powerdf <- aim2_powerdf %>% 
   arrange(change)
 
 
