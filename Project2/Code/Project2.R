@@ -88,10 +88,15 @@ r <- seq(0.2, 0.80, by = 0.05)
 # Square these values for r^squared vals
 r_squared <- r^2
 
+# Create some more visually appealing r_squared values to report
+# It's in the range of 0.04 to 0.64
+# Perhaps 0.1 to 0.6 by 0.5
+aim1_rsqrd <- seq(0.02, 0.2, by = 0.02)
+
 # Apply the corr.1samp() function to this range of effect sizes
 # What are the possible values of power for the range of correlations with a set
 # sample size of 175?
-aim1_power <- vapply(r_squared, function(k) {
+aim1_power <- vapply(aim1_rsqrd, function(k) {
   corr.1samp(
     N = 175,
     rho0 = 0,
@@ -102,24 +107,8 @@ aim1_power <- vapply(r_squared, function(k) {
   )}, numeric(1)
 )
 
-# What are the required sample sizes to achieve 80% power for the range of 
-# correlations?
-aim1_sampsizes <- vapply(r_squared, function(k) {
-  corr.1samp(
-    N = NULL,
-    rho0 = 0,
-    rhoA = k,
-    alpha = 0.05,
-    power = 0.8,
-    sides = 1
-  )}, numeric(1)
-)
-# Maybe this is relevant for Aim 2 more
-
-
 # Create a data frame of the powers
-aim1_df <- data.frame(`Correlation` = r,
-                      `R-Squared` = r_squared,
+aim1_power_df <- data.frame(`Effect Size` = aim1_rsqrd,
                       `Power` = round(aim1_power, 3),
                       check.names = FALSE)
 
@@ -153,49 +142,46 @@ aim1_df <- data.frame(`Correlation` = r,
 # Create an "interaction" variable for Aim 2
 # Interaction between IL-6 and amyloid (Y/N)
 
-# We have these possible correlations or effect sizes for the outcomes and 
-# PEVs
-# Interaction terms are known to have significantly smaller effect sizes
-# than main effects
-# So what are the sample sizes required to achieve 80% power for effect 
-# sizes that are smaller than we have for the main effects?
+#### From Tasha
+# ...use the dichotomous amyloid variable as a simplifying assumption for power. If 
+# you use that dichotomous variable, then what 2 things will you essentially be 
+# estimating in terms of the relationship between the inflammatory marker and the 
+# outcome? You can test the difference between those things using a very similar 
+# package to the one you are using for your other calculations.
+
+# If we dichotomize, the interaction is interpreted as the change in the outcomes
+# for the signficant amyloid depo. group compared to the group with no sig. 
+# amyloid dep
+# We will be testing the difference in the outcome for those with sig. AD compared
+# to those with non sig. AD
+# So we will use corr.2smp to get power for comparing the correlation
+# coefficient of both of these groups
+# We have to get the correlation coefficient for those with no sig. AD
+# And those with sig. AD
+# We have the correlation effects for the main effect of the cytokines/chemokines
+# So we will just have to do it based on that I believe
 
 # Define the new vector of correlations
-aim2_r <- seq(0.05, 0.6, by = 0.05)
+aim2_r <- seq(0.25, 0.7, by = 0.05)
 
 # Get the rsqured values
 aim2_rsquared <- aim2_r^2
 
-aim2_sampsizes <- vapply(aim2_rsquared, function(k) {
-  corr.1samp(
-    N = NULL,
-    rho0 = 0,
-    rhoA = k,
-    alpha = 0.05,
-    power = 0.8,
-    sides = 1
-  )}, numeric(1)
-)
-
-# Combine this into a data frame
-aim2_df <- data.frame(`Correlation` = aim2_r,
-                      `R-Squared` = aim2_rsquared,
-                      `Sample Sizes` = aim2_sampsizes,
-                      check.names = FALSE)
-# The smallest effect size seen with the main effects is 0.04 and the sample
-# size needed to obtain 80% power is 3,861 subjects
-# The aim is to recruit 175 subjects and with this you can achieve power of
+# Calculate power
 aim2_power <- vapply(aim2_rsquared, function(k) {
   corr.1samp(
     N = 175,
-    rho0 = 0,
+    rho0 = k,
     rhoA = k,
     alpha = 0.05,
     power = NULL,
-    sides = 1
-  )}, numeric(1)
+    sides = 1)}, 
+  numeric(1)
 )
-# 80% with an effect size of 
 
-
+# Power calculations for 
+# Create a data frame of the powers
+aim1_power_df <- data.frame(`Effect Size` = aim2_rsquared,
+                            `Power` = round(aim2_rsquared, 3),
+                            check.names = FALSE)
 
