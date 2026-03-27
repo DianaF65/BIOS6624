@@ -6,27 +6,8 @@
 
 ### Questions: 
 
-- I am thinking about dichotmizing the amyloid deposition variable which was something
-that the writers also considered. From literature, a cutoff of 1.01 amyloid deposition
-had a high sensitivity and specifity for identifying indicivuals with signficant
-amyloid pathology. 
-  - The interaction effect is then: Amyloid Deposition (Y/N) x Chemokine/Cytokine
-  - The investigators hypotheisze that this interaction will be the strongest 
-  predictor of the outcomes of interest. 
-  - Can I assume that all subjects will have significant Amyloid deposition (Y)
-  so this interaction is equivalent to the change in IL-6 (or MCP-1) and 
-  the correlation is also equal to the range of correlations for IL-6 or MCP-1?
-  
-- I am currently only planning on doing one power analysis for the aims but
-  since there are two outcomes of interest, should we be doing two power analyes
-  for each aim? I am wondering based on comments
-   made from the interim analysis plan annoucement. I was thinking one power
-   analysis but using the range of correlations from both outcomes with the variables
-   of interest. 
-   
-- Since we only have IL-6 and MCP-1, can we assume that the other two chemokines/
-cytokines are also highly correlated?
-- Ask if we should power or sample size or both
+- Is the correlation squared to get the effect size
+- 
 
 ##### 3/4 Class Notes
 # Notes on presentations
