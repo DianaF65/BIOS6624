@@ -198,62 +198,89 @@ kable(aim1_power_df,
 
 # Define the new vector of correlations
 # This is for one group say AD - which we expect to be lower than AD +
-aim2_r <- seq(0.2, 0.7, by = 0.1)
+aim2_r <- seq(0.2, 0.6, by = 0.1)
 # Vector of correlations for AD + group
 # Testing for changes of 0.1 - 0.5
 # aim2_r2 <- aim2_r + 0.1
 
-# Vector of sample sizes
-aim2_sampsizes <- seq(50, 175, by = 25)
+# Differences so that rho2 = rho1 + diff
+rho_diff <- seq(0.1, 0.3, by = 0.01)
 
-# Get the rsqaured values
-# aim2_rsquared <- aim2_r^2
-  
-#### WAY 2
-# Obtain the different combinations of rho1 and rho2
-aim2_powerdf <- data.frame(rho1 = aim2_r, 
-                            rho2 = aim2_r2,
-                            aim2_sampsizes = aim2_sampsizes)
+# Sample sizes
+aim2_sampsizes <- seq(50, 150, by = 25)
+
+# Create all combinations
+aim2_powerdf <- expand.grid(
+  n1 = aim2_sampsizes,
+  rho1 = aim2_r,
+  diff = rho_diff
+)
+
+# Add a col for n2
+aim2_powerdf$n2 <- 175 - aim2_powerdf$n1
+
+# Define rho2
+aim2_powerdf$rho2 <- aim2_powerdf$rho1 + aim2_powerdf$diff
+
+# Create ratio
+aim2_powerdf$ratio <- aim2_powerdf$n2 / aim2_powerdf$n1
 
 # Calculate power
-for (i in seq(0.1, 0.3, by = 0.1) {
-  aim2_powerdf$power <- mapply(function(i, j) {
-    corr.2samp(
-      n1 = i,
-      n.ratio = 1,
-      rho1 = j,
-      rho2 = k,
-      alpha = 0.05,
-      power = NULL,
-      sides = 2
-    )}, 
-    aim2_powerdf$aim2_sampsizes,
-    aim2_powerdf$rho1)
-  }
+aim2_powerdf$power <- mapply(function(n1, ratio, r1, r2) {
+  corr.2samp(
+    n1 = n1,
+    n.ratio = ratio,
+    rho1 = r1,
+    rho2 = r2,
+    alpha = 0.05,
+    power = NULL,
+    sides = 2
+  )
+},
+n1 = aim2_powerdf$n1,
+ratio = aim2_powerdf$ratio,
+r1 = aim2_powerdf$rho1,
+r2 = aim2_powerdf$rho2
 )
 
 
-
-# Add a column with differences
-aim2_powerdf$change <- abs(aim2_powerdf$rho1 - aim2_powerdf$rho2)
-
-# aim2_powerdf$change <- abs(round(aim2_powerdf$change, 2))
-
-# Round power
-aim2_powerdf$power <- round(aim2_powerdf$power, 4)
-
-# Arrange by change
-aim2_powerdf <- aim2_powerdf %>% 
-  arrange(change)
-
-# Visualize this
-ggplot(aim2_powerdf, aes(x = change, y = power,
-                         color = factor(aim2_sampsizes),
-                         group = factor(aim2_sampsizes))) + 
+## Visual for report
+ggplot(aim2_powerdf, aes(x = diff, 
+                         y = power,
+                         color = factor(n1))) + 
   geom_line() + 
   theme_lucid() + 
+  scale_x_continuous(breaks = seq(0, 0.5, by = 0.1)) +
   scale_y_continuous(breaks = seq(0, 100, by = 0.2)) + 
   geom_hline(yintercept = 0.8, linetype = "dashed", color = "blue") + 
-  scale_x_continuous(breaks = seq(0, 0.5, by = 0.1))
+  labs(title = "Power to Detect Differences Between AD+ and AD- Groups", 
+       x = "Difference in Correlations",
+       y = "Power",
+       color = "N for AD +") + 
+  facet_wrap( ~ rho1) 
+
+# In this plot, power is on the y-axis and the difference in effect sizes
+# Between the AD + and the AD - are on the x-axis.
+# Each panel corresponds to The effect size for the AD + group
+# The x-axis is the additional change in effect size compared the AD - group.
+# Each colored line represents the number of AD + in the total sample.
+# We see that we achieve 80% power with 100/175 subjects being AD +, with an 
+# Effect size of 0.4 and the AD - group having an effect size of 0.7.
+
+
+## Table for report
+table_aim2_powerdf <- aim2_powerdf
+
+# Round power
+table_aim2_powerdf$power <- round(table_aim2_powerdf$power, 3)
+
+# Remove ratio
+table_aim2_powerdf$ratio <- NULL
+
+
+
+
+
+
 
 
