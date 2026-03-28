@@ -5,6 +5,9 @@ library(powertools)
 library(here)
 library(readr)
 library(dplyr)
+library(ggplot2)
+library(see)
+library(kableExtra)
 
 # Read in the data
 dat <- read_csv(here("Project2", "Data", "PrelimData.csv"))
@@ -91,7 +94,7 @@ aim1_r <- seq(0, 0.80, by = 0.02)
 
 # Adjust this based on what we observe with power
 # Reaches 1 after 0.36
-aim1_r2 <- seq(0, 0.36, by = 0.02)
+aim1_r2 <- seq(0, 0.3, by = 0.05)
 
 # Create some more visually appealing r_squared values to report
 # It's in the range of 0.04 to 0.64
@@ -108,7 +111,7 @@ aim1_power <- vapply(aim1_r2, function(k) {
     rhoA = k,
     alpha = 0.05,
     power = NULL,
-    sides = 1
+    sides = 2
   )}, numeric(1)
 )
 
@@ -117,6 +120,25 @@ aim1_power_df <- data.frame(`Effect Size` = aim1_r2,
                       `Power` = round(aim1_power, 3),
                       check.names = FALSE)
 
+
+# Visualize this
+ggplot(aim1_power_df, aes(x = `Effect Size`,
+                          y = Power)) + 
+  geom_line() + 
+  theme_lucid() + 
+  geom_hline(yintercept = 0.8,
+             linetype = "dashed",
+             color = "red") +
+  scale_y_continuous(breaks = seq(0, 1, by = 0.2)) + 
+  geom_vline(xintercept = 0.19,
+             color = "blue")
+
+# Create a table of the power results
+kable(aim1_power_df,
+      # format = "latex",
+      # booktabs = TRUE)
+) %>% 
+  kable_styling(bootstrap_options = c("striped"))
 
 # This power analysis does not account for multiple predictors, baseline adjustment,
 # or interactions
@@ -176,35 +198,46 @@ aim1_power_df <- data.frame(`Effect Size` = aim1_r2,
 
 # Define the new vector of correlations
 # This is for one group say AD - which we expect to be lower than AD +
-aim2_r <- seq(0.1, 0.3, by = 0.1)
+aim2_r <- seq(0.2, 0.7, by = 0.1)
 # Vector of correlations for AD + group
 # Testing for changes of 0.1 - 0.5
-aim2_r2 <- seq(0.2, 0.6, by = 0.1)
+# aim2_r2 <- aim2_r + 0.1
+
+# Vector of sample sizes
+aim2_sampsizes <- seq(50, 175, by = 25)
 
 # Get the rsqaured values
 # aim2_rsquared <- aim2_r^2
   
 #### WAY 2
 # Obtain the different combinations of rho1 and rho2
-aim2_powerdf <- expand.grid(rho1 = aim2_r, rho2 = aim2_r2)
+aim2_powerdf <- data.frame(rho1 = aim2_r, 
+                            rho2 = aim2_r2,
+                            aim2_sampsizes = aim2_sampsizes)
 
 # Calculate power
-aim2_powerdf$power <- mapply(function(k, i) {
-  corr.2samp(
-    n1 = 175,
-    n.ratio = 1,
-    rho1 = k,
-    rho2 = i,
-    alpha = 0.05,
-    power = NULL,
-    sides = 2
-  )
-}, aim2_powerdf$rho1, aim2_powerdf$rho2)
+for (i in seq(0.1, 0.3, by = 0.1) {
+  aim2_powerdf$power <- mapply(function(i, j) {
+    corr.2samp(
+      n1 = i,
+      n.ratio = 1,
+      rho1 = j,
+      rho2 = k,
+      alpha = 0.05,
+      power = NULL,
+      sides = 2
+    )}, 
+    aim2_powerdf$aim2_sampsizes,
+    aim2_powerdf$rho1)
+  }
+)
+
+
 
 # Add a column with differences
-aim2_powerdf$change <- aim2_powerdf$rho1 - aim2_powerdf$rho2
+aim2_powerdf$change <- abs(aim2_powerdf$rho1 - aim2_powerdf$rho2)
 
-aim2_powerdf$change <- abs(round(aim2_powerdf$change, 2))
+# aim2_powerdf$change <- abs(round(aim2_powerdf$change, 2))
 
 # Round power
 aim2_powerdf$power <- round(aim2_powerdf$power, 4)
@@ -213,5 +246,14 @@ aim2_powerdf$power <- round(aim2_powerdf$power, 4)
 aim2_powerdf <- aim2_powerdf %>% 
   arrange(change)
 
+# Visualize this
+ggplot(aim2_powerdf, aes(x = change, y = power,
+                         color = factor(aim2_sampsizes),
+                         group = factor(aim2_sampsizes))) + 
+  geom_line() + 
+  theme_lucid() + 
+  scale_y_continuous(breaks = seq(0, 100, by = 0.2)) + 
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "blue") + 
+  scale_x_continuous(breaks = seq(0, 0.5, by = 0.1))
 
 
