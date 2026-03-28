@@ -6,6 +6,16 @@
 
 ### Questions: 
 
+- Just a general question about power analyses. I am still a bit unclear on why 
+we are using correlations as effect sizes for power calculations in this case.
+I had originally been planning on basing my effect sizes provided from the 
+preliminiary findings in the grant. I guess on my own I would not have thought of
+converting the effect sizes to correlation coefficients.
+Is there a way to know when you can use effect sizes from preliminary results or
+when to use correlation coefficients?
+Some reading on google seemed to basically say that correlation coefficients are 
+more appropriate when the main interest is when we are interested in the 
+strength/direction of a relationship between two variables. 
 
 ------
 - Are you guys doing 1-sided test for Aim 1?
