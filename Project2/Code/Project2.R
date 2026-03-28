@@ -94,7 +94,7 @@ aim1_r <- seq(0, 0.80, by = 0.02)
 
 # Adjust this based on what we observe with power
 # Reaches 1 after 0.36
-aim1_r2 <- seq(0, 0.3, by = 0.05)
+aim1_r2 <- seq(0.1, 0.3, by = 0.05)
 
 # Create some more visually appealing r_squared values to report
 # It's in the range of 0.04 to 0.64
