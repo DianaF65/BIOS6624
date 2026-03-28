@@ -63,7 +63,179 @@ data <- read_csv(here("Project2", "Data", "PrelimData.csv"))
 
 ```
 
+<!----------------------------------------------------------------------------->
+<!------------------------------------- Methods ------------------------------->
+<!----------------------------------------------------------------------------->
 
+
+\vspace{-10mm}
+# Methods
+\vspace{-8mm}
+
+For Aim 1, we will be testing the hypothesis that higher baseline cytokine
+and chemokine levels as well as increases after 1 year can predict decreases in memory consolidation and AD-signature corticol thickness. For Aim 2, we will test the hypothesis that the association of Amyloid Deposition with memory consolidation and AD-signature corticol thickness depends on the levels of cytokines/chemokines.
+For these analyses, we will use linear regression models for each outcome of interest. 
+For both Aim 1 and Aim 2, the primary outcomes of interest consists of the 5 memory consolidation variables as well as gray matter corticol thickness.
+The primary explanatory variables (PEVs) of interest are the changes from year 1 to baseline for the 4 chemokine/cytokine variables: IL-6, TNF-$\alpha$, MCD-1, and Eotaxin-1. 
+We will adjust for age and sex in these models with additional covariates as necessary. 
+
+For Aim 1a, we will use a linear model for each of the 6 primary outcomes.
+For each model, the outcome will be the value of the outcome at Year 1 and we will adjust for baseline values of the outcome as well as baseline values of the 4 chemokine/cytokine variables. 
+<!-- Memory consolidation in this case is Long Term Consoidation I believe! -->
+For Aim 1b, we will also use general linear regression where the outcome will be the change in the outcome from Year 1 to baseline. 
+Covariates for this model will include the change from year 1 to baseline for each of the PEVs.  We will additionally include the baseline values of the PEVs. 
+<!-- To allow for baseline differences. -->
+For Aim 2, the model will be exactly as the model used for Aim 1b with the difference that we will additionally include an interaction between the change in Amyloid Deposition (AD) from Year 1 to baseline with the change in the chemokine/cytokine levels from Year 1 to baseline. 
+This model will additionally include AD to assess if AD is associated with the outcomes.
+We will additionally adjust for education, cardiovascular markers, 
+<!-- (BMI, blood pressure, history of hypercholesterolemia),  -->
+immune health history variables,
+Clinical Dementia Rating, Geriartric Depression Scale, use of Non-Steroidal Anti-Inflammatory drugs, 
+<!-- (recent infections and illnesses, surgical procedures in the past year, and auto-immune conditions),  -->
+routinely collected cognitive measures,
+<!-- (MoCA and neuropsychological assessment), -->
+and APOE genotype as necessary.
+Because the potential number of covariates is quite large, we will assess the relationships that the variables have with each other to determine if two variables are strongly correlated to reduce the number of covariates. 
+<!-- Correlation matrix -->
+We will check if any variables have the potential to be a confounder.
+Lastly, we will check if precision variables exist which are variables that are only associated with the outcome and not the PEV. 
+With the remaining variables, we will conduct statistical tests to assess if a reduction of these variables results in a more simple and parsimonious model. 
+
+
+\vspace{-10mm}
+## Power Analysis
+\vspace{-8mm}
+
+
+We will conduct two separate power analyses for Aims 1 and 2 and we will create a tables of achievable levels of power for varying effect sizes ranging with the planned sample size of 175.
+
+
+<!----------------------------------------------------------------------------->
+<!-------------------------------------- Aim 1 -------------------------------->
+<!----------------------------------------------------------------------------->
+
+```{r, echo = F}
+################################################################################
+###                           Aim 1 Power Calculation                        ###
+################################################################################
+
+#### Power
+
+# Define the original Vector of correlation values
+aim1_r <- seq(0, 0.80, by = 0.02)
+
+# Adjust the vector above based on what we observe with power
+# Power reaches 1 after 0.36
+aim1_r2 <- seq(0.1, 0.3, by = 0.05)
+
+# Apply the corr.1samp() function to this range of effect sizes
+# What are the possible values of power for the range of correlations with a set
+# sample size of 175?
+aim1_power <- vapply(aim1_r2, function(k) {
+  corr.1samp(
+    N = 175,
+    rho0 = 0,
+    rhoA = k,
+    alpha = 0.05,
+    power = NULL,
+    sides = 2
+  )}, numeric(1)
+)
+
+# Create a data frame of the powers
+aim1_power_df <- data.frame(`Effect Size` = aim1_r2,
+                      `Power` = round(aim1_power, 3),
+                      check.names = FALSE)
+
+# Create a table of the power results
+kable(aim1_power_df,
+      # format = "latex",
+      # booktabs = TRUE)
+) %>% 
+  kable_styling(bootstrap_options = c("striped"))
+
+
+```
+
+
+
+<!----------------------------------------------------------------------------->
+<!-------------------------------------- Aim 2 -------------------------------->
+<!----------------------------------------------------------------------------->
+
+```{r, echo = F}
+# Define the new vector of correlations
+# This is for one group say AD - which we expect to be lower than AD +
+aim2_r <- seq(0.2, 0.6, by = 0.1)
+# Vector of correlations for AD + group
+# Testing for changes of 0.1 - 0.5
+# aim2_r2 <- aim2_r + 0.1
+
+# Differences so that rho2 = rho1 + diff
+rho_diff <- seq(0.1, 0.3, by = 0.01)
+
+# Sample sizes
+aim2_sampsizes <- seq(50, 150, by = 25)
+
+# Create all combinations
+aim2_powerdf <- expand.grid(
+  n1 = aim2_sampsizes,
+  rho1 = aim2_r,
+  diff = rho_diff
+)
+
+# Add a col for n2
+aim2_powerdf$n2 <- 175 - aim2_powerdf$n1
+
+# Define rho2
+aim2_powerdf$rho2 <- aim2_powerdf$rho1 + aim2_powerdf$diff
+
+# Create ratio
+aim2_powerdf$ratio <- aim2_powerdf$n2 / aim2_powerdf$n1
+
+# Calculate power
+aim2_powerdf$power <- mapply(function(n1, ratio, r1, r2) {
+  corr.2samp(
+    n1 = n1,
+    n.ratio = ratio,
+    rho1 = r1,
+    rho2 = r2,
+    alpha = 0.05,
+    power = NULL,
+    sides = 2
+  )
+},
+n1 = aim2_powerdf$n1,
+ratio = aim2_powerdf$ratio,
+r1 = aim2_powerdf$rho1,
+r2 = aim2_powerdf$rho2
+)
+
+
+## Visual for report
+ggplot(aim2_powerdf, aes(x = diff, 
+                         y = power,
+                         color = factor(n1))) + 
+  geom_line() + 
+  theme_lucid() + 
+  scale_x_continuous(breaks = seq(0, 0.5, by = 0.1)) +
+  scale_y_continuous(breaks = seq(0, 100, by = 0.2)) + 
+  geom_hline(yintercept = 0.8, linetype = "dashed", color = "blue") + 
+  labs(title = "Power to Detect Differences Between AD+ and AD- Groups", 
+       x = "Difference in Correlations",
+       y = "Power",
+       color = "N for AD +") + 
+  facet_wrap( ~ rho1) 
+
+# In this plot, power is on the y-axis and the difference in effect sizes
+# Between the AD + and the AD - are on the x-axis.
+# Each panel corresponds to The effect size for the AD + group
+# The x-axis is the additional change in effect size compared the AD - group.
+# Each colored line represents the number of AD + in the total sample.
+# We see that we achieve 80% power with 100/175 subjects being AD +, with an 
+# Effect size of 0.4 and the AD - group having an effect size of 0.7.
+
+```
 
 
 
