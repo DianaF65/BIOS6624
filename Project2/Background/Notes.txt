@@ -131,7 +131,7 @@ power for the more complicated version?
 - Primary analysis based on the key covariates
   - Secondary analysis with the additional covariates
     
-- Consider a range of correlationsand see what power looks like 
+- Consider a range of correlations and see what power looks like 
   - they don't need to see the smaller ones that are unnecessary but just a range 
   that makes sense
 - Consider a range of sample sizes
