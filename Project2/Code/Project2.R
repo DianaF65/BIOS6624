@@ -268,16 +268,6 @@ ggplot(aim2_powerdf, aes(x = diff,
 # Effect size of 0.4 and the AD - group having an effect size of 0.7.
 
 
-## Table for report
-table_aim2_powerdf <- aim2_powerdf
-
-# Round power
-table_aim2_powerdf$power <- round(table_aim2_powerdf$power, 3)
-
-# Remove ratio
-table_aim2_powerdf$ratio <- NULL
-
-
 
 
 
