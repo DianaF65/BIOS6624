@@ -69,37 +69,39 @@ data <- read_csv(here("Project2", "Data", "PrelimData.csv"),
 
 
 \vspace{-10mm}
-# Analytical Plan
+# Methods
 \vspace{-8mm}
 
 <!-- No need to restate hypotheses!! -->
 <!-- For Aim 1, we will be testing the hypothesis that higher baseline cytokine
 and chemokine levels as well as increases after 1 year can predict decreases in memory consolidation and AD-signature corticol thickness. For Aim 2, we will test the hypothesis that the association of Amyloid Deposition with memory consolidation and AD-signature corticol thickness depends on the levels of cytokines/chemokines. -->
-Assessments of the raw data obtained for analysis include missingness, outliers, and any other abnormalities to create the final data set for analyses.
-To the hypotheses of interest for Aims 1 & 2, we will use linear regression models for each outcome of interest. 
-The primary outcomes of interest for Aim 1 consists of the 5 memory consolidation variables as well as gray matter corticol thickness.
+Assessments of raw data obtained for analysis include missingness, outliers, and any other abnormalities to create the final data set for analyses.
+To assess the hypotheses of interest for Aims 1 & 2, we will use linear regression models for each combination of the 6 primary outcomes and 4 Primary explanatory variables (PEVs) - 24 models for each Aim. 
+The primary outcomes of interest for Aims 1 & 2 consists of the 5 memory consolidation variables as well as gray matter corticol thickness.
+The PEVs of interest for both Aims are the changes from year 1 to baseline for the 4 chemokines/cytokines of interest. 
+Secondary analyses will be conducted with the remaning 6 chemokines/cytokines.
 For Aim 2, we will dichotomize the Amyloid Deposition (AD) variable into AD+ and AD- using the threshold of 1.01 for SUVR from the literature. 
-The outcomes of interest for Aim 2 will be the binary version of AD as well as gray matter corticol thickness.
-The primary explanatory variables (PEVs) of interest for both Aims are the changes from year 1 to baseline for the 4 chemokine/cytokine of interest. Secondary analyses will be conducted with the remaning 6 chemokines/cytokines.
-We will additionally adjust for education, cardiovascular markers, 
+The PEV for Aim 2 will be the interaction betwen AD (Yes/No) and the cytokine/chemokine of interest.
+In the primary analyses, we will adjust for age and sex. 
+We will adjust for education, cardiovascular markers, 
 immune health history variables,
 Clinical Dementia Rating, Geriartric Depression Scale, use of Non-Steroidal Anti-Inflammatory drugs, 
 routinely collected cognitive measures, and APOE genotype as necessary in secondary analyses.
+Alternative approaches to the analysis plan we described is having 6 models that contain the 4 PEVs for each aim. However, preliminary data results revealed a correlation of ~0.93 between IL-6 and MCP-1 and with the assumption that all 4 PEVs are moderately to highly correlated, including all in the same model would lead to unstable estimates and obscure their individual contributions.
 
 For Aim 1, we will have 6 models for each of the 6 primary outcomes.
 These models will additionally include baseline measures of the outcomes to allow for differences in baseline levels. 
 <!-- To allow for baseline differences. -->
-For Aim 2, the model will be exactly as the models used for Aim 1 with the difference of the inclusion of an interaction between the change in Amyloid Deposition (AD) from Year 1 to baseline with the change in the chemokine/cytokine levels from Year 1 to baseline. 
+For Aim 2, the model will be exactly as the models used for Aim 1 with the difference of the inclusion of an interaction between the change in AD from Year 1 to baseline with the change in the chemokine/cytokine levels from Year 1 to baseline. 
 This model will additionally include AD as a covariate to assess if AD is associated with the outcomes.
-Correlations between the IL-6 and MCP-1 variables in the preliminary data revealed a high correlation. We will assume that this is the case for the other 2 cyokines/chemokines. This will allow us to use only one of cytokines/chemokines for analysis and infer the relationships for the others. 
-In regards to the available covariates, we will determine which are appropriate for a final model. 
-First we will assess if any of the variables act as confounders or precision variables. Variables identified as confounders will be retained in the final model.
+In regards to the all of the available covariates, we will take the following steps to assess inclusion in the final model for each outcome. 
+First, we will assess if any of the variables act as confounders or precision variables. Variables identified as confounders will be retained in the final model.
 Following this, a full model with the PEVs and candidate covariates will be fit. An omnibus F-test will be conducted to assess whether the model explains variation in the outcome compared to a model with no predictors.
 We will then proceed with parital F-tests to assess the contribution of individual variables and groups of variables to the model.
 Model fit will additionally be assessed using AIC.
 Taking these steps will allow for the most simple and parsimonious model. 
-As we will not be testing a total of 12 models, we will adjust for multiple testing by applying a correction of p-value/2 primary outcomes since we will make the simplifying assumptions that there are 2 tests for: 1. The 5 memory variables and 2. Corticol thickness.
-We will use a significance threshold of 0.05 and we will report model estimates, Standard Errors, p-values, and confidence intervals.
+Although we are conducting 24 analyses for each aim, we will adjust significance levels across the 6 primary outcomes. Specifically, we will apply a significance threshold of 0.05/6 = 0.0083 for all analyses in Aims 1 and 2.
+We will report model estimates, Standard Errors, p-values, and confidence intervals.
 A Table 1, relevant tables, and figures will be included in the final report.
 All analyses will be conducted with the R statistical software version 4.4.1
 
@@ -154,14 +156,16 @@ To determine achievable power for Aim 1 & 2 hypotheses, we obtained a range of c
 We calculated correlations between IL-6 and MCP-1 with the two outcomes provided in the preliminary data and obtained a range of correlations from -0.2 to -0.7.
 We used a significance level of 0.5 and power of 80% as the goal for Aim 1 & 2 power analyses.
 For Aim 1, we used the corr.1samp() function from the powertools R package to conduct the power analysis.
-We specified N = 175, a correlation coefficient of 0 for the null hypothesis, the range of correlations for the alternative hypothesis, and a 2 sided test as we are looking to predict changes in the outcome with an emphasis in declines.
-Below is a table of the results: 
+We specified N = 175, a correlation coefficient of 0 for the null hypothesis, the aforementioned range of correlations for the alternative hypothesis, and a 2 sided test as we are looking to predict changes in the outcome with an emphasis in declines.
+We visualize the results in Figure 1 below. 
+We have 80% power to detect a minimum effect size of approximately 0.21 with 175 subjects. We are undepowered to detect any effect sizes smaller than 0.21.
+
 
 <!----------------------------------------------------------------------------->
 <!-------------------------------------- Aim 1 -------------------------------->
 <!----------------------------------------------------------------------------->
 
-```{r, echo = F, results = 'hide'}
+```{r, echo = F, fig.cap="Power Analysis Results for Aim 1. The vertical dashed blue line is the threshold to achieve 80% power. The red solid line is the effect size at which 80% power is achieved.", out.width="70%", fig.align='center'}
 ################################################################################
 ###                           Aim 1 Power Calculation                        ###
 ################################################################################
@@ -174,7 +178,7 @@ aim1_r <- seq(0, 0.80, by = 0.02)
 # Adjust the vector above based on what we observe with power
 # Power reaches 1 after 0.36
 # aim1_r2 <- seq(0.1, 0.22, by = 0.02)
-aim2_r2 <- seq(0.15, 0.25, by = 0.01)
+aim1_r2 <- seq(0.15, 0.25, by = 0.01)
 
 # Apply the corr.1samp() function to this range of effect sizes
 # What are the possible values of power for the range of correlations with a set
@@ -184,7 +188,7 @@ aim1_power <- vapply(aim1_r2, function(k) {
     N = 175,
     rho0 = 0,
     rhoA = k,
-    alpha = 0.05,
+    alpha = 0.05/24,
     power = NULL,
     sides = 2
   )}, numeric(1)
@@ -207,14 +211,20 @@ ggplot(aim1_power_df,
            y = Power)) +
   geom_line() +
   geom_point(size = 2) +
-  geom_hline(yintercept = 0.80, linetype = "dashed", color = "blue") +
-  annotate("text", x = 0.22, y = 0.82, label = "80% Power", color = "blue") +
-  theme_minimal()
-
-
+  geom_hline(yintercept = 0.80, 
+             linetype = "dashed", 
+             color = "blue",
+             linewidth = 1.2) +
+  geom_vline(xintercept = 0.21,
+             linetype = "solid",
+             color = "red",
+             linewidth = 0.3) + 
+  theme_lucid() + 
+  labs(title = "Effect Size for 80% Power") + 
+  scale_y_continuous(breaks = seq(0.5, 1, by = 0.1)) + 
+  scale_x_continuous(breaks = seq(0.15, 0.25, by = 0.01))
 
 ```
-We have 80% power to detect a minimum effect size of approximately 0.21 with 175 subjects. We are undepowered to detect any effect sizes smaller than 0.21.
 
 <!----------------------------------------------------------------------------->
 <!-------------------------------------- Aim 2 -------------------------------->
@@ -223,10 +233,13 @@ We have 80% power to detect a minimum effect size of approximately 0.21 with 175
 For Aim 2, we used the corr.2samp() function from the powertools R package to conduct the power analysis.
 As we are using a dichotimized AD variable for analysis, we approximated the interaction by comparing the predictor-outcome correlation across the AD positive (AD +) and AD negative (AD -) groups. 
 We specified N = 175, varying sample sizes for AD + subjects ranging from 50 to 150 by 25, 
-correlations from 0.2 to 0.6 for the AD + group, with differences from 0.1 to 0.3 compared to the AD - group. 
-Below is a graphic of the results: 
+correlations from 0.2 to 0.5 for the AD - group, with differences from 0.1 to 0.3 compared to the AD + group. 
+In Figure 2 we display the results.
+Overall, results indicate that higher baseline correlations in the AD− group and larger differences between the AD− and AD+ groups are more likely to achieve 80% power. In contrast, the analysis for Aim 2 appears underpowered to detect smaller differences between the groups.
 
-```{r, echo = F, results='hide', include=FALSE, fig.cap="Power to detect differences in correlation (0.10–0.40) between the AD− and AD+ groups. The x-axis shows the difference in correlations between groups, and each panel corresponds to a fixed correlation in the AD− group. Larger differences, especially at higher baseline correlations, yield greater power and more easily reach 80%."}
+On a final note, we emphasize that these power analyses are a simplified version of the analysis plan outlined above as we are not adjusting for any covariates. However, these results can be applied to the analysis because if we are powered for these simplified approaches, we are certainly powered for the more complex and final analyses.
+
+```{r, echo = F, fig.cap="Power analysis results for Aim 2. Power to detect differences in correlation (0.10–0.40) between the AD− and AD+ groups. The vertical dashed line is the threshold for 80% power. The x-axis shows the difference in correlations between groups, and each panel corresponds to a fixed correlation in the AD− group. Larger differences, especially at higher baseline correlations, yield greater power and more easily reach 90%.", out.width="80%", fig.align='center', fig.pos="H"}
 # Define the new vector of correlations
 # We Assume that AD + group is hypothesized to have strong correlations
 
@@ -298,6 +311,26 @@ ggplot(aim2_powerdf, aes(x = diff,
 # Effect size of 0.4 and the AD - group having an effect size of 0.7.
 
 ```
-Overall, results indicate that higher baseline correlations in the AD− group and larger differences between the AD− and AD+ groups are more likely to achieve 80% power. In contrast, the analysis for Aim 2 appears underpowered to detect smaller differences between the groups.
-On a final note,we emphasize that these power analyses are a simplified version of the analysis plan outlined above as we are not adjusting for any covariates. However, these results can be applied to the analysis because if we are powered for these simplified approaches, we are certainly powered for the more complex and final analyses.
+\newpage
+
+# Data and Code Availability
+
+The data and statistical code used to generate the results and figures in this report are available in the following GitHub repository:
+
+- GitHub repository: [https://github.com/DianaF65/BIOS6624](https://github.com/DianaF65/BIOS6624)
+
+Directory structure:
+
+- Background/ - A description of the background of the project.
+
+- Code/ 
+  - The "Project2.R" file contains the code used for all power analyses.
+
+- Data/ – Raw data files. Because this data is not publicly available, it is not available on GitHub. The raw preliminary data was originally obtained from the BIOS 6624 P2 module. The data is on my local computer at this file path: 
+"/Users/dianafelipe/Desktop/BIOS 6624/BIOS6624/Project2/Data/PrelimData.csv"
+
+- Reports/ The "Project2_FinalReport.Rmd" R Markdown file was used to generate this final report of analyses.
+
+All analyses and figures were generated using the R statistical programming language v. 4.4.1, and the repository contains the R scripts
+and R Markdown files used to produce this report
 
