@@ -3,3 +3,15 @@
 ################################################################################
 
 #### Class 4/1
+- Age, Diabetes, Blood Pressure are covariates of interest
+  - Baseline time point only
+- Presence of CHD, BP Meds, Smoking status, total CHOL, BMI, Systolic bP
+- Outcome of interest is stroke survival 
+- Not interested in patients who have already had a stroke at first observation
+- Comment on limitations of other variables like death, etc.
+- Truncate the data at 10 years
+- Some description of the variables that are changing over time to see if 
+  time varying analysis (Diabetes and BP) should be considered for future analyses
+- Censor anything after 10 years
+- DO NOT FILTER OUT/SUBSET Data 
+  - Create new variables relative to 10 years
