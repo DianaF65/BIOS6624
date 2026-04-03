@@ -2,6 +2,11 @@
 ###                               Project 3 Notes                            ###
 ################################################################################
 
+#### Variables
+  - TIME: The day at which the period(1, 2, 3) starts
+  - TIMETOSTRKE: The days from baseline that subject had a stroke
+  
+
 #### Class 4/1
 - Age, Diabetes, Blood Pressure are covariates of interest
   - Baseline time point only
@@ -15,3 +20,4 @@
 - Censor anything after 10 years
 - DO NOT FILTER OUT/SUBSET Data 
   - Create new variables relative to 10 years
+  
