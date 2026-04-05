@@ -24,9 +24,17 @@ glimpse(frame_data)
 # Summary of vars in data
 summary(frame_data)
 
-# Interest is time to stroke within first 10 years of study
+# Missinginess with all information
+# Primary covariates of interest are: Age, Diabetes, Blood Pressure
+# Additional covariates: CHD, BP Meds, Smoke status, CHOL, BMI, SYS BP
+
+# After checking missingness, use baseline values for covariates
+
+### Description of time changing variables (Diabetes and BP specfically)
+# Should these be considered for future time varying analyses?
 
 
+### Data exploration
 # Subjects that had a stroke at time 0
 stroke_before <- frame_data %>% 
   group_by(RANDID) %>% 
@@ -67,6 +75,8 @@ baby2 <- baby %>%
 
 # Looking into those subjects that did have stroke within 10 years
 
+
+
 # Create one observation for each subject
 baby3 <- baby2 %>% 
   group_by(RANDI) %>% 
@@ -74,8 +84,6 @@ baby3 <- baby2 %>%
   slice_head(n = 1)
   
   
-  
-
 
 
 
