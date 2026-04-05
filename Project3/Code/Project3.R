@@ -44,17 +44,35 @@ stroke_before <- frame_data %>%
 # Indicator for whether data is within 10 years
 frame_data <- frame_data %>% 
   group_by(RANDID) %>% 
-  mutate(within10 = ifelse(TIME > 0 & TIME <= 3600, 1, 0),
-         strokewithin10 = ifelse(TIMESTRK > 0 & TIMESTRK <= 3600, 1, 0)) %>% 
-  relocate(c(within10, strokewithin10), .after = TIME) 
+  mutate(strokewithin10 = ifelse(TIMESTRK > 0 & TIMESTRK <= 3600, 1, 0)) %>% 
+  relocate(c(strokewithin10), .after = TIMESTRK) 
 
 # Create baby data frame to mess around and figure out
 baby <- frame_data %>% 
-  reframe(RANDID, within10, STROKE, PREVSTRK, TIMESTRK, strokewithin10)
+  reframe(RANDID, STROKE, PREVSTRK, PERIOD, TIME,
+          TIMESTRK, strokewithin10)
 
 # Create a new stroke and time to stroke varible in regard to 10 years
-baby <- baby %>% 
-  mutate(STROKE10 = )
+# We also want to adjust for those that already had a stroke before start of study
+baby2 <- baby %>% 
+  mutate(STROKE10 = ifelse(PREVSTRK == 0 & TIME == 0,
+                           ifelse(strokewithin10 == 1,
+                                  1,0),
+                           0),
+        STROKE10TIME = ifelse(PREVSTRK == 0 & TIME == 0,
+                                ifelse(STROKE10 == 1,
+                                       TIMESTRK, 0),
+                              0))
+# There are currently 11627 obs for 4434
+
+# Looking into those subjects that did have stroke within 10 years
+
+# Create one observation for each subject
+baby3 <- baby2 %>% 
+  group_by(RANDI) %>% 
+  # Pull first obs for each subject 
+  slice_head(n = 1)
+  
   
   
 
