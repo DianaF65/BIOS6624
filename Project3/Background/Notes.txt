@@ -6,6 +6,14 @@
   - TIME: The day at which the period(1, 2, 3) starts
   - TIMETOSTRKE: The days from baseline that subject had a stroke
   
+### Questions
+- What is the STROKE variable? Does it even matter..
+   RANDID STROKE PREVSTRK PERIOD  TIME TIMESTRK strokewithin10
+    9428      0        0      1     0     8766              0
+    9428      0        0      2  2199     8766              0
+   10552      1        0      1     0     2089              1
+   10552      1        0      2  1977     2089              1
+
 
 #### Class 4/1
 - Age, Diabetes, Blood Pressure are covariates of interest
@@ -13,7 +21,7 @@
 - Presence of CHD, BP Meds, Smoking status, total CHOL, BMI, Systolic bP
 - Outcome of interest is stroke survival 
 - Not interested in patients who have already had a stroke at first observation
-- Comment on limitations of other variables like death, etc.
+- ***Comment on limitations of other variables like death, etc.
 - Truncate the data at 10 years
 - Some description of the variables that are changing over time to see if 
   time varying analysis (Diabetes and BP) should be considered for future analyses
