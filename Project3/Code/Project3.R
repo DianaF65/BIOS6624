@@ -117,12 +117,9 @@ frame_data %>%
 ### Description of time changing variables (Diabetes and BP specfically)
 # Should these be considered for future time varying analyses?
 
-
-
 ############################### Survival Analysis DF ###########################
 
-
-### Data exploration
+## Data exploring
 # Subjects that had a stroke at time 0
 stroke_before <- frame_data %>% 
   group_by(RANDID) %>% 
@@ -132,45 +129,100 @@ stroke_before <- frame_data %>%
           # Create new variables
           STROKE10 = 1,
          TIMESTRK10 = 0 ) 
+# Using STROKE == 1 & TIMESTROKE == 0 because TIME = 0 removes too much
 # There were 32 subjects that had strokes before 
 
 # Create new STROKE and STRKE10 years relative to 10 years
 # For subjects that had strokes before, we will adjust the time and stroke == 0
 # Indicator for whether data is within 10 years
-frame_data <- frame_data %>% 
+pre_surv_df <- frame_data %>% 
   group_by(RANDID) %>% 
-  mutate(strokewithin10 = ifelse(TIMESTRK > 0 & TIMESTRK <= 3600, 1, 0)) %>% 
-  relocate(c(strokewithin10), .after = TIMESTRK) 
+  mutate(# Stroke at TIME = 0 indicator
+         strokeBL = ifelse(TIMESTRK == 0 & STROKE == 1,
+                           1, 0),
+         # Stroke within 10 years indicator
+         strokewithin10 = ifelse(TIMESTRK > 0 & TIMESTRK <= 3600, 1, 0)) %>% 
+  relocate(strokewithin10, .after = TIMESTRK) %>% 
+  relocate(strokeBL, .after = STROKE)
 
-# Create baby data frame to mess around and figure out
+# Looking at vars of interest
+a <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
+                                    "TIMESTRK", "STROKE",
+                                    "strokeBL", "strokewithin10"))
+
+# Create baby data frame to mess around and figure out stroke variables
 baby <- frame_data %>% 
   reframe(RANDID, STROKE, PREVSTRK, PERIOD, TIME,
           TIMESTRK, strokewithin10)
 
 # Create a new stroke and time to stroke varible in regard to 10 years
 # We also want to adjust for those that already had a stroke before start of study
-baby2 <- baby %>% 
-  mutate(STROKE10 = ifelse(PREVSTRK == 0 & TIME == 0,
+pre_surv_df <- pre_surv_df %>% 
+  # For subjects who did not have stroke at time 0
+  mutate(STROKE10 = ifelse(strokeBL == 0,
+                           # Subjects that had a stroke within 10 years
                            ifelse(strokewithin10 == 1,
-                                  1,0),
+                                  1, 
+                                  0),
+                           # If stroke at baseline, then stroke10 = 0
                            0),
-        STROKE10TIME = ifelse(PREVSTRK == 0 & TIME == 0,
+         # The time to stroke for strokes within 10 years
+        STROKE10TIME = ifelse(strokeBL == 0,
                                 ifelse(STROKE10 == 1,
-                                       TIMESTRK, 0),
+                                       TIMESTRK, 
+                                       0),
+                              # If stroke at baseline, then stroke time = 0
                               0))
-# There are currently 11627 obs for 4434
+# There are currently 11627 obs for 4434 subjects
+# Looking at vars of interest
+b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
+                                    "TIMESTRK", "STROKE",
+                                    "strokeBL", "STROKE10",
+                                    "STROKE10TIME"))
 
 # Looking into those subjects that did have stroke within 10 years
-
+# Why was I gonna do this...
 
 # Create one observation for each subject
-pre_surv_df <- frame_data %>% 
+# Filter to PERIOD 1
+per1_surv_df <- pre_surv_df %>% 
   group_by(RANDID) %>% 
   filter(PERIOD == 1)
-  
-  
+# There are 4434 obs for 4434 subjects
 
+# Filter to columns of interest
+cols <- c("RANDID", "AGE", "SYSBP", "DIABETES",
+          "STROKE10", "STROKE10TIME", "PREVSTRK", "STROKE", "TIME")
+# Filter
+per1_surv_df <- subset(per1_surv_df, 
+                       select = cols)
 
+############################## Data Distributions ##############################
+
+# Summary stats of stroke and time for 10 years
+table(per1_surv_df$STROKE10)
+
+# Plot of stroke within 10 years
+ggplot(per1_surv_df, aes(x = factor(STROKE10),
+                         fill = factor(STROKE10))) + 
+  geom_bar() + 
+  theme_lucid()
+
+# Distribution times of strokes within 10 years
+ggplot(per1_surv_df, aes(x = STROKE10TIME)) + 
+  geom_histogram(color = "magenta4", fill = "magenta4") + 
+  theme_lucid() 
+
+# Summary
+summary(per1_surv_df$STROKE10TIME)
+# > summary(per1_surv_df$STROKE10TIME)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0     0.0     0.0   214.7     0.0  3600.0 
+table(per1_surv_df$STROKE10TIME)
+# 0   22   26   45   47   58   73   87  101  110  126  133  145  146  150  168 
+# 3957    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1 
+
+# Pretty heavy zero inflated
 
 
 
