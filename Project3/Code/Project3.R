@@ -184,6 +184,29 @@ b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
 # Looking into those subjects that did have stroke within 10 years
 # Why was I gonna do this...
 
+############################### Time Varying Covariates ########################
+
+# Time varying Covariates of interest: Age, Diabetes, SYS BP
+time_covs <- c("RANDID", "AGE", "SEX",
+               "DIABETES", "SYSBP", "TIME", "PERIOD",
+               "STROKE10", "STROKE10TIME")
+
+# Subset df
+time_df <- subset(pre_surv_df, 
+                  select = time_covs)
+
+# Create a Table 1 with these variables
+table1(~ factor(STROKE10) + STROKE10TIME + 
+         AGE + SYSBP + factor(DIABETES) + factor(SEX)
+       | factor(PERIOD), 
+       data = time_df)
+
+# Pehaps make some plots eventually to visualize the changes in these vars 
+# over time
+
+
+##################################### PERIOD 1 ################################
+
 # Create one observation for each subject
 # Filter to PERIOD 1
 per1_surv_df <- pre_surv_df %>% 
