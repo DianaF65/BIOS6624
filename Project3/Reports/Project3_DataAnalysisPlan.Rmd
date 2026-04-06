@@ -1,0 +1,78 @@
+---
+title: Project 3 Data Analysis Plan
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-4cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
+---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+library(readr)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(naniar)
+library(see)
+library(pillar)
+library(visdat)
+library(finalfit)
+library(table1)
+opts_chunk$set(tidy = F)
+```
+
+\vspace{-6mm}
+# Introduction
+\vspace{-6mm}
+
+\vspace{-10mm}
+# Methods
+
+\vspace{-6mm}
+## Data Cleaning
+\vspace{-6mm}
+
+
+\vspace{-8mm}
+## Data Analysis
+\vspace{-6mm}
+
+
+
+
