@@ -12,6 +12,7 @@ library(see)
 library(pillar)
 library(visdat)
 library(finalfit)
+library(table1)
 
 # Read in dataset
 frame_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
@@ -191,13 +192,57 @@ per1_surv_df <- pre_surv_df %>%
 # There are 4434 obs for 4434 subjects
 
 # Filter to columns of interest
-cols <- c("RANDID", "AGE", "SYSBP", "DIABETES",
+cols <- c("RANDID", "SEX",
+          "AGE", "SYSBP", "DIABETES",
           "STROKE10", "STROKE10TIME", "PREVSTRK", "STROKE", "TIME")
 # Filter
 per1_surv_df <- subset(per1_surv_df, 
                        select = cols)
 
+#### Data frame for Analysis
+# Look at missingness one more time
+
+# Missinginess with all information
+# Primary covariates of interest are: Age, Diabetes, Blood Pressure
+# Additional covariates: CHD, BP Meds, Smoke status, CHOL, BMI, SYS BP
+
+# Cumulative sum of missingness for each variable
+m3 <- per1_surv_df[,-1] %>% 
+  miss_var_summary(order = TRUE)
+# Nothing is missing
+
+# How many variables 0 - 5 missing values
+m4 <- per1_surv_df[, -1] %>% 
+  naniar::miss_case_table()
+# n_miss_in_case n_cases pct_cases
+# 1              0    4434       100
+
+# Another way to visualize missingness
+# Whole data set
+missing_plot(per1_surv_df[, -1])
+
+################################ Sex Specific DFs ##############################
+
+# Males
+males_df <- per1_surv_df %>% 
+  filter(SEX == 1)
+# There are 1944 obs for 1944 subjects
+
+# Females
+females_df <- per1_surv_df %>% 
+  filter(SEX == 2)
+# There are 2490 obs for 2490 subjects
+
+
 ############################## Data Distributions ##############################
+
+############ Overall DF
+# Sex
+table(per1_surv_df$SEX)
+# 1    2 
+# 1944 2490
+
+###### Outcomes 
 
 # Summary stats of stroke and time for 10 years
 table(per1_surv_df$STROKE10)
@@ -208,21 +253,144 @@ ggplot(per1_surv_df, aes(x = factor(STROKE10),
   geom_bar() + 
   theme_lucid()
 
+#### Males
+table(males_df$STROKE10)
+# 0    1 
+# 1688  256 
+
+# Plot of stroke within 10 years
+ggplot(, aes(x = factor(STROKE10),
+                         fill = factor(STROKE10))) + 
+  geom_bar() + 
+  theme_lucid()
+
+#### Females
+table(females_df$STROKE10)
+# 0    1 
+# 2269  221 
+
+# Plot of stroke within 10 years
+ggplot(females_df, aes(x = factor(STROKE10),
+                         fill = factor(STROKE10))) + 
+  geom_bar() + 
+  theme_lucid()
+
+
 # Distribution times of strokes within 10 years
-ggplot(per1_surv_df, aes(x = STROKE10TIME)) + 
+
+### Males
+ggplot(males_df, aes(x = STROKE10TIME)) + 
   geom_histogram(color = "magenta4", fill = "magenta4") + 
   theme_lucid() 
 
 # Summary
-summary(per1_surv_df$STROKE10TIME)
-# > summary(per1_surv_df$STROKE10TIME)
+summary(males_df$STROKE10TIME)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.0     0.0     0.0   214.7     0.0  3600.0 
-table(per1_surv_df$STROKE10TIME)
-# 0   22   26   45   47   58   73   87  101  110  126  133  145  146  150  168 
-# 3957    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1 
+# 0.0     0.0     0.0   261.8     0.0  3595.0 
 
+table(males_df$STROKE10TIME)
+# 0   26   45   87  133  266  267  287  294  305  346  350  378  424  430  442 
+# 1688    1    1    1    1    1    1    1    1    1    1    1    1    1    2    1 
 # Pretty heavy zero inflated
+
+### Females
+ggplot(females_df, aes(x = STROKE10TIME)) + 
+  geom_histogram(color = "magenta4", fill = "magenta4") + 
+  theme_lucid() 
+
+# Summary
+summary(females_df$STROKE10TIME)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 0.0     0.0     0.0   177.9     0.0  3600.0 
+
+table(females_df$STROKE10TIME)
+# 0   22   47   58   73  101  110  126  145  146  150  168  178  182  184  234 
+# 2269    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
+# Pretty heavy zero inflated
+
+##################################### Covariates ###############################
+
+######### Age
+## Males
+summary(males_df$AGE)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 33.00   42.00   49.00   49.79   57.00   69.00
+
+# Plot
+ggplot(males_df, aes(x = AGE)) + 
+  geom_histogram(fill = "red", color = "black") +
+  theme_lucid()
+
+## Females
+summary(females_df$AGE)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 32.00   43.00   49.00   50.03   57.00   70.00 
+
+# Plot
+ggplot(females_df, aes(x = AGE)) + 
+  geom_histogram(fill = "magenta2", color = "black") +
+  theme_lucid()
+
+######### Diabetes
+## Males
+table(males_df$DIABETES)
+# 0    1 
+# 1885   59 
+
+# Plot
+ggplot(males_df, aes(x = DIABETES, fill = factor(DIABETES))) + 
+  geom_bar() +
+  theme_lucid()
+
+## Females
+table(females_df$DIABETES)
+# 0    1 
+# 2428   62
+
+# Plot
+ggplot(females_df, aes(x = DIABETES, fill = factor(DIABETES))) + 
+  geom_bar() +
+  theme_lucid()
+
+########## SYSBP
+## Males
+summary(males_df$SYSBP)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 83.5   118.0   129.0   131.7   141.5   235.0 
+
+# Plot
+ggplot(males_df, aes(x = SYSBP)) + 
+  geom_histogram(color = "black", fill = "orange") +
+  theme_lucid()
+
+# Log transformed
+ggplot(males_df, aes(x = log(SYSBP))) + 
+  geom_histogram(color = "black", fill = "orange") +
+  theme_lucid()
+##### Will log transform
+
+## Females
+summary(females_df$SYSBP)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+# 83.5   116.0   128.5   133.8   146.5   295.0 
+
+# Plot
+ggplot(females_df, aes(x = SYSBP)) + 
+  geom_histogram(color = "black", fill = "orange") +
+  theme_lucid()
+
+# Log transformed
+ggplot(females_df, aes(x = log(SYSBP))) + 
+  geom_histogram(color = "black", fill = "orange") +
+  theme_lucid()
+##### Will log transform
+
+##################################### Table1 ###################################
+
+# Create table 1
+table1(~ factor(STROKE10) + STROKE10TIME + 
+         AGE + SYSBP + factor(DIABETES) | factor(SEX), 
+       data = per1_surv_df)
 
 
 
