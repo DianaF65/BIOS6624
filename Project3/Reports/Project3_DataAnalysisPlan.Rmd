@@ -1,0 +1,107 @@
+---
+title: Project 1 Data Analysis Plan
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-4cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
+---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+
+library(readr)
+library(knitr)
+library(ggplot2)
+library(MASS)
+library(emmeans)
+library(multcomp)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(lme4)
+library(lmerTest)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+opts_chunk$set(tidy = F)
+```
+
+\vspace{-6mm}
+# Introduction
+\vspace{-6mm}
+
+The data for this project come from the Multicenter AIDS Cohort Study which is a prospective and observational cohort of  homosexual and bisexual men with Human Immunodeficiency Virus (HIV-1).
+<!-- A primary goal of this study was to determine the effects of a common treatment - Highly Active Antiretroviral Treatment (HART).  -->
+For this analysis, the primary interest is to investigate how treatment response 2 years after being on HART differs between patients who report to be hard drug users at baseline vs. those who do not report hard drug use at baseline. The purpose of this report is to develop the analysis plan to investigate the following hypotheses of interest: 
+
+Hypothesis 1: Non-hard drug users have a significantly lower viral load (HIV copies in a mL of blood) after 2 years of HART compared to hard-drug users. 
+Hypothesis 2: Non-hard drug users have significantly higher CD4+ T cell count after 2 years of HART compared to hard-drug users.
+Hypothesis 3: Hard drug users have a significantly lower aggregate mental quality of life score compared to non-hard drug users, 2 years after HART.
+Hypothesis 4: Hard drug users have a significantly lower aggregate physical quality of life score compared to non-hard drug users, 2 years after HART.
+
+\vspace{-10mm}
+# Methods
+
+\vspace{-6mm}
+## Data Cleaning
+\vspace{-6mm}
+
+Assessment of the four primary outcomes did not reveal any abnormalities that needed to be addressed. Due to the unbalanced distribution of race, we will collapse race into White, Black, and Other. Education will be collapsed into High School, Some/Completed College, and Some/Completed Graduate School. 
+
+Missingness was investigated through summaries and visualization of missingness for each variable.
+Relationships between missing data and all variables (outcomes and covariates) was investigated. There were no relationships between any variables and missingness that needed to be addressed. 
+
+\vspace{-8mm}
+## Data Analysis
+\vspace{-6mm}
+
+All models will include these 6 covariates at baseline: Age, BMI, Race, education, smoking status, as well as adherence to HART. Additionally, we will assess whether 1. adherence to medication is an intermediate variable between the two laboratory measures and 2. The lab measures are an intermediate variable between aggregate mental and physical quality of life scores.
+Model assumptioms including homoscedasticity and distribution assumptions will be 
+assessed through diagnostic plots. Analyses will consist of patients that have observations for both years 0 and 2 (n = 506).
+A complete case analysis will be used for each model. P-values < 0.05 will be considered significant. 
+
+For hypothesis 1, we will employ a mixture model due to the bimodal distribution of viral load. In addition to the 6 base covariates mentioned above, we will potentially include aggregate physical quality of life and aggregate mental quality of life scores, depending on assessment of multicollinearity. We will incorporate a random intercept for subject to account for the dependency between observations for each patient. 
+
+For hypothesis 2, we will model CD4+ T cell count with a Gamma mixed effects model. 
+We will include the same covariates as those for the Hypothesis 1 model, including a random intercept for subject. 
+<!-- Mixed Model with the glmmTMB() function from the glmmTMB package in R.  -->
+
+For hypothesis 3, we will model aggregate mental quality of life score with a beta mixed effects model to address the left skewed distribution. The percentages will be converted to decimals to fall in the interval [0,1], appropriate for beta regression.
+The baseline covariates as well as a random intercept for subject will be implemented in the model. 
+<!-- with the glmmTMB() function from the glmmTMB package in R. -->
+
+For hypothesis 4, aggregate physical quality of life score will be modeled with a beta mixed effects model. We will convert the percentages to decimal points for this analysis. 
+This model will contain baseline covariates and a random intercept for subject. 
+<!-- https://jef.works/blog/2017/08/05/a-practical-introduction-to-finite-mixture-models/ -->
+
+We will investigate the hypotheses of interest through both a Frequentist and a Bayesian lens. 
+
+
