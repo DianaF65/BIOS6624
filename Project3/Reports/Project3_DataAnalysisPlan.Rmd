@@ -2,14 +2,11 @@
 title: Project 3 Data Analysis Plan
 author: Diana Felipe
 output: 
-  bookdown::pdf_document2:
-    toc: false
-    number_sections: false
-    latex_engine: xelatex
+  pdf_document:
+    latex_engine: pdflatex
     extra_dependencies: ["longtable", "float"]
 mainfont: Arial
 fontsize: 12pt
-documentclass: article
 geometry: margin=1in
 header-includes:
   - \usepackage{setspace}
@@ -20,11 +17,13 @@ header-includes:
   - \setlength{\droptitle}{-4cm}
   - \preauthor{\vspace{-0.6cm}}
   - \postauthor{\vspace{-3cm}}
+  - \setlist[itemize]{noitemsep}
 ---
 
 ```{r, echo = F, warning=F, message = F}
 knitr::opts_chunk$set(echo = TRUE)
 
+library(tinytex)
 library(readr)
 library(knitr)
 library(ggplot2)
@@ -65,9 +64,6 @@ surv_df <- read_csv(here("Project3", "Data", "pre_surv_df.csv"))
 opts_chunk$set(tidy = F)
 ```
 
-```{r, echo = F}
-
-```
 
 <!-- \vspace{-6mm} -->
 # Introduction
@@ -79,7 +75,6 @@ The primary goal of the analysis is to identify risk factors of stroke within a 
 
 \vspace{-10mm}
 # Methods
-
 \vspace{-6mm}
 ## Data Cleaning
 \vspace{-6mm}
@@ -92,9 +87,26 @@ We accounted for subjects that died within 10 years or had a stroke at baseline 
 \vspace{-8mm}
 ## Data Analysis
 \vspace{-6mm}
-For the primary analysis, we will fit a Cox Proportional Hazards Model to investigate the association baseline covariates and time to stroke. 
-Potential covariates include Presence of Coronary Heart Disease (CHD), whether subjects were on Blood Pressure (BP) medications, smoking status, total Cholesterol, and Body Mass Index (BMI). 
+We will conduct analyses separately for sex and females. 
+For the primary analysis, we will fit a Cox Proportional Hazards (PH) Model to investigate the association baseline covariates and time to stroke for the five risk profiles of interest: 
 
-We will adjust for Age, Diabetes status, and Systolic Blood Pressure in all analyses. 
+\begin{itemize}
+  \item Subjects with no risk factors for the average person
+  \item Subjects with high blood pressure (BP $>160$)
+  \item Subjects with diabetes
+  \item Subjects with both high blood pressure and diabetes
+  \item Subjects who are smokers
+\end{itemize}
+
+Potential covariates include Presence of Coronary Heart Disease (CHD), whether subjects were on Blood Pressure (BP) medications, smoking status, total Cholesterol, and Body Mass Index (BMI). 
+We will perform variable selection with Least Absolute Shrinkage Selection Operator (LASSO) to identify the variables that are most meaningful and relevant for time to stroke. 
+We will include the same set of variables for each sex-stratified analysis.
+We will adjust for Age, Diabetes status, and Systolic Blood Pressure (BP) in all analyses. 
+As Diabetes status and BP are not constant and change for each visit, we will provide a description of how these variables are changing over time to determinen if a time varying analysis is more appropriate for future analyses. 
+We will assess whether the proportional hazards assumptions for the model through the Schoenfeld Residuals Test as well visually through Log Minus Log (LML) survival plots. 
+This model will allow us to identify risk factors for stroke for the five risk profiles of interest. 
+
+All analyses will be conducted with R version 4.4.1 using the survival and survminer packages. 
+
 
 
