@@ -27,6 +27,9 @@ glimpse(frame_data)
 # Summary of vars in data
 summary(frame_data)
 
+# Which types of variables
+str(frame_data)
+
 # Make sure vars are what they should be
 ## Factors
 # RANDID
@@ -134,8 +137,8 @@ pre_surv_df <- pre_surv_df %>%
   mutate(STROKE10 = factor(ifelse(strokewithin10 == 1,
                            1, 0)),
          # The time to stroke for strokes within 10 years
-        STROKE10TIME = factor(ifelse(strokewithin10 == 1,
-                              TIMESTRK, 0)))
+        STROKE10TIME = ifelse(strokewithin10 == 1,
+                              TIMESTRK, 0))
 # There are currently 11627 obs for 4434 subjects
 # Looking at vars of interest
 b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
@@ -260,13 +263,24 @@ ah$TOTCHOL$asmd_table1
 
 
 ############################### TIME TO STROKE #################################
-
 # Explore patterns of missingness for time to stroke - yes/no
+# Explanatory vars
+explanatory2 <- c(# Primary vars
+  "SEX", "AGE", "SYSBP", "DIABETES", 
+  # Additional covariates
+  "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
+
 # TIME TO STROKE
 timestroke <- c("STROKE10TIME")
 
 pre_surv_df %>% 
-  missing_pattern(timestroke, explanatory)
+  missing_pattern(timestroke, explanatory2)
+
+# Mean with and without missing vals
+pre_surv_df %>% 
+  ungroup() %>% 
+  missing_compare(timestroke, explanatory2) %>% 
+  knitr::kable(row.names=FALSE) 
 
 # No relationship with missingness and time to stroke
 
@@ -297,7 +311,8 @@ table1(~ factor(STROKE10) + STROKE10TIME +
 # Filter to PERIOD 1
 per1_surv_df <- pre_surv_df %>% 
   group_by(RANDID) %>% 
-  filter(PERIOD == 1)
+  filter(PERIOD == 1) %>% 
+  ungroup(RANDID)
 # There are 4434 obs for 4434 subjects
 
 # Filter to columns of interest for analysis
@@ -361,8 +376,6 @@ females_df <- per1_surv_df %>%
   filter(SEX == 2)
 # There are 2490 obs for 2490 subjects
 
-########## Save DF
-
 
 ############################## Data Distributions ##############################
 
@@ -389,19 +402,19 @@ table(males_df$STROKE10)
 # 1688  256 
 
 # Plot of stroke within 10 years
-ggplot(, aes(x = factor(STROKE10),
-                         fill = factor(STROKE10))) + 
+ggplot(males_df, aes(x = STROKE10,
+                         fill = STROKE10)) + 
   geom_bar() + 
   theme_lucid()
 
 #### Females
 table(females_df$STROKE10)
 # 0    1 
-# 2269  221 
+# 2445   45 
 
 # Plot of stroke within 10 years
-ggplot(females_df, aes(x = factor(STROKE10),
-                         fill = factor(STROKE10))) + 
+ggplot(females_df, aes(x = STROKE10,
+                         fill = STROKE10)) + 
   geom_bar() + 
   theme_lucid()
 
@@ -420,7 +433,7 @@ summary(males_df$STROKE10TIME)
 
 table(males_df$STROKE10TIME)
 # 0   26   45   87  133  266  267  287  294  305  346  350  378  424  430  442 
-# 1688    1    1    1    1    1    1    1    1    1    1    1    1    1    2    1 
+# 1912    1    1    1    1    1    1    1    1    1    1    1    1    1    2    1 
 # Pretty heavy zero inflated
 
 ### Females
@@ -435,12 +448,12 @@ summary(females_df$STROKE10TIME)
 
 table(females_df$STROKE10TIME)
 # 0   22   47   58   73  101  110  126  145  146  150  168  178  182  184  234 
-# 2269    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
+# 2445    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
 # Pretty heavy zero inflated
 
 ##################################### Covariates ###############################
 
-######### Age
+######################################## Age ###################################
 ## Males
 summary(males_df$AGE)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -460,8 +473,8 @@ summary(females_df$AGE)
 ggplot(females_df, aes(x = AGE)) + 
   geom_histogram(fill = "magenta2", color = "black") +
   theme_lucid()
-
-######### Diabetes
+ 
+##################################### Diabetes #################################
 ## Males
 table(males_df$DIABETES)
 # 0    1 
@@ -482,7 +495,9 @@ ggplot(females_df, aes(x = DIABETES, fill = factor(DIABETES))) +
   geom_bar() +
   theme_lucid()
 
-########## SYSBP
+## Overal diabetes is pretty unbalanced
+
+###################################### SYSBP ###################################
 ## Males
 summary(males_df$SYSBP)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
@@ -515,14 +530,146 @@ ggplot(females_df, aes(x = log(SYSBP))) +
   theme_lucid()
 ##### Will log transform
 
+##################################### ANY CHD ##################################
+## Males
+summary(males_df$ANYCHD)
+# 0    1 
+# 1234  710 
+
+# Plot
+ggplot(males_df, aes(x = ANYCHD)) + 
+  geom_bar() +
+  theme_lucid()
+
+## Feales
+summary(females_df$ANYCHD)
+# 0    1 
+# 1960  530
+
+# Plot
+ggplot(females_df, aes(x = ANYCHD)) + 
+  geom_bar() +
+  theme_lucid()
+
+##################################### BP MEDS ##################################
+
+## Males
+summary(males_df$BPMEDS)
+# 0    1 NA's 
+# 1880   42   22 
+
+# Plot
+ggplot(males_df, aes(x = BPMEDS)) + 
+  geom_bar() +
+  theme_lucid()
+
+## Females
+summary(females_df$BPMEDS)
+# 0    1 NA's 
+# 2349  102   39 
+
+# Plot
+ggplot(females_df, aes(x = BPMEDS)) + 
+  geom_bar() +
+  theme_lucid()
+
+################################## SMOKE STATUS ################################
+
+## Males
+summary(males_df$CURSMOKE)
+# 0    1 
+# 769 1175
+
+# Plot
+ggplot(males_df, aes(x = CURSMOKE)) + 
+  geom_bar() +
+  theme_lucid()
+
+## Females
+summary(females_df$CURSMOKE)
+# 0    1 
+# 1484 1006 
+
+# Plot
+ggplot(females_df, aes(x = CURSMOKE)) + 
+  geom_bar() +
+  theme_lucid()
+
+
+###################################### TOTCHOL #################################
+
+## Males
+summary(males_df$TOTCHOL)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#   113.0   206.0   231.0   233.6   259.0   696.0       7
+
+# Plot
+ggplot(males_df, aes(x = TOTCHOL)) + 
+  geom_histogram(color = "black", fill = "orangered") +
+  theme_lucid()
+
+# Log transformed
+ggplot(males_df, aes(x = log(TOTCHOL))) + 
+  geom_histogram(color = "black", fill = "orangered") +
+  theme_lucid()
+#### Log transform 
+
+## Females
+summary(females_df$TOTCHOL)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#   107.0   206.0   237.0   239.7   269.0   600.0      45 
+
+# Plot
+ggplot(females_df, aes(x = TOTCHOL)) + 
+  geom_histogram(color = "black", fill = "orangered") +
+  theme_lucid()
+
+# Log transformed
+ggplot(females_df, aes(x = log(TOTCHOL))) + 
+  geom_histogram(color = "black", fill = "orangered") +
+  theme_lucid()
+### Log transform
+
+######################################## BMI ###################################
+## Males
+summary(males_df$BMI)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 15.54   23.97   26.08   26.17   28.32   40.38       5 
+
+# Plot
+ggplot(males_df, aes(x = BMI)) + 
+  geom_histogram(color = "black", fill = "blue3") +
+  theme_lucid()
+
+# Log transformed
+ggplot(males_df, aes(x = log(BMI))) + 
+  geom_histogram(color = "black", fill = "blue3") +
+  theme_lucid()
+# Potentially log transform
+
+## Females
+summary(females_df$BMI)
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 15.96   22.54   24.83   25.59   27.82   56.80      14 
+
+# Plot
+ggplot(females_df, aes(x = BMI)) + 
+  geom_histogram(color = "black", fill = "blue3") +
+  theme_lucid()
+
+# Log transformed
+ggplot(females_df, aes(x = log(BMI))) + 
+  geom_histogram(color = "black", fill = "blue3") +
+  theme_lucid()
+# Actually definiitely log transform
+
+
 ##################################### Table1 ###################################
 
 # Create table 1
 table1(~ factor(STROKE10) + STROKE10TIME + 
          AGE + SYSBP + factor(DIABETES) | factor(SEX), 
        data = per1_surv_df)
-
-
 
 
 
