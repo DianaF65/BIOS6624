@@ -27,6 +27,81 @@ glimpse(frame_data)
 # Summary of vars in data
 summary(frame_data)
 
+############################### Survival Analysis DF ###########################
+
+## Data exploring
+# Subjects that had a stroke at time 0
+stroke_before <- frame_data %>% 
+  group_by(RANDID) %>% 
+  filter(STROKE == 1 & TIMESTRK == 0) %>% 
+  # filter(STROKE == 1 & TIME == 0) %>% 
+  reframe(RANDID, STROKE, TIMESTRK, TIME,
+          # Create new variables
+          STROKE10 = 1,
+         TIMESTRK10 = 0 ) 
+# Using STROKE == 1 & TIMESTROKE == 0 because TIME = 0 removes too much
+# There were 32 subjects that had strokes before 
+
+# Create new STROKE and STRKE10 years relative to 10 years
+# For subjects that had strokes before, we will adjust the time and stroke == 0
+# Indicator for whether data is within 10 years
+pre_surv_df <- frame_data %>% 
+  group_by(RANDID) %>% 
+  mutate(# Stroke at TIME = 0 indicator
+         strokeBL = ifelse(TIMESTRK == 0 & STROKE == 1,
+                           1, 0),
+         # Death within 10 years
+         deathwithin10 = ifelse(TIMEDTH < 3600, 1, 0),
+         # Stroke within 10 years indicator
+         strokewithin10 = ifelse((deathwithin10 == 0) & # No death within 10 years
+                            (TIMESTRK > 0 & TIMESTRK <= 3600), # Stroke within 10 years
+                                 1, 0)) %>% 
+  relocate(strokewithin10, .after = TIMESTRK) %>% 
+  relocate(strokeBL, .after = STROKE)
+
+# Looking at vars of interest
+a <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
+                                    "TIMESTRK", "STROKE",
+                                    "strokeBL", "strokewithin10",
+                                    "DEATH", "TIMEDTH",
+                                    "deathwithin10"))
+# Seems to be good
+
+# Investigate subjects who died
+## Did this after and went back and added deathwithin 10 var
+mort <- subset(pre_surv_df, 
+               select = c("RANDID", "TIME", "PERIOD",
+                          "TIMESTRK", "STROKE",
+                          "strokeBL", "strokewithin10", 
+                          "DEATH", "TIMEDTH"))
+
+# Double checking stroke within 10 years
+check <- a %>% 
+  filter(strokewithin10 == 1)
+
+
+# Create baby data frame to mess around and figure out stroke variables
+baby <- pre_surv_df %>% 
+  reframe(RANDID, STROKE, PREVSTRK, PERIOD, TIME,
+          TIMESTRK, strokewithin10)
+
+# Create a new stroke and time to stroke varible in regard to 10 years
+# We also want to adjust for those that already had a stroke before start of study
+pre_surv_df <- pre_surv_df %>% 
+  # For subjects who did not have stroke at time 0
+  mutate(STROKE10 = ifelse(strokewithin10 == 1,
+                           1, 0),
+         # The time to stroke for strokes within 10 years
+        STROKE10TIME = ifelse(strokewithin10 == 1,
+                              TIMESTRK, 0))
+# There are currently 11627 obs for 4434 subjects
+# Looking at vars of interest
+b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
+                                    "TIMESTRK", "STROKE",
+                                    "strokeBL", "STROKE10",
+                                    "STROKE10TIME"))
+
+
 ################################ Missingness ###################################
 #### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
 
@@ -92,7 +167,11 @@ missing_plot(frame_data)
 ###################################### STROKE ###################################
 
 # Explore patterns of missingness for stroke - yes/no
-explanatory <- c("AGE", "SYSBP", "DIABETES")
+explanatory <- c(# Primary vars
+  "SEX", "AGE", "SYSBP", "DIABETES",
+  "STROKE10", "STROKE10TIME", 
+  # Additional covariates
+  "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
 # STROKE
 stroke <- c("STROKE")
 
@@ -113,92 +192,6 @@ frame_data %>%
   missing_pattern(timestroke, explanatory)
 
 # No relationship with missingness and time to stroke
-
-############################ Time Changing Variables ###########################
-### Description of time changing variables (Diabetes and BP specfically)
-# Should these be considered for future time varying analyses?
-
-############################### Survival Analysis DF ###########################
-
-## Data exploring
-# Subjects that had a stroke at time 0
-stroke_before <- frame_data %>% 
-  group_by(RANDID) %>% 
-  filter(STROKE == 1 & TIMESTRK == 0) %>% 
-  # filter(STROKE == 1 & TIME == 0) %>% 
-  reframe(RANDID, STROKE, TIMESTRK, TIME,
-          # Create new variables
-          STROKE10 = 1,
-         TIMESTRK10 = 0 ) 
-# Using STROKE == 1 & TIMESTROKE == 0 because TIME = 0 removes too much
-# There were 32 subjects that had strokes before 
-
-# Create new STROKE and STRKE10 years relative to 10 years
-# For subjects that had strokes before, we will adjust the time and stroke == 0
-# Indicator for whether data is within 10 years
-pre_surv_df <- frame_data %>% 
-  group_by(RANDID) %>% 
-  mutate(# Stroke at TIME = 0 indicator
-         strokeBL = ifelse(TIMESTRK == 0 & STROKE == 1,
-                           1, 0),
-         # Death within 10 years
-         deathwithin10 = ifelse(TIMEDTH < 3600, 1, 0),
-         # Stroke within 10 years indicator
-         strokewithin10 = ifelse((deathwithin10 == 0) & # No death within 10 years
-                            (TIMESTRK > 0 & TIMESTRK <= 3600), # Stroke within 10 years
-                                 1, 0)) %>% 
-  relocate(strokewithin10, .after = TIMESTRK) %>% 
-  relocate(strokeBL, .after = STROKE)
-
-# Looking at vars of interest
-a <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
-                                    "TIMESTRK", "STROKE",
-                                    "strokeBL", "strokewithin10",
-                                    "DEATH", "TIMEDTH",
-                                    "deathwithin10"))
-# Seems to be good
-
-# Investigate subjects who died
-## Did this after and went back and added deathwithin 10 var
-mort <- subset(pre_surv_df, 
-               select = c("RANDID", "TIME", "PERIOD",
-                          "TIMESTRK", "STROKE",
-                          "strokeBL", "strokewithin10", 
-                          "DEATH", "TIMEDTH"))
-
-
-# Create baby data frame to mess around and figure out stroke variables
-baby <- frame_data %>% 
-  reframe(RANDID, STROKE, PREVSTRK, PERIOD, TIME,
-          TIMESTRK, strokewithin10)
-
-# Create a new stroke and time to stroke varible in regard to 10 years
-# We also want to adjust for those that already had a stroke before start of study
-pre_surv_df <- pre_surv_df %>% 
-  # For subjects who did not have stroke at time 0
-  mutate(STROKE10 = ifelse(strokeBL == 0,
-                           # Subjects that had a stroke within 10 years
-                           ifelse(strokewithin10 == 1,
-                                  1, 
-                                  0),
-                           # If stroke at baseline, then stroke10 = 0
-                           0),
-         # The time to stroke for strokes within 10 years
-        STROKE10TIME = ifelse(strokeBL == 0,
-                                ifelse(STROKE10 == 1,
-                                       TIMESTRK, 
-                                       0),
-                              # If stroke at baseline, then stroke time = 0
-                              0))
-# There are currently 11627 obs for 4434 subjects
-# Looking at vars of interest
-b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
-                                    "TIMESTRK", "STROKE",
-                                    "strokeBL", "STROKE10",
-                                    "STROKE10TIME"))
-
-# Looking into those subjects that did have stroke within 10 years
-# Why was I gonna do this...
 
 ############################### Time Varying Covariates ########################
 
@@ -230,10 +223,14 @@ per1_surv_df <- pre_surv_df %>%
   filter(PERIOD == 1)
 # There are 4434 obs for 4434 subjects
 
-# Filter to columns of interest
-cols <- c("RANDID", "SEX",
-          "AGE", "SYSBP", "DIABETES",
-          "STROKE10", "STROKE10TIME", "PREVSTRK", "STROKE", "TIME")
+# Filter to columns of interest for analysis
+cols <- c("RANDID", 
+          # Primary vars
+          "SEX", "AGE", "SYSBP", "DIABETES",
+          "STROKE10", "STROKE10TIME", 
+          # Additional covariates
+          "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
+
 # Filter
 per1_surv_df <- subset(per1_surv_df, 
                        select = cols)
@@ -248,17 +245,26 @@ per1_surv_df <- subset(per1_surv_df,
 # Cumulative sum of missingness for each variable
 m3 <- per1_surv_df[,-1] %>% 
   miss_var_summary(order = TRUE)
-# Nothing is missing
+# variable     n_miss pct_miss
+# 1 BPMEDS           61    1.38 
+# 2 TOTCHOL          52    1.17 
+# 3 BMI              19    0.429
+# 4 SEX               0    0    
+# 5 AGE               0    0  
 
 # How many variables 0 - 5 missing values
 m4 <- per1_surv_df[, -1] %>% 
   naniar::miss_case_table()
 # n_miss_in_case n_cases pct_cases
-# 1              0    4434       100
+# 1              0    4304   97.1   
+# 2              1     128    2.89  
+# 3              2       2    0.0451
 
 # Another way to visualize missingness
 # Whole data set
 missing_plot(per1_surv_df[, -1])
+
+
 
 ######### Save DF
 write.csv(per1_surv_df, here("Project3",
