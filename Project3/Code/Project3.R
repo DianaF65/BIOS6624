@@ -141,15 +141,31 @@ pre_surv_df <- frame_data %>%
   mutate(# Stroke at TIME = 0 indicator
          strokeBL = ifelse(TIMESTRK == 0 & STROKE == 1,
                            1, 0),
+         # Death within 10 years
+         deathwithin10 = ifelse(TIMEDTH < 3600, 1, 0),
          # Stroke within 10 years indicator
-         strokewithin10 = ifelse(TIMESTRK > 0 & TIMESTRK <= 3600, 1, 0)) %>% 
+         strokewithin10 = ifelse((deathwithin10 == 0) & # No death within 10 years
+                            (TIMESTRK > 0 & TIMESTRK <= 3600), # Stroke within 10 years
+                                 1, 0)) %>% 
   relocate(strokewithin10, .after = TIMESTRK) %>% 
   relocate(strokeBL, .after = STROKE)
 
 # Looking at vars of interest
 a <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
                                     "TIMESTRK", "STROKE",
-                                    "strokeBL", "strokewithin10"))
+                                    "strokeBL", "strokewithin10",
+                                    "DEATH", "TIMEDTH",
+                                    "deathwithin10"))
+# Seems to be good
+
+# Investigate subjects who died
+## Did this after and went back and added deathwithin 10 var
+mort <- subset(pre_surv_df, 
+               select = c("RANDID", "TIME", "PERIOD",
+                          "TIMESTRK", "STROKE",
+                          "strokeBL", "strokewithin10", 
+                          "DEATH", "TIMEDTH"))
+
 
 # Create baby data frame to mess around and figure out stroke variables
 baby <- frame_data %>% 
@@ -244,6 +260,12 @@ m4 <- per1_surv_df[, -1] %>%
 # Whole data set
 missing_plot(per1_surv_df[, -1])
 
+######### Save DF
+write.csv(per1_surv_df, here("Project3",
+                             "Data",
+                             "pre_surv_df.csv"),
+          row.names = FALSE)
+
 ################################ Sex Specific DFs ##############################
 
 # Males
@@ -255,6 +277,8 @@ males_df <- per1_surv_df %>%
 females_df <- per1_surv_df %>% 
   filter(SEX == 2)
 # There are 2490 obs for 2490 subjects
+
+########## Save DF
 
 
 ############################## Data Distributions ##############################
