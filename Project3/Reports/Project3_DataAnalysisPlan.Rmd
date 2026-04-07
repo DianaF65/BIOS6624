@@ -54,12 +54,27 @@ library(pillar)
 library(visdat)
 library(finalfit)
 library(table1)
+library(here)
+
+# Read in raw data
+raw_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
+
+# Read in modified data
+surv_df <- read_csv(here("Project3", "Data", "pre_surv_df.csv"))
+
 opts_chunk$set(tidy = F)
 ```
 
-\vspace{-6mm}
+```{r, echo = F}
+
+```
+
+<!-- \vspace{-6mm} -->
 # Introduction
-\vspace{-6mm}
+<!-- \vspace{-6mm} -->
+
+The purpose of this report is to develop the analysis plan to investigate the research questions of interest. 
+The primary goal of the analysis is to identify risk factors of stroke within a 10-year period for five different risk profiles.
 
 
 \vspace{-10mm}
@@ -68,12 +83,18 @@ opts_chunk$set(tidy = F)
 \vspace{-6mm}
 ## Data Cleaning
 \vspace{-6mm}
+The original raw data contained 11627 observations for 4434 subjects and 38 original covariates. Missingness was assessed in this data set through summaries and visualizations. Regarding the primary variables of interest, BP Meds had ~5% missingness (593 obs.), Total cholesterol had 3.5% missingness, and BMI had ~0.5% missingness. We did observe observe high rates for High and Low Density Lipoprotein cholesterol with ~74% missingness. We verified that there were no relationships between missingness and all variables and that data was Missing At Random. 
 
+We then proceeded with creating new variables specifically for the 10 year window of interest for the primary analysis. 
+We created an indicator variable for whether subjects had a stroke within 10 years (Yes/No) -  \textit{STROKE10} as well as the time to stroke -\textit{STROKE10TIME}.
+We accounted for subjects that died within 10 years or had a stroke at baseline visit. 
 
 \vspace{-8mm}
 ## Data Analysis
 \vspace{-6mm}
+For the primary analysis, we will fit a Cox Proportional Hazards Model to investigate the association baseline covariates and time to stroke. 
+Potential covariates include Presence of Coronary Heart Disease (CHD), whether subjects were on Blood Pressure (BP) medications, smoking status, total Cholesterol, and Body Mass Index (BMI). 
 
-
+We will adjust for Age, Diabetes status, and Systolic Blood Pressure in all analyses. 
 
 
