@@ -57,6 +57,7 @@ library(visdat)
 library(finalfit)
 library(table1)
 library(here)
+library(expss)
 
 # Read in raw data
 raw_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
@@ -70,44 +71,44 @@ opts_chunk$set(tidy = F)
 
 <!-- \vspace{-6mm} -->
 # Introduction
-<!-- \vspace{-6mm} -->
+\vspace{-6mm}
 
 The data for this project come from the Framington Heart Study which is a longitudinal study with the primary goal of investigating the etiology of cardiovascular disease. The study was conducted on an initial population of 5,209 individuals residing in Framingham, Massachusetts on which data was collected for blood pressure, health behaviors, medication use, and more.
-The purpose of this report is to develop the analysis plan to investigate the research questions of interest. 
-The primary goal of the analysis is to identify risk factors of stroke within a 10-year period for five different risk profiles.
+The primary goal of the analysis is to identify risk factors of stroke within a 10-year period for five different risk profiles of interest: 
 
-\vspace{-10mm}
+\vspace{-3mm}
+\begin{itemize}
+  \item Subjects with no risk factors for stroke
+  \item Subjects with high blood pressure (BP) $>160$
+  \item Subjects with diabetes
+  \item Subjects with both high blood pressure and diabetes
+  \item Subjects who were smokers at Baseline
+\end{itemize}
+\vspace{-3mm}
+
+The purpose of this report is to develop the analysis plan to investigate factors that affect the risk of stroke in a subset of the Framington Heart Study for these risk profiles. 
+
+\vspace{-9mm}
 # Methods
 \vspace{-7mm}
 ## Data Cleaning
 \vspace{-6mm}
-The original raw data contained 11627 observations for 4,434 subjects and 38 original covariates. Missingness was assessed in this data set through summaries and visualizations. Regarding the primary variables of interest, BP Meds had ~5% missingness (593 obs.), Total cholesterol had 3.5% missingness, and BMI had ~0.5% missingness. We did observe observe high rates for High and Low Density Lipoprotein cholesterol with ~74% missingness. We verified that there were no relationships between missingness and all variables and therefore concluded that data was Missing At Random. 
+The raw data contained 11627 observations for 4,434 subjects and 38 original covariates. Missingness was assessed in this data set through summaries and visualizations. Regarding the primary variables of interest, BP Meds had ~5% missingness, Total cholesterol had 3.5% missingness, and BMI had ~0.5% missingness. We did observe observe high rates for High and Low Density Lipoprotein cholesterol with ~74% missingness. We verified that there were no relationships between missingness and all variables and therefore concluded that data was Missing At Random. 
 
 We then proceeded with creating new variables specifically for the 10 year window of interest for the primary analysis. 
-We created an indicator variable for whether subjects had a stroke within 10 years (Yes/No) -  \textit{STROKE10} as well as the time to stroke -\textit{STROKE10TIME}.
-We accounted for subjects that died within 10 years or had a stroke at baseline visit. 
+We created an indicator variable for whether subjects had a stroke within 10 years (Yes/No) (\textit{STROKE10}) as well as the time to stroke (\textit{STROKE10TIME}).
+We accounted for subjects that died within 10 years or had a stroke at baseline visit when creating these variables. 
 
 \vspace{-8mm}
 ## Data Analysis
 \vspace{-6mm}
 We will conduct analyses separately for sex and females. 
-For the primary analysis, we will fit a Cox Proportional Hazards (PH) Model to investigate the association baseline covariates and time to stroke for the five risk profiles of interest: 
-
-\vspace{-3mm}
-\begin{itemize}
-  \item Subjects with no risk factors for the average person
-  \item Subjects with high blood pressure (BP $>160$)
-  \item Subjects with diabetes
-  \item Subjects with both high blood pressure and diabetes
-  \item Subjects who are smokers
-\end{itemize}
-\vspace{-3mm}
-
+For the primary analysis, we will fit a Cox Proportional Hazards (PH) Survival Model to investigate the association baseline covariates and time to stroke for the five risk profiles of interest.
+We will adjust for Age, Diabetes status, and log transformed Systolic Blood Pressure (BP) in all analyses. 
 Potential covariates include Presence of Coronary Heart Disease (CHD), whether subjects were on Blood Pressure (BP) medications, smoking status, total Cholesterol, and Body Mass Index (BMI). 
 We will perform variable selection with Least Absolute Shrinkage Selection Operator (LASSO) to identify the variables that are most meaningful and relevant for time to stroke. We will specifically use the glmnet R package for this. 
 We will follow this by assessing the relationships between the variables with each other and the outcomes to identify potential confounders or precision variables. 
 We will include the same set of variables for each sex-stratified analysis.
-We will adjust for Age, Diabetes status, and log transformed Systolic Blood Pressure (BP) in all analyses. 
 As Diabetes status and BP are not constant and change for each visit, we will provide a description of how these variables are changing over time to determine if a time varying analysis is more appropriate for future analyses. 
 We will assess whether the proportional hazards assumptions for the model through the Schoenfeld Residuals Test as well visually through Log Minus Log (LML) survival plots for each covariate included in the final model. 
 
@@ -116,4 +117,84 @@ A Table 1 as well as tables and figures describing the data and analysis results
 All analyses will be conducted with R version 4.4.1 using the glmnet, survival, survminer packages. 
 
 <!-- These analyses will allow us to identify risk factors that predict stroke in a 10 year span for the five risk profiles of interest.  -->
+
+\vspace{-3mm}
+## Preliminary Results
+\vspace{-3mm}
+Below is a description of the data for the analysis, including the new stroke and time to stroke variables for the 10 year period. 
+
+```{r, echo = F}
+# Fix levels for categorical variables for Table1
+# Sex
+surv_df$factor_SEX <- factor(surv_df$SEX,
+                      levels = c(1, 2),
+                      labels = c("Male", "Female"))
+
+# Diabetes
+surv_df$factor_diab <- factor(surv_df$DIABETES,
+                              levels = c(0, 1),
+                              labels = c("Not a diabetic", "Diabetic"))
+# Stroke 10 
+surv_df$factor_STROKE10 <- factor(surv_df$STROKE10,
+                           levels = c(0, 1),
+                           labels = c("No stroke within 10 years",
+                             "Stroke within 10 yrs"))
+
+# Any CHD
+surv_df$factor_anychd <- factor(surv_df$ANYCHD,
+                               levels = c(0, 1),
+                               labels = c("No Cardiovascular Heart Disease",
+                                          "Cardiovascular Heart Disease"))
+
+# bp meds
+surv_df$factor_bpmeds <- factor(surv_df$BPMEDS,
+                                levels = c(0, 1),
+                                labels = c("No Anti-Hyp meds",
+                                           "Anti-hyp meds"))
+
+
+# cur smoke
+surv_df$factor_cursmoke <- factor(surv_df$CURSMOKE,
+                                  levels = c(0, 1),
+                                  labels = c("Not current smoker",
+                                             "Current smoker"))
+
+# Relabel the variables for the Table 1
+
+tab1_data <- apply_labels(surv_df,
+                     factor_SEX = "Sex",
+                     AGE = "Age",
+                     SYSBP = "Systolic BP",
+                     factor_diab = "Diabetes Status",
+                     factor_bpmeds = "Blood Pressure Medication",
+                     factor_cursmoke = "Smoker Status",
+                     factor_STROKE10 = "Stroke within 10 years",
+                     factor_anychd = "Any Coronary Heart Disease",
+                     STROKE10TIME = "Time to Stroke in Days",
+                     TIMECHD = "Time to Coronary Heart Disease")
+
+# Display the modified Table1
+tab1_data %>% 
+  tbl_summary(include = c(factor_SEX,
+                          AGE, SYSBP, 
+                          factor_diab, factor_bpmeds,
+                          factor_cursmoke, 
+                          factor_anychd,
+                          TIMECHD,
+                          factor_STROKE10,
+                          STROKE10TIME),
+              by = factor_SEX,
+              statistic = list(
+      c(AGE, SYSBP, STROKE10TIME, TIMECHD) ~ "{mean} ({sd})"
+    ),
+    digits = all_continuous() ~ 2 )%>% 
+  modify_header(label = "**Sex**") %>% 
+  bold_labels() %>% 
+  modify_caption(caption = "**Patient Characteristics by Sex**") %>% 
+  modify_footnote(
+    all_stat_cols() ~ "Values are mean (SD); All 
+    covariates are measured at Baseline."
+  )
+
+```
 
