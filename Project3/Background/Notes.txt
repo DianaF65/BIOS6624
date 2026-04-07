@@ -7,12 +7,8 @@
   - TIMETOSTRKE: The days from baseline that subject had a stroke
   
 ### Questions
-- What is the STROKE variable? Does it even matter..
-   RANDID STROKE PREVSTRK PERIOD  TIME TIMESTRK strokewithin10
-    9428      0        0      1     0     8766              0
-    9428      0        0      2  2199     8766              0
-   10552      1        0      1     0     2089              1
-   10552      1        0      2  1977     2089              1
+- For presence of CHD are you using PREVCHD or ANYCHD and timeCHD?
+
 
 
 #### Class 4/1
