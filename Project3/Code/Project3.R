@@ -27,6 +27,47 @@ glimpse(frame_data)
 # Summary of vars in data
 summary(frame_data)
 
+# Make sure vars are what they should be
+## Factors
+# RANDID
+frame_data$RANDID <- factor(frame_data$RANDID)
+# Sex
+frame_data$SEX <- factor(frame_data$SEX)
+# Cursmoke
+frame_data$CURSMOKE <- factor(frame_data$CURSMOKE)
+# Diabetes
+frame_data$DIABETES <- factor(frame_data$DIABETES)
+# BP meds
+frame_data$BPMEDS <- factor(frame_data$BPMEDS)
+# eEducation
+frame_data$educ <- factor(frame_data$educ)
+# PREVCHD
+frame_data$PREVCHD <- factor(frame_data$PREVCHD)
+# PREVAP 
+frame_data$PREVAP <- factor(frame_data$PREVAP)
+# PREVMI
+frame_data$PREVMI <- factor(frame_data$PREVMI)
+# PREVSTRK 
+frame_data$PREVMI <- factor(frame_data$PREVMI)
+# PREVHYP
+frame_data$PREVHYP <- factor(frame_data$PREVHYP)
+# Death
+frame_data$DEATH <- factor(frame_data$DEATH)
+# Angine
+frame_data$ANGINA <- factor(frame_data$ANGINA)
+# HOSPI
+frame_data$HOSPMI <- factor(frame_data$HOSPMI)
+# mi fchd
+frame_data$MI_FCHD <- factor(frame_data$MI_FCHD)
+# anychd
+frame_data$ANYCHD <- factor(frame_data$ANYCHD)
+# stroke
+frame_data$STROKE <- factor(frame_data$STROKE)
+# CVD
+frame_data$CVD <- factor(frame_data$CVD)
+# Hyptertension
+frame_data$HYPERTEN <- factor(frame_data$HYPERTEN)
+
 ############################### Survival Analysis DF ###########################
 
 ## Data exploring
@@ -46,18 +87,19 @@ stroke_before <- frame_data %>%
 # For subjects that had strokes before, we will adjust the time and stroke == 0
 # Indicator for whether data is within 10 years
 pre_surv_df <- frame_data %>% 
-  group_by(RANDID) %>% 
+  # group_by(RANDID) %>% 
   mutate(# Stroke at TIME = 0 indicator
-         strokeBL = ifelse(TIMESTRK == 0 & STROKE == 1,
-                           1, 0),
+         strokeBL = factor(ifelse(TIMESTRK == 0 & STROKE == 1,
+                           1, 0)),
          # Death within 10 years
-         deathwithin10 = ifelse(TIMEDTH < 3600, 1, 0),
+         deathwithin10 = factor(ifelse(TIMEDTH < 3600, 1, 0)),
          # Stroke within 10 years indicator
-         strokewithin10 = ifelse((deathwithin10 == 0) & # No death within 10 years
-                            (TIMESTRK > 0 & TIMESTRK <= 3600), # Stroke within 10 years
-                                 1, 0)) %>% 
+         strokewithin10 = factor(ifelse((deathwithin10 == 0) & # No death within 10 years
+                            (TIMESTRK > 0 & TIMESTRK < 3600), # Stroke within 10 years
+                                 1, 0))) %>% 
   relocate(strokewithin10, .after = TIMESTRK) %>% 
-  relocate(strokeBL, .after = STROKE)
+  relocate(strokeBL, .after = STROKE) 
+
 
 # Looking at vars of interest
 a <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
@@ -89,11 +131,11 @@ baby <- pre_surv_df %>%
 # We also want to adjust for those that already had a stroke before start of study
 pre_surv_df <- pre_surv_df %>% 
   # For subjects who did not have stroke at time 0
-  mutate(STROKE10 = ifelse(strokewithin10 == 1,
-                           1, 0),
+  mutate(STROKE10 = factor(ifelse(strokewithin10 == 1,
+                           1, 0)),
          # The time to stroke for strokes within 10 years
-        STROKE10TIME = ifelse(strokewithin10 == 1,
-                              TIMESTRK, 0))
+        STROKE10TIME = factor(ifelse(strokewithin10 == 1,
+                              TIMESTRK, 0)))
 # There are currently 11627 obs for 4434 subjects
 # Looking at vars of interest
 b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
@@ -110,23 +152,23 @@ b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
 # Additional covariates: CHD, BP Meds, Smoke status, CHOL, BMI, SYS BP
 
 # Cumulative sum of missingness for each variable
-m1 <- frame_data %>% 
-  miss_var_summary(order = TRUE)
+m1 <- pre_surv_df[,-1] %>% 
+  naniar::miss_var_summary(order = TRUE)
 # variable n_miss pct_miss
 # 1 LDLC       8601  74.0   
 # 2 HDLC       8600  74.0   
 # 3 GLUCOSE    1440  12.4   
-# 4 BPMEDS      593   5.10  
-# 5 TOTCHOL     409   3.52  
+# 4 BPMEDS      593   5.10  #####
+# 5 TOTCHOL     409   3.52  #####
 # 6 educ        295   2.54  
 # 7 CIGPDAY      79   0.679 
-# 8 BMI          52   0.447 
+# 8 BMI          52   0.447 #####
 # 9 HEARTRTE      6   0.0516
-# 10 RANDID        0   0  
+# 10 SEX           0   0 
 ## LDLC, HDLC, and GLUCOSE have highest missingness
 
 # How many variables 0 - 5 missing values
-m2 <- frame_data %>% 
+m2 <- frame_data[, -1] %>% 
   naniar::miss_case_table()
 # n_miss_in_case n_cases pct_cases
 # 1              0    2236   19.2   
@@ -151,7 +193,7 @@ missing_plot(frame_data[1:20])
 # Next 20
 missing_plot(frame_data[21:39])
 # Whole data set
-missing_plot(frame_data)
+missing_plot(frame_data[2:39])
 
 ## Overall, no missingness for survival variables: STROKE and TIMESTRK
 ## No Missingness for primrary covariates
@@ -164,31 +206,66 @@ missing_plot(frame_data)
 
 # Explore patterns of missingness to determine if data is MNAR, MAR, MCAR
 
-###################################### STROKE ###################################
+##################################### STROKE 10 ################################
 
 # Explore patterns of missingness for stroke - yes/no
 explanatory <- c(# Primary vars
-  "SEX", "AGE", "SYSBP", "DIABETES",
-  "STROKE10", "STROKE10TIME", 
+  "SEX", "AGE", "SYSBP", "DIABETES", "STROKE10TIME", 
   # Additional covariates
   "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
 # STROKE
-stroke <- c("STROKE")
+stroke <- c("STROKE10")
 
-frame_data %>% 
+# Plot for patterns 
+pre_surv_df %>% 
   missing_pattern(stroke, explanatory)
 
 # There does not seem to be a relationship with
 # missingness between any pair of predictors or predictor and STROKE
 
+### Compare Not Missing and Missing values 
+pre_surv_df[, -1] %>% 
+  ungroup() %>% 
+  missing_compare(stroke, explanatory) %>% 
+  knitr::kable(row.names=FALSE) 
+# Cannot run this for some reason
+
+# Errors with above
+pre_surv_df[, -1] %>% 
+  dplyr::summarise(
+    pval_diabetews = chisq.test(DIABETES, STROKE10, simulate.p.value = TRUE)$p.value,
+  )
+
+######## Missinginess with SMDI package
+library(smdi)
+library(sm)
+
+pre_surv_df %>% 
+  gg_miss_upset()
+# We see that there are 6 observations that are missing all covariates
+# Does not appear to be any subjects that are missing both TOTCHOL and BPMEDs
+# Good amount of TOTCHOL missing with HDLC and LDLC though = 270
+# BPMEDS missing with HDLC and LDLC = 136
+
+# Create a missingness df without the RANDIDs
+miss_df <- pre_surv_df[, -1]
+
+# smdi function
+# This function outputs means for all observed and missing obs for all vars
+ah <- smdi_asmd(miss_df, includeNA = TRUE)
+
+# Look at TOTCHOL
+ah$TOTCHOL$asmd_table1
+
+
+
 ############################### TIME TO STROKE #################################
 
 # Explore patterns of missingness for time to stroke - yes/no
-explanatory <- c("AGE", "SYSBP", "DIABETES")
 # TIME TO STROKE
-timestroke <- c("TIMESTRK")
+timestroke <- c("STROKE10TIME")
 
-frame_data %>% 
+pre_surv_df %>% 
   missing_pattern(timestroke, explanatory)
 
 # No relationship with missingness and time to stroke
