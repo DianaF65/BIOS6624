@@ -7,9 +7,7 @@
   - TIMETOSTRKE: The days from baseline that subject had a stroke
   
 ### Questions
-- For presence of CHD are you using PREVCHD or ANYCHD and timeCHD?
-
-
+- For presence of CHD are you using PREVCHD or ANYCHD?
 
 #### Class 4/1
 - Age, Diabetes, SYS Blood Pressure are covariates of interest
@@ -54,6 +52,16 @@ and can backup why
 - Goal is towards comparing within sex differences
 - Assess Prop. hazards for everything
   
+#### Class 4/8
+- Interim presentation notes
+  - 111 (49 men, 62 women) stroke within 10 years
+  - KP Curves to visualize sex and diabetes differences
+
+- What are biologically implausible SYSBP and CHOL values?
+  - None if they are in data frame they are plausible
+  
+- How to censor death?
+  - should not have to use death variable
   
   
   
