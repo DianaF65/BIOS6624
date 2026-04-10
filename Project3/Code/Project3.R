@@ -13,9 +13,15 @@ library(pillar)
 library(visdat)
 library(finalfit)
 library(table1)
+library(glmnet)
+library(survival)
+library(survminer)
 
 # Read in dataset
 frame_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
+
+# Read in created survival df
+surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"))
 
 ################################################################################
 ###                        Data Exploration and Cleaning                     ###
@@ -684,13 +690,67 @@ table1(~ factor(STROKE10) + STROKE10TIME +
 ###                              Survival Analysis                           ###
 ################################################################################
 
-############################ Variable Selection ################################
+# Rename the survival df to what we will be using for the report
+surv_df <- per1_surv_df
+
+# Convert factor vars to factors
+surv_df <- surv_df %>% 
+  mutate(across(c(RANDID, SEX, DIABETES, 
+                  deathwithin10, PREVCHD, BPMEDS, CURSMOKE), 
+                as.factor))
+# Make sure STROKE10 is numeric
+surv_df$STROKE10 <- as.numeric(surv_df$STROKE10)
+
+################################## KM Curves ###################################
+# Display some KV curves by covariates
+
+### Diabetes status
+# Fit model
+km_diab <- survfit(Surv(STROKE10TIME, STROKE10) ~ DIABETES,
+                  data = surv_df)
+
+# Plot KM curves
+ggsurvplot(km_diab, 
+           conf.int = FALSE,
+           censor = FALSE,
+           xlim = c(0, max(surv_df$STROKE10TIME)))
+
+# We do see differences between males and females and intersection of 
+# survival curves
+
+### Sex
+# Fit model
+km_sex <- survfit(Surv(STROKE10TIME, STROKE10) ~ SEX,
+                   data = surv_df)
+
+# Plot KM curves
+ggsurvplot(km_sex, 
+           conf.int = FALSE,
+           censor = FALSE,
+           xlim = c(0, max(surv_df$STROKE10TIME)))
+# For the most part, seems that survival curves are quite similar between sexes
+# We do see some crossing of the curves though
+
+
+############################## Variable Selection ##############################
+# Vignette: https://glmnet.stanford.edu/articles/Coxnet.html
 
 # Perform some variable selection prevchd, bpmeds, smokecur, total chol, and BMI
 
+# Create matrix of survival data
+surv_mat <- as.matrix(surv_df)
+
+# Define time and event variables
+x <- surv_mat[, 6]
+y <- surv_df$STROKE10TIME
 
 
+# Use glmnet
+lasso_fit <- glmnet(x, y,
+                    family = "cox")
 
+# After lasso, fit a standard cosph model with the reminaing variables
+################################ Model Fitting #################################
 
 
 
