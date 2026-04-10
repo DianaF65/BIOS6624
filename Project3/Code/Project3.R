@@ -62,8 +62,8 @@ frame_data$ANGINA <- factor(frame_data$ANGINA)
 frame_data$HOSPMI <- factor(frame_data$HOSPMI)
 # mi fchd
 frame_data$MI_FCHD <- factor(frame_data$MI_FCHD)
-# anychd
-frame_data$ANYCHD <- factor(frame_data$ANYCHD)
+# PREVCHD
+frame_data$PREVCHD <- factor(frame_data$PREVCHD)
 # stroke
 frame_data$STROKE <- factor(frame_data$STROKE)
 # CVD
@@ -217,7 +217,7 @@ missing_plot(frame_data[2:39])
 explanatory <- c(# Primary vars
   "SEX", "AGE", "SYSBP", "DIABETES", "STROKE10TIME", 
   # Additional covariates
-  "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
+  "PREVCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
 # STROKE
 stroke <- c("STROKE10")
 
@@ -268,7 +268,7 @@ ah$TOTCHOL$asmd_table1
 explanatory2 <- c(# Primary vars
   "SEX", "AGE", "SYSBP", "DIABETES", 
   # Additional covariates
-  "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
+  "PREVCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
 
 # TIME TO STROKE
 timestroke <- c("STROKE10TIME")
@@ -321,7 +321,7 @@ cols <- c("RANDID",
           "SEX", "AGE", "SYSBP", "DIABETES",
           "STROKE10", "STROKE10TIME", "deathwithin10",
           # Additional covariates
-          "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
+          "PREVCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
 
 # Filter
 per1_surv_df <- subset(per1_surv_df, 
@@ -330,6 +330,10 @@ per1_surv_df <- subset(per1_surv_df,
 # Check how many subjects had stroke within 10 years
 check3 <- per1_surv_df %>% 
   filter(STROKE10 == 1)
+# Verify female and male count
+table(check3$SEX)
+# 1  2 
+# 49 62 
 
 #### Data frame for Analysis
 # Look at missingness one more time
@@ -365,7 +369,7 @@ missing_plot(per1_surv_df[, -1])
 ######### Save DF
 write.csv(per1_surv_df, here("Project3",
                              "Data",
-                             "pre_surv_df.csv"),
+                             "frmg_survival_df.csv"),
           row.names = FALSE)
 
 ################################ Sex Specific DFs ##############################
@@ -403,7 +407,7 @@ ggplot(per1_surv_df, aes(x = factor(STROKE10),
 #### Males
 table(males_df$STROKE10)
 # 0    1 
-# 1688  256 
+# 1895   49 
 
 # Plot of stroke within 10 years
 ggplot(males_df, aes(x = STROKE10,
@@ -414,7 +418,7 @@ ggplot(males_df, aes(x = STROKE10,
 #### Females
 table(females_df$STROKE10)
 # 0    1 
-# 2445   45 
+# 2428   62
 
 # Plot of stroke within 10 years
 ggplot(females_df, aes(x = STROKE10,
@@ -437,7 +441,7 @@ summary(males_df$STROKE10TIME)
 
 table(males_df$STROKE10TIME)
 # 0   26   45   87  133  266  267  287  294  305  346  350  378  424  430  442 
-# 1912    1    1    1    1    1    1    1    1    1    1    1    1    1    2    1 
+# 1895    1    1    1    1    1    1    1    1    1    1    1    1    1    2    1 
 # Pretty heavy zero inflated
 
 ### Females
@@ -448,11 +452,11 @@ ggplot(females_df, aes(x = STROKE10TIME)) +
 # Summary
 summary(females_df$STROKE10TIME)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.0     0.0     0.0   177.9     0.0  3600.0 
+# 0.0     0.0     0.0   177.9     0.0  3619.0 
 
 table(females_df$STROKE10TIME)
 # 0   22   47   58   73  101  110  126  145  146  150  168  178  182  184  234 
-# 2445    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
+# 2448    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
 # Pretty heavy zero inflated
 
 ##################################### Covariates ###############################
@@ -534,24 +538,24 @@ ggplot(females_df, aes(x = log(SYSBP))) +
   theme_lucid()
 ##### Will log transform
 
-##################################### ANY CHD ##################################
+#################################### PREV CHD ##################################
 ## Males
-summary(males_df$ANYCHD)
+summary(males_df$PREVCHD)
 # 0    1 
 # 1234  710 
 
 # Plot
-ggplot(males_df, aes(x = ANYCHD)) + 
+ggplot(males_df, aes(x = PREVCHD)) + 
   geom_bar() +
   theme_lucid()
 
 ## Feales
-summary(females_df$ANYCHD)
+summary(females_df$PREVCHD)
 # 0    1 
 # 1960  530
 
 # Plot
-ggplot(females_df, aes(x = ANYCHD)) + 
+ggplot(females_df, aes(x = PREVCHD)) + 
   geom_bar() +
   theme_lucid()
 
@@ -674,6 +678,21 @@ ggplot(females_df, aes(x = log(BMI))) +
 table1(~ factor(STROKE10) + STROKE10TIME + 
          AGE + SYSBP + factor(DIABETES) | factor(SEX), 
        data = per1_surv_df)
+
+
+################################################################################
+###                              Survival Analysis                           ###
+################################################################################
+
+############################ Variable Selection ################################
+
+# Perform some variable selection prevchd, bpmeds, smokecur, total chol, and BMI
+
+
+
+
+
+
 
 
 
