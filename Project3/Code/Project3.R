@@ -92,20 +92,25 @@ stroke_before <- frame_data %>%
 pre_surv_df <- frame_data %>% 
   # group_by(RANDID) %>% 
   mutate(# Stroke at TIME = 0 indicator
-         strokeBL = factor(ifelse(TIMESTRK == 0 & STROKE == 1,
-                           1, 0)),
+         strokeBL = ifelse((TIMESTRK == 0 & STROKE == 1),
+                           1, 0),
          # Death within 10 years
-         deathwithin10 = factor(ifelse(TIMEDTH < 3600, 1, 0)),
+         deathwithin10 = ifelse(TIMEDTH <= 3650, 1, 0),
          # Stroke within 10 years indicator
-         strokewithin10 = factor(ifelse((deathwithin10 == 0) & # No death within 10 years
-                            (TIMESTRK > 0 & TIMESTRK < 3600), # Stroke within 10 years
-                                 1, 0))) %>% 
+         strokewithin10 = ifelse((strokeBL == 0 |
+                                   deathwithin10 == 0),
+                            ifelse(STROKE == 1 & between(TIMESTRK, 1, 3650),
+                                   1, 0),
+                            0))%>% 
   relocate(strokewithin10, .after = TIMESTRK) %>% 
   relocate(strokeBL, .after = STROKE) 
 
+# Double checking stroke within 10 years
+check1 <- pre_surv_df %>% 
+  filter(PERIOD == 1 & strokewithin10 == 1)
 
 # Looking at vars of interest
-a <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
+check1 <- subset(check1, select = c("RANDID", "TIME", "PERIOD",
                                     "TIMESTRK", "STROKE",
                                     "strokeBL", "strokewithin10",
                                     "DEATH", "TIMEDTH",
@@ -120,9 +125,6 @@ mort <- subset(pre_surv_df,
                           "strokeBL", "strokewithin10", 
                           "DEATH", "TIMEDTH"))
 
-# Double checking stroke within 10 years
-check <- a %>% 
-  filter(strokewithin10 == 1)
 
 
 # Create baby data frame to mess around and figure out stroke variables
@@ -260,8 +262,6 @@ ah <- smdi_asmd(miss_df, includeNA = TRUE)
 # Look at TOTCHOL
 ah$TOTCHOL$asmd_table1
 
-
-
 ############################### TIME TO STROKE #################################
 # Explore patterns of missingness for time to stroke - yes/no
 # Explanatory vars
@@ -319,13 +319,17 @@ per1_surv_df <- pre_surv_df %>%
 cols <- c("RANDID", 
           # Primary vars
           "SEX", "AGE", "SYSBP", "DIABETES",
-          "STROKE10", "STROKE10TIME", 
+          "STROKE10", "STROKE10TIME", "deathwithin10",
           # Additional covariates
           "ANYCHD", "TIMECHD", "BPMEDS", "CURSMOKE", "TOTCHOL", "BMI")
 
 # Filter
 per1_surv_df <- subset(per1_surv_df, 
                        select = cols)
+
+# Check how many subjects had stroke within 10 years
+check3 <- per1_surv_df %>% 
+  filter(STROKE10 == 1)
 
 #### Data frame for Analysis
 # Look at missingness one more time
