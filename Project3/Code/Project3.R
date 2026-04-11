@@ -724,7 +724,7 @@ surv_df <- surv_df %>%
                   deathwithin10, PREVCHD, BPMEDS, CURSMOKE), 
                 as.factor))
 # Make sure STROKE10 is numeric
-surv_df$STROKE10 <- as.numeric(surv_df$STROKE10)
+surv_df$STROKE10 <- as.numeric(as.character(surv_df$STROKE10))
 
 ################################## KM Curves ###################################
 # Display some KV curves by covariates
@@ -780,13 +780,18 @@ AIC(fit_unstrat, fit_strat)
 # df      AIC
 # fit_unstrat  6 1723.074
 # fit_strat    5 1576.158
-### We will proceed with the stratified model 
 
-# We allowed for possible differences in baseline hazard by sex and fit a 
-# sex stratified penalized cox model
+# We saw though that the KM curves by sex were basically identical
+# Sex was not significant in the model
+# The un and stratified models give almost the same results 
+# Since we were getting convergence issues down the line with glmnet,
+# we are going to NOT stratify by sex 
+
+# Proceed with the unstratified pooled glmnet cox model
 
 ###### Glmnet
 
+# Fit stratified cox models with elastic net penalty
 # Prepare for glmnet
 # Surv object of response variables
 y <- Surv(time = surv_df$STROKE10TIME,
@@ -796,10 +801,12 @@ y <- Surv(time = surv_df$STROKE10TIME,
 x <- model.matrix(~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
                   data = surv_df)[, -1] # This removes the intercept
 
-# Use lasso Cox Model
+
+# Fit stratified cox lasso
 lasso_fit <- glmnet(x = x, 
                     y = y,
-                    family = "cox")
+                    family = "cox",
+                    alpha = 1) # LASSO penalty
 
 # Plot fit 
 plot(lasso_fit)
@@ -809,23 +816,90 @@ set.seed(345)
 cv_fit <- cv.glmnet(x = x, 
                     y = y, 
                     family = "cox",
-                    type.measure = "C")
+                    alpha = 1)
 
 # Look at plot - optimal lambda value
 plot(cv_fit)
 # The left vertical line is where the CV error curve hits its minimum
 # The right vertical line is the most regularized model with CV error within 1 SD
+# Basically we see that model performance is basically flat and increasing
+# model complexity does not improve performance much
+
 
 # Get the optimal lambdas
 cv_fit$lambda.min
-# 0.0007695643
+#  0.0002092128
+## This gives the best fit or lowest CV error where a small penalty means
+# more variables are kept - risk of overfitting though
+
+# See which variables are kept
+coef_min <- coef(cv_fit, s = "lambda.min")
+# PREVCHD1  0.827245643
+# BPMEDS1   1.382781943
+# CURSMOKE1 0.123849200
+# TOTCHOL   0.002622194
+# BMI       0.043796358
+
+# Get the nonzero variables
+nz_min <- which(as.vector(coef_min) != 0)
+selected_min <- rownames(coef_min)[nz_min]
+# "PREVCHD1"  "BPMEDS1"   "CURSMOKE1" "TOTCHOL"   "BMI" 
+
 cv_fit$lambda.1se
-# 0.004946816
+# 0.01376481
+## Largest lambda within 1 SE of the minimum
+# More penalty more simpler model
 
-# After lasso, fit a standard cosph model with the reminaing variables
-################################ Model Fitting #################################
+# See which variables are kept
+coef_1se <- coef(cv_fit, s = "lambda.1se")
+# PREVCHD1  .
+# BPMEDS1   .
+# CURSMOKE1 .
+# TOTCHOL   .
+# BMI       .
 
+# Get the nonzero variables
+nz_1se <- which(as.vector(coef_1se) != 0)
+selected_1se <- rownames(coef_1se)[nz_1se]
+# character(0)
 
+# Basically we found that lambda.min keeps all variables while
+# lambda.1se drops everything
+# We did already have pre-selected variables that were clinically driven so 
+# perhaps further reduction is not necessary
 
+# Using lambda.min, all five candidate predictors were retained.
+# Using the more conservative lambda.1se rule, all coefficients were shrunk to zero, 
+# indicating that the cross-validated error was fairly flat and that there was 
+# limited evidence for a sparser predictive model with clear improvement over the null.
+
+# We used LASSO with cross-validation to assess variable importance. 
+# Because the cross-validated error curve was relatively flat, the more 
+# conservative λ₁ₛₑ resulted in a null model. Therefore, we selected λ_min to 
+# retain relevant predictors while minimizing prediction error.
+
+# After lasso, fit a standard coxph model with ALL variables
+
+################################## Model Fitting ###############################
+
+##################################### Females ##################################
+
+# Model for females
+females_fit <- coxph(
+  Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
+  + PREVCHD + BPMEDS 
+  + CURSMOKE + TOTCHOL + BMI,
+  data = surv_df
+)
+
+###################################### Males ###################################
+
+# Model for males
+females_fit <- coxph(
+  Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
+  + PREVCHD + BPMEDS 
+  + CURSMOKE + TOTCHOL + BMI,
+  data = surv_df
+)
 
 
