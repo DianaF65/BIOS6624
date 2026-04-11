@@ -146,10 +146,11 @@ pre_surv_df <- pre_surv_df %>%
                            1, 0)),
          # The time to stroke for strokes within 10 years
         STROKE10TIME = ifelse(strokewithin10 == 1,
-                              TIMESTRK, 0))
+                              TIMESTRK, 
+                              TIMESTRK))
 # There are currently 11627 obs for 4434 subjects
 # Looking at vars of interest
-b <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
+check2 <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
                                     "TIMESTRK", "STROKE",
                                     "strokeBL", "STROKE10",
                                     "STROKE10TIME"))
@@ -370,10 +371,26 @@ m4 <- per1_surv_df[, -1] %>%
 # Whole data set
 missing_plot(per1_surv_df[, -1])
 
+################################## Survival DF #################################
+# Which rows had NAs
+nas <- per1_surv_df[!complete.cases(per1_surv_df), ]
 
+# Create a complete case data frame for analysis
+complete_surv_df <- per1_surv_df[complete.cases(per1_surv_df), ]
+# From 4434 obs to 4304 obs.
+
+
+# Check how many subjects had stroke within 10 years
+check4 <- complete_surv_df %>% 
+  filter(STROKE10 == 1)
+
+# Verify female and male count
+table(check4$SEX)
+# 1  2 
+# 48 57
 
 ######### Save DF
-write.csv(per1_surv_df, here("Project3",
+write.csv(complete_surv_df, here("Project3",
                              "Data",
                              "frmg_survival_df.csv"),
           row.names = FALSE)
@@ -399,7 +416,9 @@ table(per1_surv_df$SEX)
 # 1    2 
 # 1944 2490
 
-###### Outcomes 
+#################################### Outcomes ##################################
+
+################################### STROKE 10 ##################################
 
 # Summary stats of stroke and time for 10 years
 table(per1_surv_df$STROKE10)
@@ -432,6 +451,7 @@ ggplot(females_df, aes(x = STROKE10,
   geom_bar() + 
   theme_lucid()
 
+################################### STROKE 10 TIME #############################
 
 # Distribution times of strokes within 10 years
 
@@ -443,12 +463,9 @@ ggplot(males_df, aes(x = STROKE10TIME)) +
 # Summary
 summary(males_df$STROKE10TIME)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.0     0.0     0.0   261.8     0.0  3595.0 
+# 0    5639    8766    7018    8766    8766
 
 table(males_df$STROKE10TIME)
-# 0   26   45   87  133  266  267  287  294  305  346  350  378  424  430  442 
-# 1895    1    1    1    1    1    1    1    1    1    1    1    1    1    2    1 
-# Pretty heavy zero inflated
 
 ### Females
 ggplot(females_df, aes(x = STROKE10TIME)) + 
@@ -458,12 +475,9 @@ ggplot(females_df, aes(x = STROKE10TIME)) +
 # Summary
 summary(females_df$STROKE10TIME)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.0     0.0     0.0   177.9     0.0  3619.0 
+# 0    7351    8766    7574    8766    8766 
 
 table(females_df$STROKE10TIME)
-# 0   22   47   58   73  101  110  126  145  146  150  168  178  182  184  234 
-# 2448    1    1    1    1    1    1    1    1    1    1    1    1    1    1    1
-# Pretty heavy zero inflated
 
 ##################################### Covariates ###############################
 
@@ -690,8 +704,12 @@ table1(~ factor(STROKE10) + STROKE10TIME +
 ###                              Survival Analysis                           ###
 ################################################################################
 
-# Rename the survival df to what we will be using for the report
-surv_df <- per1_surv_df
+# Read in created survival df
+surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"))
+
+# Create a complete case data frame
+surv_df <- na.omit(surv_df)
+# From 4434 obs. to 4304 obs.
 
 # Convert factor vars to factors
 surv_df <- surv_df %>% 
@@ -737,16 +755,18 @@ ggsurvplot(km_sex,
 
 # Perform some variable selection prevchd, bpmeds, smokecur, total chol, and BMI
 
-# Create matrix of survival data
-surv_mat <- as.matrix(surv_df)
+# Prepare for glmnet
+# Surv object of response variables
+y <- Surv(time = surv_df$STROKE10TIME,
+          event = surv_df$STROKE10)
 
-# Define time and event variables
-x <- surv_mat[, 6]
-y <- surv_df$STROKE10TIME
+# Create matrix of predictors
+x <- model.matrix(~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
+                  data = surv_df)[, -1] # This removes the intercept
 
-
-# Use glmnet
-lasso_fit <- glmnet(x, y,
+# Use lasso Cox Model
+lasso_fit <- glmnet(x = x, 
+                    y = y,
                     family = "cox")
 
 # After lasso, fit a standard cosph model with the reminaing variables
