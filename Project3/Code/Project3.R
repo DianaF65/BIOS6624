@@ -103,11 +103,9 @@ pre_surv_df <- frame_data %>%
          # Death within 10 years
          deathwithin10 = ifelse(TIMEDTH <= 3650, 1, 0),
          # Stroke within 10 years indicator
-         strokewithin10 = ifelse((strokeBL == 0 |
-                                   deathwithin10 == 0),
-                            ifelse(STROKE == 1 & between(TIMESTRK, 1, 3650),
-                                   1, 0),
-                            0))%>% 
+         strokewithin10 = ifelse(
+           strokeBL == 0 & STROKE == 1 & TIMESTRK > 0 & TIMESTRK <= 3650,
+           1, 0)) %>% 
   relocate(strokewithin10, .after = TIMESTRK) %>% 
   relocate(strokeBL, .after = STROKE) 
 
@@ -145,16 +143,29 @@ pre_surv_df <- pre_surv_df %>%
   mutate(STROKE10 = factor(ifelse(strokewithin10 == 1,
                            1, 0)),
          # The time to stroke for strokes within 10 years
-        STROKE10TIME = ifelse(strokewithin10 == 1,
-                              TIMESTRK, 
-                              TIMESTRK))
+         STROKE10TIME = case_when(
+           strokeBL == 1 ~ NA_real_,  # Remove baseline strokes
+           STROKE10 == 1 ~ TIMESTRK, # Keep time as is
+           # Account for subjects that died within 10 years
+           TIMEDTH > 0 & TIMEDTH <= 3650 ~ TIMEDTH,
+           # 10 years in days
+           TRUE ~ 3650
+         )
+        )
 # There are currently 11627 obs for 4434 subjects
 # Looking at vars of interest
 check2 <- subset(pre_surv_df, select = c("RANDID", "TIME", "PERIOD",
                                     "TIMESTRK", "STROKE",
                                     "strokeBL", "STROKE10",
-                                    "STROKE10TIME"))
+                                    "STROKE10TIME", "SEX"))
 
+# How many had stroke
+check2 <- check2 %>% 
+  filter(PERIOD == 1 & STROKE10 == 1)
+# males and females
+table(check2$SEX)
+# 1  2 
+# 49 62
 
 ################################ Missingness ###################################
 #### Really nice tutorial: https://cran.r-project.org/web/packages/finalfit/vignettes/missing.html
@@ -374,11 +385,11 @@ missing_plot(per1_surv_df[, -1])
 ################################## Survival DF #################################
 # Which rows had NAs
 nas <- per1_surv_df[!complete.cases(per1_surv_df), ]
+# 159 obs
 
 # Create a complete case data frame for analysis
 complete_surv_df <- per1_surv_df[complete.cases(per1_surv_df), ]
-# From 4434 obs to 4304 obs.
-
+# From 4434 obs to 4275 obs.
 
 # Check how many subjects had stroke within 10 years
 check4 <- complete_surv_df %>% 
@@ -398,12 +409,12 @@ write.csv(complete_surv_df, here("Project3",
 ################################ Sex Specific DFs ##############################
 
 # Males
-males_df <- per1_surv_df %>% 
+males_df <- complete_surv_df %>% 
   filter(SEX == 1)
 # There are 1944 obs for 1944 subjects
 
 # Females
-females_df <- per1_surv_df %>% 
+females_df <- complete_surv_df %>% 
   filter(SEX == 2)
 # There are 2490 obs for 2490 subjects
 
@@ -432,7 +443,7 @@ ggplot(per1_surv_df, aes(x = factor(STROKE10),
 #### Males
 table(males_df$STROKE10)
 # 0    1 
-# 1895   49 
+# 1862   48 
 
 # Plot of stroke within 10 years
 ggplot(males_df, aes(x = STROKE10,
@@ -443,7 +454,7 @@ ggplot(males_df, aes(x = STROKE10,
 #### Females
 table(females_df$STROKE10)
 # 0    1 
-# 2428   62
+# 2337   57
 
 # Plot of stroke within 10 years
 ggplot(females_df, aes(x = STROKE10,
@@ -697,7 +708,7 @@ ggplot(females_df, aes(x = log(BMI))) +
 # Create table 1
 table1(~ factor(STROKE10) + STROKE10TIME + 
          AGE + SYSBP + factor(DIABETES) | factor(SEX), 
-       data = per1_surv_df)
+       data = complete_surv_df)
 
 
 ################################################################################
@@ -706,10 +717,6 @@ table1(~ factor(STROKE10) + STROKE10TIME +
 
 # Read in created survival df
 surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"))
-
-# Create a complete case data frame
-surv_df <- na.omit(surv_df)
-# From 4434 obs. to 4304 obs.
 
 # Convert factor vars to factors
 surv_df <- surv_df %>% 
@@ -755,6 +762,31 @@ ggsurvplot(km_sex,
 
 # Perform some variable selection prevchd, bpmeds, smokecur, total chol, and BMI
 
+##### First, going to assess whether sex should have different baseline hazards
+# Unstratified model
+fit_unstrat <- coxph(
+  Surv(STROKE10TIME, STROKE10) ~ SEX + PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
+  data = surv_df
+)
+
+# Stratified by sex model
+fit_strat <- coxph(
+  Surv(STROKE10TIME, STROKE10) ~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI + strata(SEX),
+  data = surv_df
+)
+
+# Compare model fit with AIC
+AIC(fit_unstrat, fit_strat)
+# df      AIC
+# fit_unstrat  6 1723.074
+# fit_strat    5 1576.158
+### We will proceed with the stratified model 
+
+# We allowed for possible differences in baseline hazard by sex and fit a 
+# sex stratified penalized cox model
+
+###### Glmnet
+
 # Prepare for glmnet
 # Surv object of response variables
 y <- Surv(time = surv_df$STROKE10TIME,
@@ -768,6 +800,27 @@ x <- model.matrix(~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
 lasso_fit <- glmnet(x = x, 
                     y = y,
                     family = "cox")
+
+# Plot fit 
+plot(lasso_fit)
+
+# K-fold Cross validation
+set.seed(345)
+cv_fit <- cv.glmnet(x = x, 
+                    y = y, 
+                    family = "cox",
+                    type.measure = "C")
+
+# Look at plot - optimal lambda value
+plot(cv_fit)
+# The left vertical line is where the CV error curve hits its minimum
+# The right vertical line is the most regularized model with CV error within 1 SD
+
+# Get the optimal lambdas
+cv_fit$lambda.min
+# 0.0007695643
+cv_fit$lambda.1se
+# 0.004946816
 
 # After lasso, fit a standard cosph model with the reminaing variables
 ################################ Model Fitting #################################
