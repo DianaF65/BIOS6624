@@ -917,6 +917,8 @@ ggsurvplot(survfit(females_fit),
            censor = F,
            conf.int = T)
 
+################################# Risk Profile 1 ###############################
+
 # Create data frame for the different risk profiles
 # Risk profile 1: 
 ## Average age, no diabetes, average sysbp, no prechd, no bpmeds, no cursmoke,
@@ -962,41 +964,99 @@ frp1_results <- data.frame(Age = c(40, 50, 60),
                                          "%")
 )
 
+################################# Risk Profile 2 ###############################
 
 # Risk profile 2: 
 ## High blood pressure and no other risk factors
-females_rp2 <- data.frame(AGE = c(40, 50, 60),
-                          DIABETES = rep(factor(0), 3),
-                          SYSBP = c(170, 180, 190),
-                          PREVCHD = rep(factor(0), 3),
-                          BPMEDS = rep(factor(0), 3),
-                          CURSMOKE = rep(factor(0), 3),
-                          TOTCHOL = rep(mean(females_df$TOTCHOL), 3),
-                          BMI = rep(mean(females_df$BMI), 3)
+females_rp2 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(0, 3), 
+                    levels = levels(females_df$DIABETES)),
+  SYSBP = c(180, 230, 280),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(females_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(females_df$BPMEDS)),
+  CURSMOKE = factor(rep(0, 3), 
+                    levels = levels(females_df$CURSMOKE)),
+  TOTCHOL = rep(mean(females_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(females_df$BMI), 3)
 )
+
+# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        0   180       0      0        0 239.5698 25.56664
+# 2  50        0   230       0      0        0 239.5698 25.56664
+# 3  60        0   280       0      0        0 239.5698 25.56664
 
 # Fit cox model for risk profile 2
 frp2_fit <- survfit(females_fit, newdata = females_rp2)
 
-# Estimates for 10 years
-frp2_probs <- summary(frp2_fit, times = 365*10)
-# time n.risk n.event survival1 survival2 survival3
-# 3650   2177      57     0.986     0.964     0.904
+# Plot the survival curves
+ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp2),
+           data = females_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           ylim = c(0.35, 1),
+           xlim = c(0, 3650)
+) 
 
-# Risk profile 3:
+# Estimates for 10 years
+frp2_summary <- summary(frp2_fit, times = 365*10)
+# time n.risk n.event survival1 survival2 survival3
+# 3650   2177      57     0.983     0.878     0.382
+
+# Create data frame of survival 10 years and risk 10 years
+frp2_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp2_summary$surv), 3),
+                           Risk = paste0(round(1 - frp2_summary$surv, 3)*100,
+                                         "%")
+)
+# Age Survival  Risk
+# 1  40    0.983  1.7%
+# 2  50    0.878 12.2%
+# 3  60    0.382 61.8%
+
+
+################################# Risk Profile 3 ###############################
+
+#### Risk profile 3:
 ## Diabetes and no other risk factors
-females_rp3 <- data.frame(AGE = c(40, 50, 60),
-                          DIABETES = rep(factor(1), 3),
-                          SYSBP = rep(mean(females_df$SYSBP), 3),
-                          PREVCHD = rep(factor(0), 3),
-                          BPMEDS = rep(factor(0), 3),
-                          CURSMOKE = rep(factor(0), 3),
-                          TOTCHOL = rep(mean(females_df$TOTCHOL), 3),
-                          BMI = rep(mean(females_df$BMI), 3)
-                          )
+females_rp3 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(1, 3), 
+                    levels = levels(females_df$DIABETES)),
+  SYSBP = rep(mean(females_df$SYSBP), 3),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(females_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(females_df$BPMEDS)),
+  CURSMOKE = factor(rep(0, 3), 
+                    levels = levels(females_df$CURSMOKE)),
+  TOTCHOL = rep(mean(females_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(females_df$BMI), 3)
+)
+# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        1 133.5524       0      0        0 239.5698 25.56664
+# 2  50        1 133.5524       0      0        0 239.5698 25.56664
+# 3  60        1 133.5524       0      0        0 239.5698 25.56664
 
 # Fit cox model for risk profile 3
 frp3_fit <- survfit(females_fit, newdata = females_rp3)
+
+# Plot the survival curves
+ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp3),
+           data = females_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           ylim = c(0.95, 1),
+           xlim = c(0, 3650)
+) 
 
 # Estimates for 10 years
 frp3_probs <- summary(frp3_fit, times = 365*10)
@@ -1004,7 +1064,87 @@ frp3_probs <- summary(frp3_fit, times = 365*10)
 # 3650   2177      57      0.99     0.979     0.955
 
 
+# Estimates for 10 years
+frp3_summary <- summary(frp3_fit, times = 365*10)
+# time n.risk n.event survival1 survival2 survival3
+# 3650   2177      57      0.99     0.979     0.955
+
+# Create data frame of survival 10 years and risk 10 years
+frp3_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp3_summary$surv), 3),
+                           Risk = paste0(round(1 - frp3_summary$surv, 3)*100,
+                                         "%")
+)
+
+# Age Survival Risk
+# 1  40    0.990   1%
+# 2  50    0.979 2.1%
+# 3  60    0.955 4.5%
+
+################################# Risk Profile 4 ###############################
+
+#### Risk profile 4:
+## Diabetes and no other risk factors
+females_rp4 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(1, 3), 
+                    levels = levels(females_df$DIABETES)),
+  SYSBP = c(180, 230, 280),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(females_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(females_df$BPMEDS)),
+  CURSMOKE = factor(rep(0, 3), 
+                    levels = levels(females_df$CURSMOKE)),
+  TOTCHOL = rep(mean(females_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(females_df$BMI), 3)
+)
+# 
+# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        1   180       0      0        0 239.5698 25.56664
+# 2  50        1   230       0      0        0 239.5698 25.56664
+# 3  60        1   280       0      0        0 239.5698 25.56664
+
+# Fit cox model for risk profile 3
+frp4_fit <- survfit(females_fit, newdata = females_rp4)
+
+# Plot the survival curves
+ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp4),
+           data = females_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           # ylim = c(0.95, 1),
+           xlim = c(0, 3650)
+) 
+
+# Estimates for 10 years
+frp4_summary <- summary(frp4_fit, times = 365*10)
+# time n.risk n.event survival1 survival2 survival3
+# 3650   2177      57      0.99     0.979     0.955
+
+# Create data frame of survival 10 years and risk 10 years
+frp4_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp4_summary$surv), 3),
+                           Risk = paste0(round(1 - frp4_summary$surv, 3)*100,
+                                         "%")
+)
+
+# Age Survival  Risk
+# 1  40    0.968  3.2%
+# 2  50    0.785 21.5%
+# 3  60    0.167 83.3%
+
+################### Combine these all for the report
+
+
+
+
 ###################################### Males ###################################
+
+
 
 # Model for males
 females_fit <- coxph(
