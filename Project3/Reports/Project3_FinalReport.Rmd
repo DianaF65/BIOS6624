@@ -1,0 +1,188 @@
+---
+title: P3 meow
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    urlcolor: magenta
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+documentclass: article
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \setlength{\droptitle}{-3cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-3cm}}
+---
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = FALSE)
+library(readr)
+library(knitr)
+library(tidyr)
+library(ggplot2)
+library(kableExtra)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(nlme)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(see)
+library(gridExtra)
+library(kableExtra)
+library(regressinator)
+library(patchwork)
+library(purrr)
+library(stringr)
+library(survival)
+library(survminer)
+library(gtsummary)
+library(kableExtra)
+library(here)
+
+opts_chunk$set(tidy = F)
+```
+
+```{r, echo = F}
+# Read in the Data
+# Read in created survival df
+surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"))
+
+# Convert factor vars to factors
+surv_df <- surv_df %>% 
+  mutate(across(c(RANDID, SEX, DIABETES, 
+                  deathwithin10, PREVCHD, BPMEDS, CURSMOKE), 
+                as.factor))
+# Make sure STROKE10 is numeric
+surv_df$STROKE10 <- as.numeric(as.character(surv_df$STROKE10))
+
+```
+
+
+\vspace{-8mm}
+# Introduction
+\vspace{-8mm}
+
+And then i said i sai dmoe meow meow moew meow moewo jew
+
+
+\vspace{-10mm}
+# Methods
+\vspace{-6mm}
+
+and then they said meow moew moew moewmoewm oewmoew meow
+
+\vspace{-6mm}
+## Data Cleaning
+\vspace{-6mm}
+
+and then we said we said meow meow meomeow moew moew
+
+<!-- Extras -->
+<!-- With the exception of adherence, all other variables in the data set had no more than ~7% missingness. -->
+
+\vspace{-8mm}
+## Data Analysis
+\vspace{-6mm}
+
+Then we all got toegher and said mewo mewo moew moewmoew
+
+\vspace{-10mm}
+# Results
+\vspace{-6mm}
+
+churu churuc churu yummy churu chury
+
+<!------------------------------------ Table 1 -------------------------------->
+
+```{r, echo = F, eval = F}
+# Fix levels for categorical variables for Table1
+# Race
+data$RACE_tab1 <- factor(data$collapse_RACE,
+                         levels = c("Other", "White_NH"),
+                         labels = c("Other", "White Non-Hispanic"))
+# Education
+data$EDU_tab1 <- factor(data$collapsed_EDUCBAS,
+                        levels = c("Comp_Coll_Higher", "Less_Than_College"),
+                        labels = c("Complete College Or Higher",
+                                   "Less Than College"))
+# Adherence
+
+
+# Relabel the variables for the Table 1
+
+tab1_data <- apply_labels(data,
+                     VLOAD_yr0 = "Viral Load - (Yr 0)",
+                     VLOAD_yr2 = "Viral Load - (Yr 2)",
+                     LEU3N_yr0 = "CD4+ T-Cell Count (Yr 0)",
+                     LEU3N_yr2 = "CD4+ T-Cell Count (Yr 2)",
+                     AGG_MENT_yr0 = "Agg. Mental Quality of Life Score (Yr 0)",
+                     AGG_MENT_yr2 = "Agg. Mental Quality of Life Score (Yr 2)",
+                     AGG_PHYS_yr0 = "Agg. Physical Quality of Life Score (Yr 0)",
+                     AGG_PHYS_yr2 = "Agg. Physical Quality of Life Score (Yr 2)",
+                     collapse_SMOKE = "Smoking Status (Baseline)",
+                     EDU_tab1 = "Education (Baseline)",
+                     RACE_tab1 = "Race",
+                     age = "Age (Baseline)",
+                     hard_drugs_cat = "Hard Drug Use (Baseline)",
+                     collapsed_ADH = "HAART Adherence")
+
+# Display the modified Table1
+tab1_data %>% 
+  tbl_summary(include = c(VLOAD_yr0, VLOAD_yr2,
+                          LEU3N_yr0, LEU3N_yr2,
+                          AGG_MENT_yr0, AGG_MENT_yr2,
+                          AGG_PHYS_yr0, AGG_PHYS_yr2,
+                          BMI, collapse_SMOKE, 
+                          age, RACE_tab1,
+                          EDU_tab1,
+                          collapsed_ADH),
+              by = hard_drugs_cat,
+              statistic = list(c("VLOAD_yr2", "VLOAD_yr0",
+                          "LEU3N_yr2", "LEU3N_yr0",
+                          "BMI") 
+                               ~ "{mean}{sd}")) %>% 
+  modify_header(label = "**Hard Drug Use at Baseline**") %>% 
+  bold_labels() %>% 
+  modify_caption(caption = "**Patient Characteristics by Hard Drug Use at Baseline**")
+```
+
+
+
+
+\newpage
+
+# Data and Code Availability
+
+The data and statistical code used to generate the results and figures in this report are available in the following GitHub repository:
+
+- GitHub repository: [https://github.com/DianaF65/BIOS6624](https://github.com/DianaF65/BIOS6624)
+
+Directory structure:
+
+- Background/ - A description of the background of the project.
+
+- Code/ 
+  - The "Project1_ExploratoryAnalysis.R" file contains initial data exploration as well as code for construction of the final data set used for all analyses.
+  - The R Markdown file 'All_Analyses.Rmd' consists of all Code used for the Frequentist and Bayesian analyses.
+
+- RawData/ – Raw data files. Because this data is not publicly available, it is not available on GitHub. The raw data was originally obtained from the BIOS 6624 P1 module. The raw and processed datasets to generate these results are available on my local computer at this file path: 
+"/Users/dianafelipe/Desktop/BIOS 6624/BIOS6624/Project1/Data/hiv_6624_final.csv"
+
+- Reports/ The "Project1_Report.Rmd" R Markdown file was used to generate this final report of analyses.
+
+All analyses and figures were generated using the R statistical programming language v. 4.4.1, and the repository contains the R scripts
+and R Markdown files used to produce this report
+
+
