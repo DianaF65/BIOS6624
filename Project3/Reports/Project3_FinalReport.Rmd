@@ -48,6 +48,8 @@ library(survival)
 library(survminer)
 library(gtsummary)
 library(here)
+library(expss)
+library(labelled)
 
 opts_chunk$set(tidy = F)
 ```
@@ -227,11 +229,14 @@ Then we all got toegher and said mewo mewo moew moewmoew
 # Results
 \vspace{-6mm}
 
-churu churuc churu yummy churu chury
+Table 1 contains a description of the data used for all analyses. 
+The data is stratified by sex, n and \% of patients is displayed for the categorical variables, and the mean and standard deviation is shown for each continuous variable.
+We note the small number of subjects across both sexes that had a stroke within the 10 year time span. In addition, the use of Anti-hypertensive medication and prevalent coronary heart disease groups are noticeably unbalanced. 
 
+In Table 2 we compare the predicted survival and $\%$ risk over 10 years for males and females for ages 40, 50, and 60 for the 5 risk profiles of interest.
 <!------------------------------------ Table 1 -------------------------------->
 
-```{r, echo = F, eval = F}
+```{r, echo = F}
 # Fix levels for categorical variables for Table1
 # Data frame for table1
 tab1_data <- surv_df
@@ -239,7 +244,7 @@ tab1_data <- surv_df
 # Sex
 tab1_data$factor_SEX <- factor(tab1_data$SEX,
                         levels = c(1, 2),
-                        labels = c("Male", "Femle"))
+                        labels = c("Male", "Female"))
 
 # Diabetes
 tab1_data$factor_DIABETES <- factor(tab1_data$DIABETES,
@@ -297,7 +302,7 @@ tab1_data %>%
                           SYSBP,
                           TOTCHOL,
                           BMI),
-              by = SEX,
+              by = factor_SEX,
               statistic = list(c(all_continuous()) 
                                ~ "{mean}({sd})")) %>% 
   modify_header(label = "**Sex**") %>% 
@@ -310,7 +315,7 @@ tab1_data %>%
 <!----------------------------------------------------------------------------->
 
 
-```{r, echo = F, results = 'hide', include=F, warning=F, message=F}
+```{r, echo = F, warning=F, message=F, fig.cap="Model Results for Females"}
 ################################## Model Fitting ###############################
 
 ##################################### Females ##################################
@@ -331,22 +336,33 @@ females_fit <- coxph(
 females_sum1 <- summary(females_fit)
 
 # Create data frame of results
-females_fit %>% 
+females_table <- females_fit %>% 
   tbl_regression(intercept = TRUE, 
                  conf.level = .95,
                  exponentiate = TRUE,
                  pvalue_fun = label_style_pvalue(digits = 2),
                  conf.int = TRUE,
-                 show_single_row = c(DIABETES, PREVCHD, BPMEDS, CURSMOKE)
-                 )
+                 show_single_row = c(DIABETES, PREVCHD, BPMEDS, CURSMOKE),
+                 label = list(
+                   AGE ~ "Age",
+                   DIABETES ~ "Diabetes Status",
+                   PREVCHD ~ "Prevalent CHD",
+                   BPMEDS ~ "BP Medication",
+                   CURSMOKE ~ "Smoking Status",
+                   SYSBP ~ "Systolic BP",
+                   TOTCHOL ~ "Total Cholesterol"))
 
+```
+
+```{r, echo = F, eval = F, results='hide', warning=F, message=F}
 # Plot survival curve - hmmm
 ggsurvplot(survfit(females_fit),
            data = females_df,
            censor = F,
-           conf.int = T)
-
+           conf.int = T,
+           ylim = c(0.95, 1))
 ```
+
 
 ```{r, echo = F, results='hide'}
 ################################# Risk Profile 1 ###############################
@@ -401,7 +417,7 @@ females_rp2 <- data.frame(
   AGE = c(40, 50, 60),
   DIABETES = factor(rep(0, 3), 
                     levels = levels(females_df$DIABETES)),
-  SYSBP = c(180, 230, 280),
+  SYSBP = rep(200, 3),
   PREVCHD = factor(rep(0, 3), 
                    levels = levels(females_df$PREVCHD)),
   BPMEDS = factor(rep(0, 3), 
@@ -507,7 +523,7 @@ females_rp4 <- data.frame(
   AGE = c(40, 50, 60),
   DIABETES = factor(rep(1, 3), 
                     levels = levels(females_df$DIABETES)),
-  SYSBP = c(180, 230, 280),
+  SYSBP = rep(200, 3),
   PREVCHD = factor(rep(0, 3), 
                    levels = levels(females_df$PREVCHD)),
   BPMEDS = factor(rep(0, 3), 
@@ -647,7 +663,424 @@ female_results <- cbind(mrp1_results,
 
 ```
 
+
+
+
+<!----------------------------------------------------------------------------->
+<!------------------------------------ MALES ---------------------------------->
+<!----------------------------------------------------------------------------->
+
+
+```{r, echo = F, warning=F, message=F, fig.cap="Model Results for Malesw"}
+################################## Model Fitting ###############################
+
+##################################### Males ##################################
+# Data frame for males
+males_df <- surv_df %>% 
+  filter(SEX == 1)
+# 1897 obs for 1897 subjects
+
+# Model for males
+males_fit <- coxph(
+  Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
+  + PREVCHD + BPMEDS 
+  + CURSMOKE + TOTCHOL + BMI,
+  data = males_df
+)
+
+# Summary of general model
+males_sum1 <- summary(males_fit)
+
+# Create data frame of results
+males_table <- males_fit %>% 
+    tbl_regression(intercept = TRUE, 
+                 conf.level = .95,
+                 exponentiate = TRUE,
+                 pvalue_fun = label_style_pvalue(digits = 2),
+                 conf.int = TRUE,
+                 show_single_row = c(DIABETES, PREVCHD, BPMEDS, CURSMOKE),
+                 label = list(
+                   AGE ~ "Age",
+                   DIABETES ~ "Diabetes Status",
+                   PREVCHD ~ "Prevalent CHD",
+                   BPMEDS ~ "BP Medication",
+                   CURSMOKE ~ "Smoking Status",
+                   SYSBP ~ "Systolic BP",
+                   TOTCHOL ~ "Total Cholesterol")) 
+
+```
+
+```{r, echo = F, eval = F, results='hide', warning=F, message=F}
+# Plot survival curve - hmmm
+ggsurvplot(survfit(males_fit),
+           data = males_df,
+           censor = F,
+           conf.int = T)
+```
+
+```{r, echo = F, fig.pos="H"}
+# Display both male and female regression tables together
+tbl_side_by_side <- tbl_merge(
+  tbls = list(females_table, males_table),
+  tab_spanner = c("**Females**", "**Males**")
+)
+
+tbl_side_by_side %>%
+  modify_caption("Model Results by Sex") %>%
+  as_gt() %>%
+  gt::tab_source_note(
+    gt::md("*BP = Blood Pressure; CHD = Coronary Heart Disease")
+  ) %>%
+  gt::tab_source_note(
+    gt::md("**All factor variable HRs are compared to reference groups")
+  ) %>% 
+  gt::tab_options(table.font.size = "small")
+```
+\newpage
+
+```{r, echo = F, results='hide'}
+################################# Risk Profile 1 ###############################
+
+# Create data frame for the different risk profiles
+# Risk profile 1: 
+## Average age, no diabetes, average sysbp, no prechd, no bpmeds, no cursmoke,
+## average totchol, average bmi
+males_rp1 <- data.frame(
+    AGE = c(40, 50, 60),
+    DIABETES = factor(rep(0, 3), 
+                      levels = levels(males_df$DIABETES)),
+    SYSBP = rep(mean(males_df$SYSBP), 3),
+    PREVCHD = factor(rep(0, 3), 
+                     levels = levels(males_df$PREVCHD)),
+    BPMEDS = factor(rep(0, 3), 
+                    levels = levels(males_df$BPMEDS)),
+    CURSMOKE = factor(rep(0, 3), 
+                      levels = levels(males_df$CURSMOKE)),
+    TOTCHOL = rep(mean(males_df$TOTCHOL, 
+                       na.rm = TRUE), 3),
+    BMI = rep(mean(males_df$BMI), 3)
+)
+
+# Fit cox model for risk profile 1
+mrp1_fit <- survfit(males_fit, newdata = males_rp1)
+
+
+# Estimates for 10 years
+mrp1_summary <- summary(mrp1_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   1647      48     0.995      0.99     0.981
+
+# Data frame of survival 10 years and risk 10 years
+mrp1_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(mrp1_summary$surv), 3),
+                           Risk = paste0(round(1 - mrp1_summary$surv, 3)*100,
+                                         "%")
+)
+
+
+
+```
+
+
+```{r, echo = F, results='hide'}
+################################# Risk Profile 2 ###############################
+
+# Risk profile 2: 
+## High blood pressure and no other risk factors
+males_rp2 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(0, 3), 
+                    levels = levels(males_df$DIABETES)),
+  SYSBP = rep(200, 3),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(males_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(males_df$BPMEDS)),
+  CURSMOKE = factor(rep(0, 3), 
+                    levels = levels(males_df$CURSMOKE)),
+  TOTCHOL = rep(mean(males_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(males_df$BMI), 3)
+)
+
+# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        0   180       0      0        0 233.7359 26.16627
+# 2  50        0   230       0      0        0 233.7359 26.16627
+# 3  60        0   280       0      0        0 233.7359 26.16627
+
+
+# Fit cox model for risk profile 2
+mrp2_fit <- survfit(males_fit, newdata = males_rp2)
+
+# Estimates for 10 years
+mrp2_summary <- summary(mrp2_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   1647      48     0.976     0.795     0.114
+
+# Create data frame of survival 10 years and risk 10 years
+mrp2_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(mrp2_summary$surv), 3),
+                           Risk = paste0(round(1 - mrp2_summary$surv, 3)*100,
+                                         "%")
+)
+# Age Survival  Risk
+# 1  40    0.976  2.4%
+# 2  50    0.795 20.5%
+# 3  60    0.114 88.6%
+
+
+```
+
+
+```{r, echo = F, results='hide'}
+
+################################# Risk Profile 3 ###############################
+
+#### Risk profile 3:
+## Diabetes and no other risk factors
+males_rp3 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(1, 3), 
+                    levels = levels(males_df$DIABETES)),
+  SYSBP = rep(mean(males_df$SYSBP), 3),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(males_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(males_df$BPMEDS)),
+  CURSMOKE = factor(rep(0, 3), 
+                    levels = levels(males_df$CURSMOKE)),
+  TOTCHOL = rep(mean(males_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(males_df$BMI), 3)
+)
+# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        1 131.5422       0      0        0 233.7359 26.16627
+# 2  50        1 131.5422       0      0        0 233.7359 26.16627
+# 3  60        1 131.5422       0      0        0 233.7359 26.16627
+
+
+# Fit cox model for risk profile 3
+mrp3_fit <- survfit(males_fit, newdata = males_rp3)
+
+# Estimates for 10 years
+mrp3_probs <- summary(mrp3_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   1647      48     0.974      0.95     0.905
+
+
+# Estimates for 10 years
+mrp3_summary <- summary(mrp3_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   1647      48     0.974      0.95     0.905
+
+# Create data frame of survival 10 years and risk 10 years
+mrp3_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(mrp3_summary$surv), 3),
+                           Risk = paste0(round(1 - mrp3_summary$surv, 3)*100,
+                                         "%")
+)
+
+# Age Survival Risk
+# 1  40    0.974 2.6%
+# 2  50    0.950   5%
+# 3  60    0.905 9.5%
+
+```
+
+
+```{r, echo = F, results='hide'}
+################################# Risk Profile 4 ###############################
+
+#### Risk profile 4:
+## High BP and Diabetes
+males_rp4 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(1, 3), 
+                    levels = levels(males_df$DIABETES)),
+  SYSBP = rep(200, 3),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(males_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(males_df$BPMEDS)),
+  CURSMOKE = factor(rep(0, 3), 
+                    levels = levels(males_df$CURSMOKE)),
+  TOTCHOL = rep(mean(males_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(males_df$BMI), 3)
+)
+# 
+# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        1   180       0      0        0 233.7359 26.16627
+# 2  50        1   230       0      0        0 233.7359 26.16627
+# 3  60        1   280       0      0        0 233.7359 26.16627
+
+# Fit cox model for risk profile 3
+mrp4_fit <- survfit(males_fit, newdata = males_rp4)
+
+# Estimates for 10 years
+mrp4_summary <- summary(mrp4_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   1647      48     0.883     0.307  1.44e-05
+
+# Create data frame of survival 10 years and risk 10 years
+mrp4_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(mrp4_summary$surv), 3),
+                           Risk = paste0(round(1 - mrp4_summary$surv, 3)*100,
+                                         "%")
+)
+
+# Age Survival  Risk
+#   Age Survival  Risk
+# 1  40    0.883 11.7%
+# 2  50    0.307 69.3%
+# 3  60    0.000  100%
+
+```
+
+
+```{r, echo = F, results='hide'}
+################################# Risk Profile 5 ###############################
+
+#### Risk profile 4:
+## Smoker and no other risk factors
+males_rp5 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(0, 3), 
+                    levels = levels(males_df$DIABETES)),
+  SYSBP = rep(mean(males_df$SYSBP), 3),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(males_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(males_df$BPMEDS)),
+  CURSMOKE = factor(rep(1, 3), 
+                    levels = levels(males_df$CURSMOKE)),
+  TOTCHOL = rep(mean(males_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(males_df$BMI), 3)
+)
+# 
+# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        0 131.5422       0      0        1 233.7359 26.16627
+# 2  50        0 131.5422       0      0        1 233.7359 26.16627
+# 3  60        0 131.5422       0      0        1 233.7359 26.16627
+
+# Fit cox model for risk profile 3
+mrp5_fit <- survfit(males_fit, newdata = males_rp5)
+
+# Estimates for 10 years
+mrp5_summary <- summary(mrp5_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   1647      48      0.99      0.98     0.962
+
+# Create data frame of survival 10 years and risk 10 years
+mrp5_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(mrp5_summary$surv), 3),
+                           Risk = paste0(round(1 - mrp5_summary$surv, 3)*100,
+                                         "%")
+)
+
+# Age Survival Risk
+# 1  40    0.990   1%
+# 2  50    0.980   2%
+# 3  60    0.962 3.8%
+```
+
+
+```{r, echo = F, fig.pos='H'}
+################### Combine these all for the report
+library(knitr)
+library(kableExtra)
+
+# Create individual kables for each df
+# Results 1
+rk1 <- kable(mrp1_results, caption = "meow1",
+             format = "html") %>% 
+  kable_styling()
+
+# Results 2
+rk2 <- kable(mrp2_results, caption = "meow2",
+             format = "html") %>% 
+  kable_styling()
+
+# Results 3
+rk3 <- kable(mrp3_results, caption = "meow3",
+             format = "html") %>% 
+  kable_styling()
+
+# Results 4
+rk4 <- kable(mrp4_results, caption = "meow4",
+             format = "html") %>% 
+  kable_styling()
+
+# Combimne results into one
+male_results <- cbind(mrp1_results, 
+                       mrp2_results[, 2:3],
+                       mrp3_results[,2:3],
+                       mrp4_results[,2:3],
+                       mrp5_results[,2:3]
+                       )
+
+# Display with kable
+# kable(male_results,
+#   format = "latex",
+#   booktabs = TRUE,
+#   digits = 3,
+#   caption = "Survival Rates and Risk \\% Over 10 Years for Males") %>% 
+#   kable_styling(latex_options = c("striped", "hold_position", 
+#                                   "scale_down")) %>% 
+#   add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2, 
+#                      "Risk Profile 2\nHigh BP" = 2,
+#                      "Risk Profile 3\nDiabetes" = 2,
+#                      "Risk Profile 4\n High BP & Diabetes" = 2,
+#                      "Risk Profile 5\n Smoker" = 2)) %>% 
+#   footnote(number = c("BP = Blood Pressure ",
+#                       "All Risk Factors are at Baseline Timepoint"))
+
+```
+
 ```{r, echo = F}
+# Display both male and female tables together
+
+kable(female_results,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 3, 
+  caption = "Survival Rates and Risk \\% Over 10 Years") %>%
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) %>%
+  add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2,
+                     "Risk Profile 2\nHigh BP" = 2,
+                     "Risk Profile 3\nDiabetes" = 2,
+                     "Risk Profile 4\n High BP & Diabetes" = 2,
+                     "Risk Profile 5\n Smoker" = 2)) %>%
+  add_header_above(c("Females"
+                     = 11),
+                   escape = FALSE)
+
+kable(male_results,
+  format = "latex",
+  booktabs = TRUE,
+  digits = 3) %>% 
+  # caption = "Survival Rates and Risk \\% Over 10 Years for Males") %>%
+  kable_styling(latex_options = c("striped", "hold_position",
+                                  "scale_down")) %>%
+  add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2,
+                     "Risk Profile 2\nHigh BP" = 2,
+                     "Risk Profile 3\nDiabetes" = 2,
+                     "Risk Profile 4\n High BP & Diabetes" = 2,
+                     "Risk Profile 5\n Smoker" = 2)) %>%
+  add_header_above(c("Males"
+                     = 11),
+                   escape = FALSE) %>%
+  footnote(number = c("BP = Blood Pressure & High BP = 200 (mmHg)",
+                      "All Risk Factors are at Baseline Timepoint"))
+
+
+```
+
+\newpage
+
+```{r, echo = F, eval = F, message=F, warning=F}
 library(colorspace)
 # Plot the survival curves
 f1 <- ggsurvplot(survfit(females_fit, 
@@ -767,389 +1200,9 @@ annotate_figure(plot1,
 #                     title = "Estimated Survival Curves - Females")
 ```
 
+\newpage
 
-<!----------------------------------------------------------------------------->
-<!------------------------------------ MALES ---------------------------------->
-<!----------------------------------------------------------------------------->
-
-
-```{r, echo = F, results = 'hide', include=F, warning=F, message=F}
-################################## Model Fitting ###############################
-
-##################################### males ##################################
-# Data frame for males
-males_df <- surv_df %>% 
-  filter(SEX == 1)
-# 1897 obs for 1897 subjects
-
-# Model for males
-males_fit <- coxph(
-  Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
-  + PREVCHD + BPMEDS 
-  + CURSMOKE + TOTCHOL + BMI,
-  data = males_df
-)
-
-# Summary of general model
-males_sum1 <- summary(males_fit)
-
-# Create data frame of results
-males_fit %>% 
-  tbl_regression(intercept = TRUE, 
-                 conf.level = .95,
-                 exponentiate = TRUE,
-                 pvalue_fun = label_style_pvalue(digits = 2),
-                 conf.int = TRUE,
-                 show_single_row = c(DIABETES, PREVCHD, BPMEDS, CURSMOKE)
-                 )
-
-# Plot survival curve - hmmm
-ggsurvplot(survfit(males_fit),
-           data = males_df,
-           censor = F,
-           conf.int = T)
-
-```
-
-```{r, echo = F, results='hide'}
-################################# Risk Profile 1 ###############################
-
-# Create data frame for the different risk profiles
-# Risk profile 1: 
-## Average age, no diabetes, average sysbp, no prechd, no bpmeds, no cursmoke,
-## average totchol, average bmi
-males_rp1 <- data.frame(
-    AGE = c(40, 50, 60),
-    DIABETES = factor(rep(0, 3), 
-                      levels = levels(males_df$DIABETES)),
-    SYSBP = rep(mean(males_df$SYSBP), 3),
-    PREVCHD = factor(rep(0, 3), 
-                     levels = levels(males_df$PREVCHD)),
-    BPMEDS = factor(rep(0, 3), 
-                    levels = levels(males_df$BPMEDS)),
-    CURSMOKE = factor(rep(0, 3), 
-                      levels = levels(males_df$CURSMOKE)),
-    TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                       na.rm = TRUE), 3),
-    BMI = rep(mean(males_df$BMI), 3)
-)
-
-# Fit cox model for risk profile 1
-mrp1_fit <- survfit(males_fit, newdata = males_rp1)
-
-
-# Estimates for 10 years
-mrp1_summary <- summary(mrp1_fit, times = 365*10)
- # time n.risk n.event survival1 survival2 survival3
- # 3650   1647      48     0.995      0.99     0.981
-
-# Data frame of survival 10 years and risk 10 years
-mrp1_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp1_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp1_summary$surv, 3)*100,
-                                         "%")
-)
-
-
-
-```
-
-
-```{r, echo = F, results='hide'}
-################################# Risk Profile 2 ###############################
-
-# Risk profile 2: 
-## High blood pressure and no other risk factors
-males_rp2 <- data.frame(
-  AGE = c(40, 50, 60),
-  DIABETES = factor(rep(0, 3), 
-                    levels = levels(males_df$DIABETES)),
-  SYSBP = c(180, 230, 280),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(males_df$BPMEDS)),
-  CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
-)
-
-# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        0   180       0      0        0 233.7359 26.16627
-# 2  50        0   230       0      0        0 233.7359 26.16627
-# 3  60        0   280       0      0        0 233.7359 26.16627
-
-
-# Fit cox model for risk profile 2
-mrp2_fit <- survfit(males_fit, newdata = males_rp2)
-
-# Estimates for 10 years
-mrp2_summary <- summary(mrp2_fit, times = 365*10)
- # time n.risk n.event survival1 survival2 survival3
- # 3650   1647      48     0.976     0.795     0.114
-
-# Create data frame of survival 10 years and risk 10 years
-mrp2_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp2_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp2_summary$surv, 3)*100,
-                                         "%")
-)
-# Age Survival  Risk
-# 1  40    0.976  2.4%
-# 2  50    0.795 20.5%
-# 3  60    0.114 88.6%
-
-
-```
-
-
-```{r, echo = F, results='hide'}
-
-################################# Risk Profile 3 ###############################
-
-#### Risk profile 3:
-## Diabetes and no other risk factors
-males_rp3 <- data.frame(
-  AGE = c(40, 50, 60),
-  DIABETES = factor(rep(1, 3), 
-                    levels = levels(males_df$DIABETES)),
-  SYSBP = rep(mean(males_df$SYSBP), 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(males_df$BPMEDS)),
-  CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
-)
-# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        1 131.5422       0      0        0 233.7359 26.16627
-# 2  50        1 131.5422       0      0        0 233.7359 26.16627
-# 3  60        1 131.5422       0      0        0 233.7359 26.16627
-
-
-# Fit cox model for risk profile 3
-mrp3_fit <- survfit(males_fit, newdata = males_rp3)
-
-# Estimates for 10 years
-mrp3_probs <- summary(mrp3_fit, times = 365*10)
- # time n.risk n.event survival1 survival2 survival3
- # 3650   1647      48     0.974      0.95     0.905
-
-
-# Estimates for 10 years
-mrp3_summary <- summary(mrp3_fit, times = 365*10)
- # time n.risk n.event survival1 survival2 survival3
- # 3650   1647      48     0.974      0.95     0.905
-
-# Create data frame of survival 10 years and risk 10 years
-mrp3_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp3_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp3_summary$surv, 3)*100,
-                                         "%")
-)
-
-# Age Survival Risk
-# 1  40    0.974 2.6%
-# 2  50    0.950   5%
-# 3  60    0.905 9.5%
-
-```
-
-
-```{r, echo = F, results='hide'}
-################################# Risk Profile 4 ###############################
-
-#### Risk profile 4:
-## High BP and Diabetes
-males_rp4 <- data.frame(
-  AGE = c(40, 50, 60),
-  DIABETES = factor(rep(1, 3), 
-                    levels = levels(males_df$DIABETES)),
-  SYSBP = c(180, 230, 280),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(males_df$BPMEDS)),
-  CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
-)
-# 
-# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        1   180       0      0        0 233.7359 26.16627
-# 2  50        1   230       0      0        0 233.7359 26.16627
-# 3  60        1   280       0      0        0 233.7359 26.16627
-
-# Fit cox model for risk profile 3
-mrp4_fit <- survfit(males_fit, newdata = males_rp4)
-
-# Estimates for 10 years
-mrp4_summary <- summary(mrp4_fit, times = 365*10)
- # time n.risk n.event survival1 survival2 survival3
- # 3650   1647      48     0.883     0.307  1.44e-05
-
-# Create data frame of survival 10 years and risk 10 years
-mrp4_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp4_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp4_summary$surv, 3)*100,
-                                         "%")
-)
-
-# Age Survival  Risk
-#   Age Survival  Risk
-# 1  40    0.883 11.7%
-# 2  50    0.307 69.3%
-# 3  60    0.000  100%
-
-```
-
-
-```{r, echo = F, results='hide'}
-################################# Risk Profile 5 ###############################
-
-#### Risk profile 4:
-## Smoker and no other risk factors
-males_rp5 <- data.frame(
-  AGE = c(40, 50, 60),
-  DIABETES = factor(rep(0, 3), 
-                    levels = levels(males_df$DIABETES)),
-  SYSBP = rep(mean(males_df$SYSBP), 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(males_df$BPMEDS)),
-  CURSMOKE = factor(rep(1, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
-)
-# 
-# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        0 131.5422       0      0        1 233.7359 26.16627
-# 2  50        0 131.5422       0      0        1 233.7359 26.16627
-# 3  60        0 131.5422       0      0        1 233.7359 26.16627
-
-# Fit cox model for risk profile 3
-mrp5_fit <- survfit(males_fit, newdata = males_rp5)
-
-# Estimates for 10 years
-mrp5_summary <- summary(mrp5_fit, times = 365*10)
- # time n.risk n.event survival1 survival2 survival3
- # 3650   1647      48      0.99      0.98     0.962
-
-# Create data frame of survival 10 years and risk 10 years
-mrp5_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp5_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp5_summary$surv, 3)*100,
-                                         "%")
-)
-
-# Age Survival Risk
-# 1  40    0.990   1%
-# 2  50    0.980   2%
-# 3  60    0.962 3.8%
-```
-
-
-```{r, echo = F}
-################### Combine these all for the report
-library(knitr)
-library(kableExtra)
-
-# Create individual kables for each df
-# Results 1
-rk1 <- kable(mrp1_results, caption = "meow1",
-             format = "html") %>% 
-  kable_styling()
-
-# Results 2
-rk2 <- kable(mrp2_results, caption = "meow2",
-             format = "html") %>% 
-  kable_styling()
-
-# Results 3
-rk3 <- kable(mrp3_results, caption = "meow3",
-             format = "html") %>% 
-  kable_styling()
-
-# Results 4
-rk4 <- kable(mrp4_results, caption = "meow4",
-             format = "html") %>% 
-  kable_styling()
-
-# Combimne results into one
-male_results <- cbind(mrp1_results, 
-                       mrp2_results[, 2:3],
-                       mrp3_results[,2:3],
-                       mrp4_results[,2:3],
-                       mrp5_results[,2:3]
-                       )
-
-# Display with kable
-# kable(male_results,
-#   format = "latex",
-#   booktabs = TRUE,
-#   digits = 3,
-#   caption = "Survival Rates and Risk \\% Over 10 Years for Males") %>% 
-#   kable_styling(latex_options = c("striped", "hold_position", 
-#                                   "scale_down")) %>% 
-#   add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2, 
-#                      "Risk Profile 2\nHigh BP" = 2,
-#                      "Risk Profile 3\nDiabetes" = 2,
-#                      "Risk Profile 4\n High BP & Diabetes" = 2,
-#                      "Risk Profile 5\n Smoker" = 2)) %>% 
-#   footnote(number = c("BP = Blood Pressure ",
-#                       "All Risk Factors are at Baseline Timepoint"))
-
-```
-
-```{r, echo = F}
-# Display both male and female tables together
-
-kable(female_results,
-  format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Survival Rates and Risk \\% Over 10 Years for Females") %>%
-  kable_styling(latex_options = c("striped", "hold_position",
-                                  "scale_down")) %>%
-  add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2,
-                     "Risk Profile 2\nHigh BP" = 2,
-                     "Risk Profile 3\nDiabetes" = 2,
-                     "Risk Profile 4\n High BP & Diabetes" = 2,
-                     "Risk Profile 5\n Smoker" = 2)) %>%
-  footnote(number = c("BP = Blood Pressure ",
-                      "All Risk Factors are at Baseline Timepoint"))
-
-kable(male_results,
-  format = "latex",
-  booktabs = TRUE,
-  digits = 3,
-  caption = "Survival Rates and Risk \\% Over 10 Years for Males") %>%
-  kable_styling(latex_options = c("striped", "hold_position",
-                                  "scale_down")) %>%
-  add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2,
-                     "Risk Profile 2\nHigh BP" = 2,
-                     "Risk Profile 3\nDiabetes" = 2,
-                     "Risk Profile 4\n High BP & Diabetes" = 2,
-                     "Risk Profile 5\n Smoker" = 2)) %>%
-  footnote(number = c("BP = Blood Pressure ",
-                      "All Risk Factors are at Baseline Timepoint"))
-
-
-```
-
-
-
-```{r, echo = F}
+```{r, echo = F, message = F, warning = F, fig.pos="H"}
 library(colorspace)
 # Plot the survival curves
 m1 <- ggsurvplot(survfit(males_fit, 
@@ -1157,7 +1210,7 @@ m1 <- ggsurvplot(survfit(males_fit,
            data = males_df,
            censor = FALSE,
            conf.int = FALSE,
-           ylim = c(0.98, 1),
+           # ylim = c(0.98, 1),
            xlim = c(0, 3650),
            # risk.table = TRUE,
            ggtheme = theme_minimal(),
@@ -1196,7 +1249,7 @@ m3 <- ggsurvplot(survfit(males_fit,
            censor = F,
            conf.int = FALSE,
            # Min is 0.35 and max is 0.99
-           ylim = c(0.90, 1),
+           # ylim = c(0.90, 1),
            xlim = c(0, 3650),
            ggtheme = theme_minimal(),
            legend = "none",
@@ -1231,7 +1284,7 @@ m5 <- ggsurvplot(survfit(males_fit,
                  censor = F,
                  conf.int = FALSE,
                  # Min is 0.35 and max is 0.99
-                 ylim = c(0.95, 1),
+                 # ylim = c(0.95, 1),
                  xlim = c(0, 3650),
                  ggtheme = theme_minimal(),
                  legend = "none",
