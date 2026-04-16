@@ -17,6 +17,7 @@ library(glmnet)
 library(survival)
 library(survminer)
 library(gtsummary)
+library(kableExtra)
 
 # Read in dataset
 frame_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
@@ -711,6 +712,7 @@ table1(~ factor(STROKE10) + STROKE10TIME +
          AGE + SYSBP + factor(DIABETES) | factor(SEX), 
        data = complete_surv_df)
 
+################################ Survival Analysis #############################
 
 ################################################################################
 ###                              Survival Analysis                           ###
@@ -889,6 +891,7 @@ selected_1se <- rownames(coef_1se)[nz_1se]
 # Data frame for females
 females_df <- surv_df %>% 
   filter(SEX == 2)
+# 2378 obs for 2378 subjects
 
 # Model for females
 females_fit <- coxph(
@@ -939,18 +942,25 @@ females_rp1 <- data.frame(
     BMI = rep(mean(females_df$BMI), 3)
 )
 
+library(see)
+# Plot the survival curves
+f1 <- ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp1),
+           data = females_df,
+           censor = FALSE,
+           conf.int = TRUE,
+           ylim = c(0.95, 1),
+           xlim = c(0, 3650),
+           # risk.table = TRUE,
+           ggtheme = theme_minimal(),
+           legend.labs = c("Age 40", "Age 50", "Age 60"),
+           title = "Risk Profile 1 Estimated Survival\nAverage Individual"
+           ) 
+f1
+
 # Fit cox model for risk profile 1
 frp1_fit <- survfit(females_fit, newdata = females_rp1)
 
-# Plot the survival curves
-ggsurvplot(survfit(females_fit, 
-                   newdata = females_rp1),
-           data = females_df,
-           censor = F,
-           conf.int = TRUE,
-           ylim = c(0.95, 1),
-           xlim = c(0, 3650)
-           ) 
 
 # Estimates for 10 years
 frp1_summary <- summary(frp1_fit, times = 365*10)
@@ -989,11 +999,9 @@ females_rp2 <- data.frame(
 # 2  50        0   230       0      0        0 239.5698 25.56664
 # 3  60        0   280       0      0        0 239.5698 25.56664
 
-# Fit cox model for risk profile 2
-frp2_fit <- survfit(females_fit, newdata = females_rp2)
 
 # Plot the survival curves
-ggsurvplot(survfit(females_fit, 
+f2 <- ggsurvplot(survfit(females_fit, 
                    newdata = females_rp2),
            data = females_df,
            censor = F,
@@ -1002,6 +1010,10 @@ ggsurvplot(survfit(females_fit,
            ylim = c(0.35, 1),
            xlim = c(0, 3650)
 ) 
+f2
+
+# Fit cox model for risk profile 2
+frp2_fit <- survfit(females_fit, newdata = females_rp2)
 
 # Estimates for 10 years
 frp2_summary <- summary(frp2_fit, times = 365*10)
@@ -1044,11 +1056,8 @@ females_rp3 <- data.frame(
 # 2  50        1 133.5524       0      0        0 239.5698 25.56664
 # 3  60        1 133.5524       0      0        0 239.5698 25.56664
 
-# Fit cox model for risk profile 3
-frp3_fit <- survfit(females_fit, newdata = females_rp3)
-
 # Plot the survival curves
-ggsurvplot(survfit(females_fit, 
+f3 <- ggsurvplot(survfit(females_fit, 
                    newdata = females_rp3),
            data = females_df,
            censor = F,
@@ -1057,6 +1066,11 @@ ggsurvplot(survfit(females_fit,
            ylim = c(0.95, 1),
            xlim = c(0, 3650)
 ) 
+f3
+
+
+# Fit cox model for risk profile 3
+frp3_fit <- survfit(females_fit, newdata = females_rp3)
 
 # Estimates for 10 years
 frp3_probs <- summary(frp3_fit, times = 365*10)
@@ -1106,11 +1120,9 @@ females_rp4 <- data.frame(
 # 2  50        1   230       0      0        0 239.5698 25.56664
 # 3  60        1   280       0      0        0 239.5698 25.56664
 
-# Fit cox model for risk profile 3
-frp4_fit <- survfit(females_fit, newdata = females_rp4)
 
 # Plot the survival curves
-ggsurvplot(survfit(females_fit, 
+f4 <- ggsurvplot(survfit(females_fit, 
                    newdata = females_rp4),
            data = females_df,
            censor = F,
@@ -1119,6 +1131,10 @@ ggsurvplot(survfit(females_fit,
            # ylim = c(0.95, 1),
            xlim = c(0, 3650)
 ) 
+f4
+
+# Fit cox model for risk profile 3
+frp4_fit <- survfit(females_fit, newdata = females_rp4)
 
 # Estimates for 10 years
 frp4_summary <- summary(frp4_fit, times = 365*10)
@@ -1137,9 +1153,92 @@ frp4_results <- data.frame(Age = c(40, 50, 60),
 # 2  50    0.785 21.5%
 # 3  60    0.167 83.3%
 
+################################# Risk Profile 5 ###############################
+
+#### Risk profile 4:
+## Smoker and no other risk factors
+females_rp5 <- data.frame(
+  AGE = c(40, 50, 60),
+  DIABETES = factor(rep(0, 3), 
+                    levels = levels(females_df$DIABETES)),
+  SYSBP = rep(mean(females_df$SYSBP), 3),
+  PREVCHD = factor(rep(0, 3), 
+                   levels = levels(females_df$PREVCHD)),
+  BPMEDS = factor(rep(0, 3), 
+                  levels = levels(females_df$BPMEDS)),
+  CURSMOKE = factor(rep(1, 3), 
+                    levels = levels(females_df$CURSMOKE)),
+  TOTCHOL = rep(mean(females_df$TOTCHOL, 
+                     na.rm = TRUE), 3),
+  BMI = rep(mean(females_df$BMI), 3)
+)
+# 
+# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
+# 1  40        0 133.5524       0      0        1 239.5698 25.56664
+# 2  50        0 133.5524       0      0        1 239.5698 25.56664
+# 3  60        0 133.5524       0      0        1 239.5698 25.56664
+
+
+# Plot the survival curves
+f5 <- ggsurvplot(survfit(females_fit, 
+                         newdata = females_rp5),
+                 data = females_df,
+                 censor = F,
+                 conf.int = FALSE,
+                 # Min is 0.35 and max is 0.99
+                 ylim = c(0.95, 1),
+                 xlim = c(0, 3650)
+) 
+f5
+
+# Fit cox model for risk profile 3
+frp5_fit <- survfit(females_fit, newdata = females_rp5)
+
+# Estimates for 10 years
+frp5_summary <- summary(frp5_fit, times = 365*10)
+# time n.risk n.event survival1 survival2 survival3
+# 3650   2177      57     0.992     0.984     0.966
+
+# Create data frame of survival 10 years and risk 10 years
+frp5_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp5_summary$surv), 3),
+                           Risk = paste0(round(1 - frp5_summary$surv, 3)*100,
+                                         "%")
+)
+
+# Age Survival Risk
+# 1  40    0.992 0.8%
+# 2  50    0.984 1.6%
+# 3  60    0.966 3.4%
+
 ################### Combine these all for the report
+library(knitr)
+library(kableExtra)
+
+# Create list of dfs
+females_results_list <- list(
+  frp1_results,
+  frp2_results
+)
+
+# Create individual kables for each df
+# Results 1
+fk1 <- kable(frp1_results, caption = "meow1") %>% 
+  kable_styling()
+
+# Results 2
+fk2 <- kable(frp2_results, caption = "meow2") %>% 
+  kable_styling()
+
+# Combine these horizontally
+frow1 <- cbind(fk1, fk2) %>% kable_styling()
+
+# Display with kable
 
 
+##### Display all plots together
+library(gridExtra)
+arrange_ggsurvplots(results_list)
 
 
 ###################################### Males ###################################
