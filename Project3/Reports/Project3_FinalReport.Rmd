@@ -55,7 +55,8 @@ opts_chunk$set(tidy = F)
 ```{r, echo = F}
 # Read in the Data
 # Read in created survival df
-surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"))
+surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"),
+                    show_col_types = FALSE)
 
 # Convert factor vars to factors
 surv_df <- surv_df %>% 
@@ -345,22 +346,6 @@ females_rp1 <- data.frame(
     BMI = rep(mean(females_df$BMI), 3)
 )
 
-library(see)
-# Plot the survival curves
-f1 <- ggsurvplot(survfit(females_fit, 
-                   newdata = females_rp1),
-           data = females_df,
-           censor = FALSE,
-           conf.int = TRUE,
-           ylim = c(0.95, 1),
-           xlim = c(0, 3650),
-           # risk.table = TRUE,
-           ggtheme = theme_minimal(),
-           legend.labs = c("Age 40", "Age 50", "Age 60"),
-           title = "Risk Profile 1 Estimated Survival\nAverage Individual"
-           ) 
-# f1
-
 # Fit cox model for risk profile 1
 frp1_fit <- survfit(females_fit, newdata = females_rp1)
 
@@ -408,18 +393,6 @@ females_rp2 <- data.frame(
 # 2  50        0   230       0      0        0 239.5698 25.56664
 # 3  60        0   280       0      0        0 239.5698 25.56664
 
-
-# Plot the survival curves
-f2 <- ggsurvplot(survfit(females_fit, 
-                   newdata = females_rp2),
-           data = females_df,
-           censor = F,
-           conf.int = FALSE,
-           # Min is 0.35 and max is 0.99
-           ylim = c(0.35, 1),
-           xlim = c(0, 3650)
-) 
-# f2
 
 # Fit cox model for risk profile 2
 frp2_fit <- survfit(females_fit, newdata = females_rp2)
@@ -469,18 +442,6 @@ females_rp3 <- data.frame(
 # 1  40        1 133.5524       0      0        0 239.5698 25.56664
 # 2  50        1 133.5524       0      0        0 239.5698 25.56664
 # 3  60        1 133.5524       0      0        0 239.5698 25.56664
-
-# Plot the survival curves
-f3 <- ggsurvplot(survfit(females_fit, 
-                   newdata = females_rp3),
-           data = females_df,
-           censor = F,
-           conf.int = FALSE,
-           # Min is 0.35 and max is 0.99
-           ylim = c(0.95, 1),
-           xlim = c(0, 3650)
-) 
-# f3
 
 
 # Fit cox model for risk profile 3
@@ -538,19 +499,6 @@ females_rp4 <- data.frame(
 # 2  50        1   230       0      0        0 239.5698 25.56664
 # 3  60        1   280       0      0        0 239.5698 25.56664
 
-
-# Plot the survival curves
-f4 <- ggsurvplot(survfit(females_fit, 
-                   newdata = females_rp4),
-           data = females_df,
-           censor = F,
-           conf.int = FALSE,
-           # Min is 0.35 and max is 0.99
-           # ylim = c(0.95, 1),
-           xlim = c(0, 3650)
-) 
-# f4
-
 # Fit cox model for risk profile 3
 frp4_fit <- survfit(females_fit, newdata = females_rp4)
 
@@ -600,19 +548,6 @@ females_rp5 <- data.frame(
 # 2  50        0 133.5524       0      0        1 239.5698 25.56664
 # 3  60        0 133.5524       0      0        1 239.5698 25.56664
 
-
-# Plot the survival curves
-f5 <- ggsurvplot(survfit(females_fit, 
-                         newdata = females_rp5),
-                 data = females_df,
-                 censor = F,
-                 conf.int = FALSE,
-                 # Min is 0.35 and max is 0.99
-                 ylim = c(0.95, 1),
-                 xlim = c(0, 3650)
-) 
-# f5
-
 # Fit cox model for risk profile 3
 frp5_fit <- survfit(females_fit, newdata = females_rp5)
 
@@ -661,19 +596,6 @@ fk4 <- kable(frp4_results, caption = "meow4",
              format = "html") %>% 
   kable_styling()
 
-# Combine these horizontally
-
-
-### Try 2
-# knitr::kable(list(frp1_results, 
-#                   frp2_results[2:3],
-#                   frp3_results[2:3]),
-#              booktabs = TRUE,
-#              caption = "Survival and Risk Rates for Females") |>
-#   kable_styling(latex_options = "hold_position") |>
-#   add_header_above(c("Meow1" = 2, "Meow2" = 2)) %>% 
-#   footnote(general = "Meowsss")
-  
 # Combimne results into one
 female_results <- cbind(frp1_results, 
                        frp2_results[, 2:3],
@@ -699,10 +621,107 @@ kable(female_results,
 
 ```
 
-```{r, echo = F, eval = F}
+```{r, echo = F}
+# Plot the survival curves
+f1 <- ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp1),
+           data = females_df,
+           censor = FALSE,
+           conf.int = FALSE,
+           ylim = c(0.95, 1),
+           xlim = c(0, 3650),
+           # risk.table = TRUE,
+           ggtheme = theme_minimal(),
+           # legend = "none",
+           legend.labs = c("Age 40", "Age 50", "Age 60"),
+           title = "Risk Profile 1 Estimated Survival\nAverage Individual",
+           font.main = 10
+           ) 
+# f1
+
+# Plot the survival curves
+f2 <- ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp2),
+           data = females_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           ylim = c(0.35, 1),
+           xlim = c(0, 3650),
+           ggtheme = theme_minimal(),
+           legend.labs = c("Age 40", "Age 50", "Age 60"),
+           legend = "none",
+           title = "Risk Profile 2 Estimated Survival\nHigh BP",
+           font.main = 10
+) 
+# f2
+
+
+# Plot the survival curves
+f3 <- ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp3),
+           data = females_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           ylim = c(0.95, 1),
+           xlim = c(0, 3650),
+           ggtheme = theme_minimal(),
+           legend = "none",
+           title = "Risk Profile 2 Estimated Survival\nDiabetes",
+           font.main = 10
+) 
+# f3
+
+# Plot the survival curves
+f4 <- ggsurvplot(survfit(females_fit, 
+                   newdata = females_rp4),
+           data = females_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           # ylim = c(0.95, 1),
+           xlim = c(0, 3650),
+           ggtheme = theme_minimal(),
+           legend.labs = c("Age 40", "Age 50", "Age 60"),
+           legend = "none",
+           title = "Risk Profile 2 Estimated Survival\nHigh BP & Diabetes",
+           font.main = 10
+) 
+# f4
+
+# Plot the survival curves
+f5 <- ggsurvplot(survfit(females_fit, 
+                         newdata = females_rp5),
+                 data = females_df,
+                 censor = F,
+                 conf.int = FALSE,
+                 # Min is 0.35 and max is 0.99
+                 ylim = c(0.95, 1),
+                 xlim = c(0, 3650),
+                 ggtheme = theme_minimal(),
+                 legend = "none",
+                 title = "Risk Profile 2 Estimated Survival\nSmoker",
+                 font.main = 10
+) 
+# f5
+
 ##### Display all plots together
 
-arrange_ggsurvplots(results_list)
+# Using ggarrange
+ggarrange(f1$plot, f2$plot, f3$plot, f4$plot, f5$plot,
+          ncol = 3, nrow = 2,
+          common.legend = TRUE,
+          legend = "top",
+          legend.labs = c("Age", "Age 50", "Age 60"),
+          vjust = 0.5
+          ) 
+  
+
+# With survival package - could not get one legend for all plots
+# arrange_ggsurvplots(list(f1, f2, f3, f4, f5),
+#                     ncol = 3, nrow = 2,
+#                     title = "Estimated Survival Curves - Females")
 ```
 
 
