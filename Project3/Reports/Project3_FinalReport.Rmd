@@ -8,18 +8,20 @@ output:
     number_sections: false
     latex_engine: xelatex
     extra_dependencies: ["longtable", "float"]
+    keep_tex: true
 mainfont: Arial
 fontsize: 12pt
 documentclass: article
 geometry: margin=1in
-header-includes:
-  - \usepackage{setspace}
-  - \doublespacing
-  - \usepackage{float}
-  - \usepackage{caption}
-  - \usepackage{titling}
-  - \setlength{\droptitle}{-3cm}
-  - \preauthor{\vspace{-0.6cm}}
+header-includes: 
+  - \usepackage{setspace} 
+  - \doublespacing 
+  - \usepackage{float} 
+  - \usepackage{caption} 
+  - \usepackage{titling} 
+  - \setlength{\droptitle}{-3cm} 
+  - \setlength{\textfloatsep}{5pt} 
+  - \preauthor{\vspace{-0.6cm}} 
   - \postauthor{\vspace{-3cm}}
 ---
 
@@ -236,7 +238,7 @@ We note the small number of subjects across both sexes that had a stroke within 
 In Table 2 we compare the predicted survival and $\%$ risk over 10 years for males and females for ages 40, 50, and 60 for the 5 risk profiles of interest.
 <!------------------------------------ Table 1 -------------------------------->
 
-```{r, echo = F}
+```{r, echo = F, fig.pos='H'}
 # Fix levels for categorical variables for Table1
 # Data frame for table1
 tab1_data <- surv_df
@@ -307,7 +309,11 @@ tab1_data %>%
                                ~ "{mean}({sd})")) %>% 
   modify_header(label = "**Sex**") %>% 
   bold_labels() %>% 
-  modify_caption(caption = "**Patient Characteristics At Baseline**")
+  modify_caption(caption = "Patient Characteristics At Baseline")
+  
+  
+  # as_kable_extra(booktabs = TRUE, linesep = "") %>%
+  # kableExtra::kable_styling(latex_options = c("hold_position"))
 ```
 
 <!----------------------------------------------------------------------------->
@@ -315,7 +321,7 @@ tab1_data %>%
 <!----------------------------------------------------------------------------->
 
 
-```{r, echo = F, warning=F, message=F, fig.cap="Model Results for Females"}
+```{r, echo = F, warning=F, message=F}
 ################################## Model Fitting ###############################
 
 ##################################### Females ##################################
@@ -353,6 +359,9 @@ females_table <- females_fit %>%
                    TOTCHOL ~ "Total Cholesterol"))
 
 ```
+
+And then meow meow moew omoew moewmeow moweriwefoawiefjoiwejfoweijfowaeijfoiwejfioe
+
 
 ```{r, echo = F, eval = F, results='hide', warning=F, message=F}
 # Plot survival curve - hmmm
@@ -645,25 +654,7 @@ female_results <- cbind(mrp1_results,
                        mrp5_results[,2:3]
                        )
 
-# Display with kable
-# kable(female_results,
-#   format = "latex",
-#   booktabs = TRUE,
-#   digits = 3,
-#   caption = "Survival Rates and Risk \\% Over 10 Years for Females") %>% 
-#   kable_styling(latex_options = c("striped", "hold_position", 
-#                                   "scale_down")) %>% 
-#   add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2, 
-#                      "Risk Profile 2\nHigh BP" = 2,
-#                      "Risk Profile 3\nDiabetes" = 2,
-#                      "Risk Profile 4\n High BP & Diabetes" = 2,
-#                      "Risk Profile 5\n Smoker" = 2)) %>% 
-#   footnote(number = c("BP = Blood Pressure ",
-#                       "All Risk Factors are at Baseline Timepoint"))
-
 ```
-
-
 
 
 <!----------------------------------------------------------------------------->
@@ -671,7 +662,7 @@ female_results <- cbind(mrp1_results,
 <!----------------------------------------------------------------------------->
 
 
-```{r, echo = F, warning=F, message=F, fig.cap="Model Results for Malesw"}
+```{r, echo = F, warning=F, message=F, fig.cap="Model Results for Males"}
 ################################## Model Fitting ###############################
 
 ##################################### Males ##################################
@@ -718,8 +709,10 @@ ggsurvplot(survfit(males_fit),
            conf.int = T)
 ```
 
-```{r, echo = F, fig.pos="H"}
-# Display both male and female regression tables together
+
+
+```{r, echo = F, fig.pos='H'}
+
 tbl_side_by_side <- tbl_merge(
   tbls = list(females_table, males_table),
   tab_spanner = c("**Females**", "**Males**")
@@ -733,10 +726,12 @@ tbl_side_by_side %>%
   ) %>%
   gt::tab_source_note(
     gt::md("**All factor variable HRs are compared to reference groups")
-  ) %>% 
-  gt::tab_options(table.font.size = "small")
+  ) %>%
+  gt::tab_options(
+    table.font.size = "small",
+    data_row.padding = gt::px(2)
+  )
 ```
-\newpage
 
 ```{r, echo = F, results='hide'}
 ################################# Risk Profile 1 ###############################
@@ -776,8 +771,6 @@ mrp1_results <- data.frame(Age = c(40, 50, 60),
                            Risk = paste0(round(1 - mrp1_summary$surv, 3)*100,
                                          "%")
 )
-
-
 
 ```
 
@@ -1057,10 +1050,11 @@ kable(female_results,
                      = 11),
                    escape = FALSE)
 
+
 kable(male_results,
   format = "latex",
   booktabs = TRUE,
-  digits = 3) %>% 
+  digits = 3) %>%
   # caption = "Survival Rates and Risk \\% Over 10 Years for Males") %>%
   kable_styling(latex_options = c("striped", "hold_position",
                                   "scale_down")) %>%
@@ -1075,10 +1069,7 @@ kable(male_results,
   footnote(number = c("BP = Blood Pressure & High BP = 200 (mmHg)",
                       "All Risk Factors are at Baseline Timepoint"))
 
-
 ```
-
-\newpage
 
 ```{r, echo = F, eval = F, message=F, warning=F}
 library(colorspace)
@@ -1200,9 +1191,8 @@ annotate_figure(plot1,
 #                     title = "Estimated Survival Curves - Females")
 ```
 
-\newpage
 
-```{r, echo = F, message = F, warning = F, fig.pos="H"}
+```{r, echo = F, message = F, warning = F, fig.pos="H", eval =F}
 library(colorspace)
 # Plot the survival curves
 m1 <- ggsurvplot(survfit(males_fit, 
@@ -1323,28 +1313,5 @@ annotate_figure(plot2,
 ```
 
 
-\newpage
-
-# Data and Code Availability
-
-The data and statistical code used to generate the results and figures in this report are available in the following GitHub repository:
-
-- GitHub repository: [https://github.com/DianaF65/BIOS6624](https://github.com/DianaF65/BIOS6624)
-
-Directory structure:
-
-- Background/ - A description of the background of the project.
-
-- Code/ 
-  - The "Project1_ExploratoryAnalysis.R" file contains initial data exploration as well as code for construction of the final data set used for all analyses.
-  - The R Markdown file 'All_Analyses.Rmd' consists of all Code used for the Frequentist and Bayesian analyses.
-
-- RawData/ – Raw data files. Because this data is not publicly available, it is not available on GitHub. The raw data was originally obtained from the BIOS 6624 P1 module. The raw and processed datasets to generate these results are available on my local computer at this file path: 
-"/Users/dianafelipe/Desktop/BIOS 6624/BIOS6624/Project1/Data/hiv_6624_final.csv"
-
-- Reports/ The "Project1_Report.Rmd" R Markdown file was used to generate this final report of analyses.
-
-All analyses and figures were generated using the R statistical programming language v. 4.4.1, and the repository contains the R scripts
-and R Markdown files used to produce this report
 
 
