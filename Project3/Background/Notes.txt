@@ -7,7 +7,8 @@
   - TIMETOSTRKE: The days from baseline that subject had a stroke
   
 ### Questions
-- For presence of CHD are you using PREVCHD or ANYCHD?
+- For risk profile 2 with high blood pressure, are there desired levels of 
+  interest? I am currently doing increments of 50: From 180. 230, and 280.
 
 #### Class 4/1
 - Age, Diabetes, SYS Blood Pressure are covariates of interest
@@ -62,6 +63,34 @@ and can backup why
   
 - How to censor death?
   - should not have to use death variable
+  
+##### P3 Analysis Plan Feedback
+- Define the primary variables and the secondary variables for analysis!!
+  - Make sure to say which type of BP
+- WE ARE ALSO LOOKING AT ASSESSING CHANGE OVER TIME!!!
+  - As the secondary outcome
+- Do not talk about anything that we are not interested in for the analysis
+  - Don't mention missingness for High/Low density lipoprotein cholesterol
+- How did you verify that data was Missing at random? 
+  - May need to revisit the categories of missingness and if/how they can be 
+  evaluated from the observed data
+- How did we account for death? 
+  - People who died before having a stroke should have already been counted as 
+  censored at their time of death in the stroke variables. 
+  - Some people had a stroke before death -- so they have both outcomes
+- What about preliminary descriptive analysis of the survival curves before 
+fitting the Cox model?
+- Why did we choose to log transform SYSBP and how will interpretation change?
+- Do not mention assessment of confounding/precision. 
+  - Is it necessary after LASSO?
+  
+  
+  
+  
+
+
+
+
   
   
   
