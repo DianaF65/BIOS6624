@@ -394,46 +394,50 @@ For the primary analysis, we kept the LASSO selected variables specific to each 
 ################################## Model Fitting ###############################
 
 ##################################### Females ##################################
-# Data frame for females
-females_df <- surv_df %>% 
-  filter(SEX == 2)
-# 2378 obs for 2378 subjects
 
 # Model for females
-females_fit <- coxph(
-  Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
-  + PREVCHD + BPMEDS 
-  + CURSMOKE + TOTCHOL + BMI,
+females_fit <- coxph(Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES 
+                     + SYSBP + PREVCHD + BPMEDS + TOTCHOL + BMI,
   data = females_df
 )
 
 # Summary of general model
 females_sum1 <- summary(females_fit)
+```
 
-# Create data frame of results
+
+```{r, echo = F}
+################################ Test PH assumptions ##########################
+## Schoenfeld residuals :Do the effects of each covariate change over time?
+## H0: PH holds - no time varying effect
+## H1: Violation of PH
+
+# Schoenfeld residuals
+females_res <- cox.zph(females_fit)
+
+# Plot
+ggcoxzph(females_res,
+         se = F)
+
+```
+
+```{r, echo = F}
+##### Create data frame of results
 females_table <- females_fit %>% 
   tbl_regression(intercept = TRUE, 
                  conf.level = .95,
                  exponentiate = TRUE,
                  pvalue_fun = label_style_pvalue(digits = 2),
                  conf.int = TRUE,
-                 show_single_row = c(DIABETES, PREVCHD, BPMEDS, CURSMOKE),
+                 show_single_row = c(DIABETES, PREVCHD, BPMEDS),
                  label = list(
                    AGE ~ "Age",
                    DIABETES ~ "Diabetes Status",
                    PREVCHD ~ "Prevalent CHD",
                    BPMEDS ~ "BP Medication",
-                   CURSMOKE ~ "Smoking Status",
                    SYSBP ~ "Systolic BP",
                    TOTCHOL ~ "Total Cholesterol"))
-
 ```
-
-
-```{r, echo = F}
-#### Test PH assumptions
-```
-
 
 
 ```{r, echo = F, eval = F, results='hide', warning=F, message=F}
@@ -444,6 +448,7 @@ ggsurvplot(survfit(females_fit),
            conf.int = T,
            ylim = c(0.95, 1))
 ```
+
 
 
 ```{r, echo = F, results='hide'}
@@ -484,8 +489,6 @@ mrp1_results <- data.frame(Age = c(40, 50, 60),
                            Risk = paste0(round(1 - mrp1_summary$surv, 3)*100,
                                          "%")
 )
-
-
 
 ```
 
@@ -739,16 +742,10 @@ female_results <- cbind(mrp1_results,
 ################################## Model Fitting ###############################
 
 ##################################### Males ##################################
-# Data frame for males
-males_df <- surv_df %>% 
-  filter(SEX == 1)
-# 1897 obs for 1897 subjects
-
 # Model for males
 males_fit <- coxph(
   Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
-  + PREVCHD + BPMEDS 
-  + CURSMOKE + TOTCHOL + BMI,
+  + BPMEDS,
   data = males_df
 )
 
@@ -762,15 +759,12 @@ males_table <- males_fit %>%
                  exponentiate = TRUE,
                  pvalue_fun = label_style_pvalue(digits = 2),
                  conf.int = TRUE,
-                 show_single_row = c(DIABETES, PREVCHD, BPMEDS, CURSMOKE),
+                 show_single_row = c(DIABETES, BPMEDS),
                  label = list(
                    AGE ~ "Age",
                    DIABETES ~ "Diabetes Status",
-                   PREVCHD ~ "Prevalent CHD",
-                   BPMEDS ~ "BP Medication",
-                   CURSMOKE ~ "Smoking Status",
                    SYSBP ~ "Systolic BP",
-                   TOTCHOL ~ "Total Cholesterol")) 
+                   BPMEDS ~ "BP Medication")) 
 
 ```
 
@@ -783,12 +777,35 @@ ggsurvplot(survfit(males_fit),
 ```
 
 
+```{r, echo = F, eval = F, results='hide'}
+################################ Test PH assumptions ##########################
+## Schoenfeld residuals :Do the effects of each covariate change over time?
+## H0: PH holds - no time varying effect
+## H1: Violation of PH
+
+# Schoenfeld residuals
+males_res <- cox.zph(males_fit)
+#          chisq df    p
+# AGE      0.467  1 0.49
+# DIABETES 2.636  1 0.10
+# SYSBP    1.653  1 0.20
+# BPMEDS   0.101  1 0.75
+# GLOBAL   4.204  4 0.38
+
+# Plot
+ggcoxzph(males_res,
+         se = F)
+# Looks good
+
+```
+
 
 ```{r, echo = F, eval = F}
 
 tbl_side_by_side <- tbl_merge(
   tbls = list(females_table, males_table),
-  tab_spanner = c("**Females**", "**Males**")
+  tab_spanner = c("**Females**", "**Males**"),
+  quiet = TRUE
 )
 
 tbl_side_by_side %>%
@@ -1143,6 +1160,9 @@ kable(male_results,
                       "All Risk Factors are at Baseline Timepoint"))
 
 ```
+
+
+Schoenfeld residiual test for males and females indicated no evidence of violation of the proportional hazards assumption for individual covariates for globally (global p = 0.714).
 
 ```{r, echo = F, eval = F, message=F, warning=F}
 library(colorspace)
