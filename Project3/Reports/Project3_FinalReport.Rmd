@@ -1,5 +1,5 @@
 ---
-title: P3 meow
+title: Risk Factors of Stroke in a 10-year Period
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -22,7 +22,7 @@ header-includes:
   - \setlength{\droptitle}{-3cm} 
   - \setlength{\textfloatsep}{5pt} 
   - \preauthor{\vspace{-0.6cm}} 
-  - \postauthor{\vspace{-3cm}}
+  - \postauthor{\vspace{-2.5cm}}
 ---
 
 ```{r, echo = F, warning=F, message = F}
@@ -72,27 +72,161 @@ surv_df$STROKE10 <- as.numeric(as.character(surv_df$STROKE10))
 
 ```
 
-
-\vspace{-8mm}
 # Introduction
-\vspace{-8mm}
+\vspace{-6mm}
 
-And then i said i sai dmoe meow meow moew meow moewo jew
-
+The Framington Heart Study is a longitudinal and prospective study with the overarching goal of investigating the etiology of cardiovascular disease in the community of Framingham, Massachusetts. The study was conducted on an initial population of 5,209 individuals on which data was collected for health behaviors, medication use, clinical measurements such as blood pressure, and more. The primary goal of this analysis is to identify risk factors of stroke within a 10-year period for five different risk profiles of interest: 1.) Subjects with no risk factors for stroke, 2.) Subjects with high blood pressure (BP) (> 60 (mmHg) ), 3.) Subjects with diabetes, 4.) Subjects with high blood pressure and diabetes, 5.) Subjects who were smokers. All risk factors are measured at baseline. Additionally, we will summarize the change in the risk factors over the whole duration of the study period to determine whether a more complex time-varying covariate analysis is warranted. 
+This report covers the preliminary findings of our analysis answering the primary question of interest. It fills in the results from the data analysis plan agreed upon in the Data Analysis Plan report.
 
 \vspace{-10mm}
 # Methods
-\vspace{-6mm}
-
-and then they said meow moew moew moewmoewm oewmoew meow
 
 \vspace{-6mm}
 ## Data Cleaning
 \vspace{-6mm}
 
-and then we said we said meow meow meomeow moew moew
+The raw data contained 11,627 observations for 4,434 subjects and 38 variables. Missingness was assessed in the whole data set thruogh summaries and visualizations. Regarding the primary variables of interest, BP Medication had ~5% missginness, total cholesterol had 3.5% missingness, and BMI had ~0.5% missingness. We verified that there were no relationships between missingness and any variables and therefore concluded that data was Missing Completely at Random.
+We then proceeded with creating new variables specifically for the 10-year window of interest for the primary analysis. We created an indicator variable for whether subjects had a stroke with 10 years (Yes/No) as well as the time to stroke for these events. 
+The data for all analyses consisted of 4,434 observations with 2,378 for females and 2,056 for males. We used a complete case data frame, removing any missing variables mentioned previously mentioned for the analyses. 
 
-```{r, echo = F, results='hide', eval = F, warning=F, message=F}
+\vspace{-8mm}
+## Data Analysis
+\vspace{-6mm}
+
+We conducted analyses separately for male and females. 
+We also performed a preliminary descriptive analysis of survival curves by sex with visualizations of the Kaplan Meier curves before fitting the primary Cox model. This allowed us to visually compare the curves for the two sexes.
+To identify risk factors that are associated with stroke in a 10-year period, we conducted a Survival analysis with stroke as the event and days to stroke as the time to event. Specifically, we fit a Cox Proportional Hazards (PH) Survival Model to identify important risk factors of stroke and obtain the 10-year probability of stroke based on the five risk profiles. 
+We adjusted for Age, Diabetes status (Yes/No), and Systolic BP in all analyses. 
+We performed variable selection with the Least Absolute Shrinkage Selection Operator (LASSO) on Presence of Coronary Heart Disease (CHD), whether subjects were on BP medications, smoking status, total cholesterol, and Body Mass Index (BMI). In particular, we used LASSO with K-fold cross validation to assess variable importance which retained all 5 variables. 
+Therefore, we included a total of 8 variables for all analyses for each sex-stratified analysis. 
+We note that the cross-validated error was fairly flat indicating limited evidence for a sparser predictive model with clear improvement over a model with no covariates. 
+We assessed the proportional hazards assumptions for all models using the Schoenfeld Residuals Test as well as visually through the Log Minus Log (LML) plots for each covariate. 
+Lastly, we created a table describing how variables such as Systolic BP and BMI change over over time. 
+
+We used a significance level of $\alpha = 0.05$ for the significance threshold. All analyses were conducted with R version 4.1.1 using the glmnet, survival, and survminer packages. 
+
+\vspace{-10mm}
+# Results
+\vspace{-6mm}
+
+Table 1 contains a description of the data used for all analyses. 
+The data is stratified by sex, n and \% of patients is displayed for the categorical variables, and the mean and standard deviation is shown for each continuous variable.
+We note the small number of subjects across both sexes that had a stroke within the 10 year time span. In addition, the use of Anti-hypertensive medication and prevalent coronary heart disease groups are noticeably unbalanced. 
+The preliminary analysis of the survival curves for sex showed...
+
+In Table 2 we compare the predicted survival and $\%$ risk over 10 years for males and females for ages 40, 50, and 60 for the 5 risk profiles of interest.
+<!------------------------------------ Table 1 -------------------------------->
+
+```{r, echo = F, fig.pos='H', eval = F}
+# Fix levels for categorical variables for Table1
+# Data frame for table1
+tab1_data <- surv_df
+
+# Sex
+tab1_data$factor_SEX <- factor(tab1_data$SEX,
+                        levels = c(1, 2),
+                        labels = c("Male", "Female"))
+
+# Diabetes
+tab1_data$factor_DIABETES <- factor(tab1_data$DIABETES,
+                                    levels = c(0, 1),
+                                    labels = c("Not a Diabetic", "Diabetic"))
+
+# Prevchd
+tab1_data$factor_PREVCHD <- factor(tab1_data$PREVCHD,
+                                   levels = c(0, 1),
+                                   labels = c("Free of CHD",
+                                              "Prevalent CHD"))
+
+# Cursmoke
+tab1_data$factor_CURSMOKE <- factor(tab1_data$CURSMOKE,
+                             levels = c(0, 1),
+                             labels = c("Not a Current Smoker",
+                                        "Current Smoker"))
+
+# BPMeds
+tab1_data$factor_BPMEDS <- factor(tab1_data$BPMEDS,
+                                  levels = c(0, 1),
+                                  labels = c("No Use of Medication",
+                                             "Use of Medication"))
+
+# Stroke 10
+tab1_data$factor_STROKE <- factor(tab1_data$STROKE10,
+                                  levels = c(0, 1),
+                                  labels = c("No Stroke",
+                                             "Stroke"))
+
+
+
+# Relabel the variables for the Table 1
+tab1_data <- apply_labels(tab1_data,
+                     factor_STROKE = "Stroke Within 10 Yrs",
+                     factor_SEX = "Sex",
+                     factor_BPMEDS = "Use of Anti-hypertensive Medication",
+                     factor_PREVCHD = "Prevalent Coronary Heart Disease",
+                     factor_CURSMOKE = "Cigarrete Smoking Status",
+                     AGE = "Age",
+                     SYSBP = "Systolic Blood Pressure (mmHg)",
+                     STROKE10TIME = "Time to Stroke (Days)",
+                     TOTCHOL = "Serum Total Cholesterol (mg/dL)",
+                     BMI = "Body Mass Index"
+                     )
+
+# Display the modified Table1
+tab1_data %>% 
+  tbl_summary(include = c(factor_STROKE,
+                          STROKE10TIME,
+                          AGE,
+                          factor_BPMEDS,
+                          factor_PREVCHD,
+                          factor_CURSMOKE,
+                          SYSBP,
+                          TOTCHOL,
+                          BMI),
+              by = factor_SEX,
+              statistic = list(c(all_continuous()) 
+                               ~ "{mean}({sd})")) %>% 
+  modify_header(label = "**Sex**") %>% 
+  bold_labels() %>% 
+  modify_caption(caption = "Patient Characteristics At Baseline")
+  
+  
+  # as_kable_extra(booktabs = TRUE, linesep = "") %>%
+  # kableExtra::kable_styling(latex_options = c("hold_position"))
+```
+
+<!----------------------------------------------------------------------------->
+<!--------------------------------- KM Curves --------------------------------->
+<!----------------------------------------------------------------------------->
+
+The preliminary Kaplan-Meier analysis reveled frequent crossing between the separate male and female survival curves. This indicates a violation of the proportional hazards assumption and therefore necessitates stratified Cox models to obtain the sex-specific risk differences. 
+
+```{r, echo = F, eval = F, results='hide'}
+################################ Prelim Cox Analysis ###########################
+# Create some Kaplan Meier curves by covariates
+
+### Sex
+# Fit model
+km_sex <- survfit(Surv(STROKE10TIME, STROKE10) ~ SEX,
+                   data = surv_df)
+
+# Plot KM curves
+ggsurvplot(km_sex, 
+           conf.int = FALSE,
+           censor = FALSE,
+           xlim = c(0, max(surv_df$STROKE10TIME)),
+           ylim = c(0.95, 1))
+# For the most part, seems that survival curves are quite similar between sexes
+# We do see some crossing of the curves though
+
+```
+
+
+<!----------------------------------------------------------------------------->
+<!------------------------------ Variable Selection --------------------------->
+<!----------------------------------------------------------------------------->
+
+```{r, echo = F, eval = F, results='hide'}
 ############################## Variable Selection ##############################
 # Vignette: https://glmnet.stanford.edu/articles/Coxnet.html
 
@@ -101,7 +235,8 @@ and then we said we said meow meow meomeow moew moew
 ##### First, going to assess whether sex should have different baseline hazards
 # Unstratified model
 fit_unstrat <- coxph(
-  Surv(STROKE10TIME, STROKE10) ~ SEX + PREVCHD + 
+  Surv(STROKE10TIME, STROKE10) ~ SEX
+    + PREVCHD + 
     BPMEDS + CURSMOKE + TOTCHOL + BMI,
   data = surv_df
 )
@@ -119,7 +254,7 @@ AIC(fit_unstrat, fit_strat)
 # fit_unstrat  6 1723.074
 # fit_strat    5 1576.158
 
-# We saw though that the KM curves by sex were basically identical
+# We saw though that the KM curves by sex did cross a lot
 # Sex was not significant in the model
 # The un and stratified models give almost the same results 
 # Since we were getting convergence issues down the line with glmnet,
@@ -221,105 +356,9 @@ selected_1se <- rownames(coef_1se)[nz_1se]
 
 
 
-\vspace{-8mm}
-## Data Analysis
-\vspace{-6mm}
-
-Then we all got toegher and said mewo mewo moew moewmoew
-
-\vspace{-10mm}
-# Results
-\vspace{-6mm}
-
-Table 1 contains a description of the data used for all analyses. 
-The data is stratified by sex, n and \% of patients is displayed for the categorical variables, and the mean and standard deviation is shown for each continuous variable.
-We note the small number of subjects across both sexes that had a stroke within the 10 year time span. In addition, the use of Anti-hypertensive medication and prevalent coronary heart disease groups are noticeably unbalanced. 
-
-In Table 2 we compare the predicted survival and $\%$ risk over 10 years for males and females for ages 40, 50, and 60 for the 5 risk profiles of interest.
-<!------------------------------------ Table 1 -------------------------------->
-
-```{r, echo = F, fig.pos='H'}
-# Fix levels for categorical variables for Table1
-# Data frame for table1
-tab1_data <- surv_df
-
-# Sex
-tab1_data$factor_SEX <- factor(tab1_data$SEX,
-                        levels = c(1, 2),
-                        labels = c("Male", "Female"))
-
-# Diabetes
-tab1_data$factor_DIABETES <- factor(tab1_data$DIABETES,
-                                    levels = c(0, 1),
-                                    labels = c("Not a Diabetic", "Diabetic"))
-
-# Prevchd
-tab1_data$factor_PREVCHD <- factor(tab1_data$PREVCHD,
-                                   levels = c(0, 1),
-                                   labels = c("Free of CHD",
-                                              "Prevalent CHD"))
-
-# Cursmoke
-tab1_data$factor_CURSMOKE <- factor(tab1_data$CURSMOKE,
-                             levels = c(0, 1),
-                             labels = c("Not a Current Smoker",
-                                        "Current Smoker"))
-
-# BPMeds
-tab1_data$factor_BPMEDS <- factor(tab1_data$BPMEDS,
-                                  levels = c(0, 1),
-                                  labels = c("No Use of Medication",
-                                             "Use of Medication"))
-
-# Stroke 10
-tab1_data$factor_STROKE <- factor(tab1_data$STROKE10,
-                                  levels = c(0, 1),
-                                  labels = c("No Stroke",
-                                             "Stroke"))
-
-
-
-# Relabel the variables for the Table 1
-tab1_data <- apply_labels(tab1_data,
-                     factor_STROKE = "Stroke Within 10 Yrs",
-                     factor_SEX = "Sex",
-                     factor_BPMEDS = "Use of Anti-hypertensive Medication",
-                     factor_PREVCHD = "Prevalent Coronary Heart Disease",
-                     factor_CURSMOKE = "Cigarrete Smoking Status",
-                     AGE = "Age",
-                     SYSBP = "Systolic Blood Pressure (mmHg)",
-                     STROKE10TIME = "Time to Stroke (Days)",
-                     TOTCHOL = "Serum Total Cholesterol (mg/dL)",
-                     BMI = "Body Mass Index"
-                     )
-
-# Display the modified Table1
-tab1_data %>% 
-  tbl_summary(include = c(factor_STROKE,
-                          STROKE10TIME,
-                          AGE,
-                          factor_BPMEDS,
-                          factor_PREVCHD,
-                          factor_CURSMOKE,
-                          SYSBP,
-                          TOTCHOL,
-                          BMI),
-              by = factor_SEX,
-              statistic = list(c(all_continuous()) 
-                               ~ "{mean}({sd})")) %>% 
-  modify_header(label = "**Sex**") %>% 
-  bold_labels() %>% 
-  modify_caption(caption = "Patient Characteristics At Baseline")
-  
-  
-  # as_kable_extra(booktabs = TRUE, linesep = "") %>%
-  # kableExtra::kable_styling(latex_options = c("hold_position"))
-```
-
 <!----------------------------------------------------------------------------->
 <!----------------------------------- FEMALES --------------------------------->
 <!----------------------------------------------------------------------------->
-
 
 ```{r, echo = F, warning=F, message=F}
 ################################## Model Fitting ###############################
@@ -360,7 +399,11 @@ females_table <- females_fit %>%
 
 ```
 
-And then meow meow moew omoew moewmeow moweriwefoawiefjoiwejfoweijfowaeijfoiwejfioe
+
+```{r, echo = F}
+#### Test PH assumptions
+```
+
 
 
 ```{r, echo = F, eval = F, results='hide', warning=F, message=F}
@@ -711,7 +754,7 @@ ggsurvplot(survfit(males_fit),
 
 
 
-```{r, echo = F, fig.pos='H'}
+```{r, echo = F, eval = F}
 
 tbl_side_by_side <- tbl_merge(
   tbls = list(females_table, males_table),
@@ -1031,7 +1074,7 @@ male_results <- cbind(mrp1_results,
 
 ```
 
-```{r, echo = F}
+```{r, echo = F, eval = F}
 # Display both male and female tables together
 
 kable(female_results,
