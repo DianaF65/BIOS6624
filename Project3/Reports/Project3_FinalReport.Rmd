@@ -199,7 +199,6 @@ tab1_data %>%
 <!--------------------------------- KM Curves --------------------------------->
 <!----------------------------------------------------------------------------->
 
-The preliminary Kaplan-Meier analysis reveled frequent crossing between the separate male and female survival curves. This indicates a violation of the proportional hazards assumption and therefore necessitates stratified Cox models to obtain the sex-specific risk differences. 
 
 ```{r, echo = F, eval = F, results='hide'}
 ################################ Prelim Cox Analysis ###########################
@@ -221,6 +220,7 @@ ggsurvplot(km_sex,
 
 ```
 
+The preliminary Kaplan-Meier analysis reveled frequent crossing between the separate male and female survival curves. This indicates a violation of the proportional hazards assumption and therefore necessitates stratified Cox models to obtain the sex-specific risk differences. 
 
 <!----------------------------------------------------------------------------->
 <!------------------------------ Variable Selection --------------------------->
@@ -228,103 +228,42 @@ ggsurvplot(km_sex,
 
 ```{r, echo = F, eval = F, results='hide'}
 ############################## Variable Selection ##############################
+library(glmnet)
 # Vignette: https://glmnet.stanford.edu/articles/Coxnet.html
+
+#----------------------------------- Males ------------------------------------#
 
 # Perform some variable selection prevchd, bpmeds, smokecur, total chol, and BMI
 
-##### First, going to assess whether sex should have different baseline hazards
-# Unstratified model
-fit_unstrat <- coxph(
-  Surv(STROKE10TIME, STROKE10) ~ SEX
-    + PREVCHD + 
-    BPMEDS + CURSMOKE + TOTCHOL + BMI,
-  data = surv_df
-)
+# Males only df
+males_df <- surv_df %>% 
+  filter(SEX == 1)
 
-# Stratified by sex model
-fit_strat <- coxph(
-  Surv(STROKE10TIME, STROKE10) ~ PREVCHD + BPMEDS + 
-    CURSMOKE + TOTCHOL + BMI + strata(SEX),
-  data = surv_df
-)
+# Fit model
+y_m <- Surv(time = males_df$STROKE10TIME, 
+            event = males_df$STROKE10)
 
-# Compare model fit with AIC
-AIC(fit_unstrat, fit_strat)
-# df      AIC
-# fit_unstrat  6 1723.074
-# fit_strat    5 1576.158
+# Create the model matrix for glmnet
+x_m <- model.matrix(
+  ~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
+  data = males_df)[, -1]  # Remove the intercept
 
-# We saw though that the KM curves by sex did cross a lot
-# Sex was not significant in the model
-# The un and stratified models give almost the same results 
-# Since we were getting convergence issues down the line with glmnet,
-# we are going to NOT stratify by sex 
+# Lasso - cross validation
+cv_m <- cv.glmnet(x_m, y_m, 
+                  family = "cox", 
+                  alpha = 1)
 
-# Proceed with the unstratified pooled glmnet cox model
+# Plot to see the optimal lambda value
+plot(cv_m)
+# Looks pretty flat across all top and bottom values
 
-###### Glmnet
+# Which variables were kept with 1se
+## The largest lambda within 1 SE of the minimum error 
+## More penalty -> simplier model, more stable and more conservaitive,
+## Provides the best simple model!
 
-# Fit stratified cox models with elastic net penalty
-# Prepare for glmnet
-# Surv object of response variables
-y <- Surv(time = surv_df$STROKE10TIME,
-          event = surv_df$STROKE10)
-
-# Create matrix of predictors
-x <- model.matrix(~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
-                  data = surv_df)[, -1] # This removes the intercept
-
-
-# Fit stratified cox lasso
-lasso_fit <- glmnet(x = x, 
-                    y = y,
-                    family = "cox",
-                    alpha = 1) # LASSO penalty
-
-# Plot fit 
-plot(lasso_fit)
-
-# K-fold Cross validation
-set.seed(345)
-cv_fit <- cv.glmnet(x = x, 
-                    y = y, 
-                    family = "cox",
-                    alpha = 1)
-
-# Look at plot - optimal lambda value
-plot(cv_fit)
-# The left vertical line is where the CV error curve hits its minimum
-# The right vertical line is the most regularized model with CV error within 1 SD
-# Basically we see that model performance is basically flat and increasing
-# model complexity does not improve performance much
-
-
-# Get the optimal lambdas
-cv_fit$lambda.min
-#  0.001777793
-## This gives the best fit or lowest CV error where a small penalty means
-# more variables are kept - risk of overfitting though
-
-# See which variables are kept
-coef_min <- coef(cv_fit, s = "lambda.min")
-# PREVCHD1  0.827245643
-# BPMEDS1   1.382781943
-# CURSMOKE1 0.123849200
-# TOTCHOL   0.002622194
-# BMI       0.043796358
-
-# Get the nonzero variables
-nz_min <- which(as.vector(coef_min) != 0)
-selected_min <- rownames(coef_min)[nz_min]
-# "PREVCHD1"  "BPMEDS1"   "CURSMOKE1" "TOTCHOL"   "BMI" 
-
-cv_fit$lambda.1se
-# 0.01376481
-## Largest lambda within 1 SE of the minimum
-# More penalty more simpler model
-
-# See which variables are kept
-coef_1se <- coef(cv_fit, s = "lambda.1se")
+coef_1se_males <- coef(cv_m, s = "lambda.1se")
+#           1
 # PREVCHD1  .
 # BPMEDS1   .
 # CURSMOKE1 .
@@ -332,29 +271,120 @@ coef_1se <- coef(cv_fit, s = "lambda.1se")
 # BMI       .
 
 # Get the nonzero variables
-nz_1se <- which(as.vector(coef_1se) != 0)
-selected_1se <- rownames(coef_1se)[nz_1se]
-# character(0)
+m_1se <- which(as.vector(coef_1se_males) != 0)
+m_selected_1se <- rownames(coef_1se_males)[m_1se]
+# character(0)  -----  NO variables kept
+## None of the predictors add enough predictve value to justify including them
 
-# Basically we found that lambda.min keeps all variables while
-# lambda.1se drops everything
-# We did already have pre-selected variables that were clinically driven so 
-# perhaps further reduction is not necessary
+# Which variables were kept with lambda min
+## The value of lambda that gives the lowest corss-validated error
+## More flexble model -> keeps more variables
+## Higher risk of overfitting though
+## Provides the best fit
+coef_min_males <- coef(cv_m, s = "lambda.min")
+# > #           1
+# > # PREVCHD1  .
+# > # BPMEDS1   .
+# > # CURSMOKE1 .
+# > # TOTCHOL   .
+# > # BMI       .
+# > coef(cv_m, s = "lambda.min")
+# 5 x 1 sparse Matrix of class "dgCMatrix"
+#                  1
+# PREVCHD1  .       
+# BPMEDS1   1.217418
+# CURSMOKE1 .       
+# TOTCHOL   .       
+# BMI       .
 
-# Using lambda.min, all five candidate predictors were retained.
-# Using the more conservative lambda.1se rule, all coefficients were shrunk to zero, 
-# indicating that the cross-validated error was fairly flat and that there was 
-# limited evidence for a sparser predictive model with clear improvement over the null.
+# Get the nonzero variables
+m_min <- which(as.vector(coef_min_males) != 0)
+m_selected_min <- rownames(coef_min_males)[m_min]
+# character(0)  -----  NO variables kept
+# [1] "BPMEDS1"
 
-# We used LASSO with cross-validation to assess variable importance. 
-# Because the cross-validated error curve was relatively flat, the more 
-# conservative λ₁ₛₑ resulted in a null model. Therefore, we selected λ_min to 
-# retain relevant predictors while minimizing prediction error.
+### Based on minimum, keep BPMEDS for males - the only variable with meaningful
+### predictive signal for males
+```
 
-# After lasso, fit a standard coxph model with ALL variables
+We performed LASSO variable selection using cross validation separately for each sex. For males, only antihypertensive medication use was retained, suggesting it is the strongest predictor of stroke risk among the variables considered.
+
+```{r, echo = F}
+############################## Variable Selection ##############################
+library(glmnet)
+# Vignette: https://glmnet.stanford.edu/articles/Coxnet.html
+
+#----------------------------------- Females ----------------------------------#
+
+# Perform some variable selection prevchd, bpmeds, smokecur, total chol, and BMI
+
+# Females only df
+females_df <- surv_df %>% 
+  filter(SEX == 2)
+
+# Fit model
+y_f <- Surv(time = females_df$STROKE10TIME, 
+            event = females_df$STROKE10)
+
+# Create the model matrix for glmnet
+x_f <- model.matrix(
+  ~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
+  data = females_df)[, -1]  # Remove the intercept
+
+# Lasso - cross validation
+cv_f <- cv.glmnet(x_f, y_f, 
+                  family = "cox", 
+                  alpha = 1)
+
+# Plot to see the optimal lambda value
+plot(cv_f)
+# Looks pretty flat across as well all top and bottom values
+
+# Which variables were kept with 1se
+## The largest lambda within 1 SE of the minimum error 
+## More penalty -> simplier model, more stable and more conservaitive,
+## Provides the best simple model!
+
+coef_1se_females <- coef(cv_f, s = "lambda.1se")
+#           1
+# PREVCHD1  .
+# BPMEDS1   .
+# CURSMOKE1 .
+# TOTCHOL   .
+# BMI       .
+
+# Get the nonzero variables
+f_1se <- which(as.vector(coef_1se_females) != 0)
+f_selected_1se <- rownames(coef_1se_females)[f_1se]
+# character(0)  -----  NO variables kept
+## None of the predictors add enough predictve value to justify including them
+
+# Which variables were kept with lambda min
+## The value of lambda that gives the lowest corss-validated error
+## More flexble model -> keeps more variables
+## Higher risk of overfitting though
+## Provides the best fit
+coef_min_females <- coef(cv_f, s = "lambda.min")
+#                     1
+# PREVCHD1  1.051070381
+# BPMEDS1   1.235644137
+# CURSMOKE1 .          
+# TOTCHOL   0.002948321
+# BMI       0.041851181
+
+# Get the nonzero variables
+f_min <- which(as.vector(coef_min_females) != 0)
+f_selected_min <- rownames(coef_min_females)[f_min]
+# "PREVCHD1" "BPMEDS1"  "TOTCHOL"  "BMI" 
+
+### Based on minimum, keep PRECHD, BPMEDS, TOTCHOL, and BMI
+### Remove CURSMOKE
+### The only variable with meaningful predictive signal for females
 ```
 
 
+LASSO variable selection was conducted separately by sex. BP medication was selected in both males and females, while additional predictors prevalent CHD, total cholesterol, and BMI were retained in females. 
+For the primary analysis, we kept the LASSO selected variables specific to each sex. 
 
 <!----------------------------------------------------------------------------->
 <!----------------------------------- FEMALES --------------------------------->
