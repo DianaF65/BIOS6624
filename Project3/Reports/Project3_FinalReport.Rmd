@@ -96,9 +96,10 @@ The data for sex-specific analyses consisted of 2,378 observations for females a
 We performed a preliminary descriptive analysis of survival curves by sex with visualizations of the Kaplan Meier curves before fitting the primary Cox model.
 The preliminary Kaplan-Meier analysis reveled frequent crossing between the separate male and female survival curves. This indicated a violation of the proportional hazards assumption and therefore necessitates stratified Cox models to obtain the sex-specific risk differences. 
 We performed LASSO variable selection using cross validation separately for each sex. For males, only antihypertensive medication use was retained, suggesting it is the strongest predictor of stroke risk among the variables considered.
-For femaes, in addition to antihypertensive medication, additional predictors including prevalent CHD, total cholesterol, and BMI were retained in females. 
+For females, in addition to antihypertensive medication, additional predictors including prevalent CHD, total cholesterol, and BMI were retained in females. 
 For the primary analysis, we kept the LASSO selected variables specific to each sex. 
 In regard to model assumptions, Schoenfeld residiual test for males and females indicated no evidence of violation of the proportional hazards assumption for individual covariates for globally (global p = 0.714).
+The LML Plot for Diabetes status, use of antihypertensive medication, and prevalent CHD visually satisfied the PH assumption for categorical variables as the curves for the different strata were parallel. 
 To identify risk factors that are associated with stroke in a 10-year period, we conducted a Survival analysis with stroke as the event and days to stroke as the time to event. Specifically, we fit a Cox Proportional Hazards (PH) Survival Model to identify important risk factors of stroke and obtain the 10-year probability of stroke based on the five risk profiles. 
 We adjusted for Age, Diabetes status (Yes/No), and Systolic BP in the models for both sexes and incorporated the LASSO selected variables specific to each sex. 
 Lastly, we created a table describing how variables such as Systolic BP and BMI change over over time. 
@@ -219,6 +220,15 @@ ggsurvplot(km_sex,
 
 ```
 
+
+```{r, echo = F, results='hide', warning=F, message=F, eval = F}
+# LML Plots
+ggsurvplot(km_sex,
+           conf.int = F, 
+           censor = F,
+           fun="cloglog")
+# We see that the lines are not parallel and this suggests that the PH assumption is not met
+```
 
 <!----------------------------------------------------------------------------->
 <!------------------------------ Variable Selection --------------------------->
@@ -400,7 +410,7 @@ females_sum1 <- summary(females_fit)
 ```
 
 
-```{r, echo = F, include=FALSE}
+```{r, echo = F, results='hide', eval = F}
 ################################ Test PH assumptions ##########################
 ## Schoenfeld residuals :Do the effects of each covariate change over time?
 ## H0: PH holds - no time varying effect
@@ -414,6 +424,52 @@ ggcoxzph(females_res,
          se = F)
 
 ```
+
+```{r, echo = F, results='hide', eval = F}
+# LML Plots for each categorical variable
+
+# Fit model for DIABETES
+females_diabetes <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~
+                                    strata(DIABETES),
+                                  data = females_df))
+# LML Plot
+plot(females_diabetes, 
+     fun = "cloglog", 
+     col = c("red", "blue"), 
+     main = "LML Plot for Diabetes",
+     xlab = "Log(Time)", 
+     ylab = "Log(-Log(Survival))")
+# Assumption met for Sex
+
+# Fit model for PREVCHD
+females_prevchd <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~ 
+                                   strata(PREVCHD),
+                           data = females_df))
+
+# LML Plot
+plot(females_prevchd, 
+     fun = "cloglog", 
+     col = c("red", "blue"), 
+     main = "LML Plot for PREVCHD",
+     xlab = "Log(Time)", 
+     ylab = "Log(-Log(Survival))")
+# Assumption met for prevchd
+
+# Fit Model for BPMEDS
+females_bpmeds <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~ 
+                                  strata(BPMEDS),
+                          data = females_df))
+
+# LML Plot
+plot(females_bpmeds, 
+     fun = "cloglog", 
+     col = c("red", "blue"), 
+     main = "LML Plot for BPMEDS",
+     xlab = "Log(Time)", 
+     ylab = "Log(-Log(Survival))")
+# Assumption met for bpmeds
+```
+
 
 ```{r, echo = F}
 ##### Create data frame of results
@@ -754,7 +810,7 @@ ggsurvplot(survfit(males_fit),
 ```
 
 
-```{r, echo = F, include=FALSE}
+```{r, echo = F, include=FALSE, results='hide'}
 ################################ Test PH assumptions ##########################
 ## Schoenfeld residuals :Do the effects of each covariate change over time?
 ## H0: PH holds - no time varying effect
@@ -774,6 +830,71 @@ ggcoxzph(males_res,
          se = F)
 # Looks good
 
+```
+
+
+```{r, echo = F, results='hide', eval = F}
+# LML Plots for each categorical variable
+
+# Fit model for DIABETES
+males_diabetes <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~
+                                    strata(DIABETES),
+                                  data = males_df))
+# LML Plot
+plot(males_diabetes, 
+     fun = "cloglog", 
+     col = c("red", "blue"), 
+     main = "LML Plot for Diabetes",
+     xlab = "Log(Time)", 
+     ylab = "Log(-Log(Survival))")
+# Assumption met for Sex
+
+# Fit model for PREVCHD
+males_prevchd <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~ 
+                                   strata(PREVCHD),
+                           data = males_df))
+
+# LML Plot
+plot(males_prevchd, 
+     fun = "cloglog", 
+     col = c("red", "blue"), 
+     main = "LML Plot for PREVCHD",
+     xlab = "Log(Time)", 
+     ylab = "Log(-Log(Survival))")
+# Assumption met for prevchd
+
+# Fit Model for BPMEDS
+males_bpmeds <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~ 
+                                  strata(BPMEDS),
+                          data = males_df))
+
+# LML Plot
+plot(males_bpmeds, 
+     fun = "cloglog", 
+     col = c("red", "blue"), 
+     main = "LML Plot for BPMEDS",
+     xlab = "Log(Time)", 
+     ylab = "Log(-Log(Survival))")
+# Assumption met for bpmeds
+```
+
+
+```{r, echo = F}
+##### Create data frame of results
+females_table <- females_fit %>% 
+  tbl_regression(intercept = TRUE, 
+                 conf.level = .95,
+                 exponentiate = TRUE,
+                 pvalue_fun = label_style_pvalue(digits = 2),
+                 conf.int = TRUE,
+                 show_single_row = c(DIABETES, PREVCHD, BPMEDS),
+                 label = list(
+                   AGE ~ "Age",
+                   DIABETES ~ "Diabetes Status",
+                   PREVCHD ~ "Prevalent CHD",
+                   BPMEDS ~ "BP Medication",
+                   SYSBP ~ "Systolic BP",
+                   TOTCHOL ~ "Total Cholesterol"))
 ```
 
 
