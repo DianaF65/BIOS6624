@@ -1,5 +1,5 @@
 ---
-title: Risk Factors of Stroke in a 10-year Period
+title: Risk Factors of 10-year Stroke
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -57,7 +57,10 @@ opts_chunk$set(tidy = F)
 ```
 
 ```{r, echo = F}
-# Read in the Data
+# Read in the original data
+frame_data <- read_csv(here("Project3", "Data", "frmgham2.csv"),
+                       show_col_types = FALSE)
+
 # Read in created survival df
 surv_df <- read_csv(here("Project3", "Data", "frmg_survival_df.csv"),
                     show_col_types = FALSE)
@@ -111,6 +114,8 @@ We used a significance level of $\alpha = 0.05$ for the significance threshold. 
 <!------------------------------------ Table 1 -------------------------------->
 
 ```{r, echo = F, fig.pos='H'}
+##################################### Table 1 ##################################
+
 # Fix levels for categorical variables for Table1
 # Data frame for table1
 tab1_data <- surv_df
@@ -1268,7 +1273,7 @@ kable(male_results,
 
 <!------------------------------- Results continued -------------------------->
 
-\vspace*{1mm}
+\vspace*{0.6mm}
 
 Age and Diabetes status were not significantly associated with risk of stroke for males. 
 Table 3 displays the predicted survival and $\%$ risk over 10 years for males and females aged 40, 50, and 60 for the 5 risk profiles of interest. Figure 1 visualizes the survival probability curves for males.
@@ -1399,18 +1404,104 @@ annotate_figure(plot2,
 ```
 
 In regard to how much change there is in the risk factors over the 3 periods of data collection, Table 4 displays the N, mean, and SDs for the variables for the three time periods. 
+As to be expected, we do observe a steady decline in the number of study participants for both males and females over time. 
+We also note the increase in missing values over time with anti-hypertensive medication, total cholesterol, and BMI. 
+We observe increases in the number of subjects using anti-hypertensive medication and prevalent CHD as well as decreases in the number of subjects who smoke over time. Regarding the continuous covariates, Systolic BP steadily increases with time whereas total cholesterol and BMI have relatively flat trends across time. 
 
-```{r, echo = F}
+```{r, echo = F, fig.pos='H'}
+##################################### Table 4 ##################################
 
+# Table describing the change in the risk factors over time
+
+# Fix levels for categorical variables for Table1
+# Data frame for table1
+tab3_data <- frame_data
+
+# Make sure the factor variables are factors
+
+# Sex
+tab3_data$factor_SEX <- factor(tab3_data$SEX,
+                        levels = c(1, 2),
+                        labels = c("Male", "Female"))
+
+# Diabetes
+tab3_data$factor_DIABETES <- factor(tab3_data$DIABETES,
+                                    levels = c(0, 1),
+                                    labels = c("Not a Diabetic", "Diabetic"))
+
+# Prevchd
+tab3_data$factor_PREVCHD <- factor(tab3_data$PREVCHD,
+                                   levels = c(0, 1),
+                                   labels = c("Free of CHD",
+                                              "Prevalent CHD"))
+
+# Cursmoke
+tab3_data$factor_CURSMOKE <- factor(tab3_data$CURSMOKE,
+                             levels = c(0, 1),
+                             labels = c("Not a Current Smoker",
+                                        "Current Smoker"))
+
+# BPMeds
+tab3_data$factor_BPMEDS <- factor(tab3_data$BPMEDS,
+                                  levels = c(0, 1),
+                                  labels = c("No Use of Medication",
+                                             "Use of Medication"))
+
+# Period
+tab3_data$factor_PERIOD <- factor(tab3_data$PERIOD,
+                                  levels = c(1, 2, 3),
+                                  labels = c("Period 1\n",
+                                             "Period 2\n",
+                                             "Period 3\n"))
+
+
+# Relabel the variables for the Table 1
+tab3_data <- apply_labels(tab3_data,
+                     factor_SEX = "Sex",
+                     factor_BPMEDS = "Use of Anti-hypertensive Medication",
+                     factor_PREVCHD = "Prevalent Coronary Heart Disease",
+                     factor_CURSMOKE = "Cigarrete Smoking Status",
+                     AGE = "Age",
+                     SYSBP = "Systolic Blood Pressure (mmHg)",
+                     TOTCHOL = "Serum Total Cholesterol (mg/dL)",
+                     BMI = "Body Mass Index"
+                     )
+
+# Display the modified Table1
+tab3_data %>% 
+  tbl_summary(include = c(factor_SEX,
+                          AGE,
+                          factor_BPMEDS,
+                          factor_PREVCHD,
+                          factor_CURSMOKE,
+                          SYSBP,
+                          TOTCHOL,
+                          BMI),
+              missing_text = "Missing",
+              by = factor_PERIOD,
+              statistic = list(c(AGE, SYSBP, TOTCHOL, BMI) 
+                               ~ "{mean}({sd})")) %>% 
+  modify_header(label = "Study Period") %>% 
+  # bold_labels() %>% 
+  modify_caption(caption = "Patient Characteristics Across the 
+                 Three Periods") %>% 
+  # Remove the stars from the 3 study period col headers
+  modify_header(all_stat_cols() ~ "{level}\n (N = {n}) ") %>% 
+  # Modify to fit in report
+  as_kable(
+           booktabs = TRUE) %>% 
+  kableExtra::kable_styling(latex_options = c("scale_down",
+                                              "hold_position")) %>% 
+  column_spec(1, bold = TRUE) %>% 
+  row_spec(0, bold = TRUE) %>% 
+  add_indent(c(2:3, 6:8, 10:11, 13:14, 17, 19))
 ```
-
-
 
 \vspace{-6mm}
 ## Discussion
 \vspace{-6mm}
 
-
+And then meow meow moew moew moew moew moew mowem ewomeow meow moew
 
 ```{r, echo = F, eval = F, message=F, warning=F}
 library(colorspace)
