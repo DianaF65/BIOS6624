@@ -1221,22 +1221,6 @@ male_results <- cbind(mrp1_results,
                        mrp5_results[,2:3]
                        )
 
-# Display with kable
-# kable(male_results,
-#   format = "latex",
-#   booktabs = TRUE,
-#   digits = 3,
-#   caption = "Survival Rates and Risk \\% Over 10 Years for Males") %>% 
-#   kable_styling(latex_options = c("striped", "hold_position", 
-#                                   "scale_down")) %>% 
-#   add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2, 
-#                      "Risk Profile 2\nHigh BP" = 2,
-#                      "Risk Profile 3\nDiabetes" = 2,
-#                      "Risk Profile 4\n High BP & Diabetes" = 2,
-#                      "Risk Profile 5\n Smoker" = 2)) %>% 
-#   footnote(number = c("BP = Blood Pressure ",
-#                       "All Risk Factors are at Baseline Timepoint"))
-
 ```
 
 ```{r, echo = F}
@@ -1246,7 +1230,8 @@ kable(female_results,
   format = "latex",
   booktabs = TRUE,
   digits = 3, 
-  caption = "Survival Rates and Risk \\% Over 10 Years") %>%
+  caption = "Survival Rates and Risk \\% Over 10 Years for Different 
+  Risk Profiles") %>%
   kable_styling(latex_options = c("striped", "hold_position",
                                   "scale_down")) %>%
   add_header_above(c(" ", "Risk Profile 1\nNo Risk factors" = 2,
@@ -1283,8 +1268,149 @@ kable(male_results,
 
 <!------------------------------- Results continued -------------------------->
 
-Age and Diabetes status were not significantly associated with risk of stroke. 
-In Table 3 we compare the predicted survival and $\%$ risk over 10 years for males and females for ages 40, 50, and 60 for the 5 risk profiles of interest.
+\vspace*{1mm}
+
+Age and Diabetes status were not significantly associated with risk of stroke for males. 
+Table 3 displays the predicted survival and $\%$ risk over 10 years for males and females aged 40, 50, and 60 for the 5 risk profiles of interest. Figure 1 visualizes the survival probability curves for males.
+Comparing the survival probabilities and risks for males and females, 
+we see that individuals with no risk factors have survival probabilities greater than 97$\%$ and risks lower than $3\%$. 
+The probabilities and risk $\%$ is identical to that of subjects who identifed as being current smokers at baseline. 
+The survival probabilities decrease and risk percentages increase for both sexes with high blood pressure, diabetes, or high BP and diabetes.  We observe the sharpest contrast from Risk Profile 1 with Risk Profile 4 with noticeable decreases in survival probabilites and increases in risk. 
+Overall, sex differences in survival probabilites and risk are apparent, each additional increment of age from 40 to 60 evidently affects these numbers, and high blood pressure and diabetes appear to be the biggest risk factors for stroke. 
+
+```{r, echo = F, message = F, warning = F, fig.pos="H", eval =F}
+library(colorspace)
+# Plot the survival curves
+m1 <- ggsurvplot(survfit(males_fit, 
+                   newdata = males_rp1),
+           data = males_df,
+           censor = FALSE,
+           conf.int = FALSE,
+           # ylim = c(0.98, 1),
+           xlim = c(0, 3650),
+           # risk.table = TRUE,
+           ggtheme = theme_minimal(),
+           # legend = "none",
+           legend.labs = c("40", "50", "60"),
+           legend.title = "Age",
+           title = "Risk Profile 1 Estimated Survival\nAverage Individual",
+           font.main = 10,
+           palette = "Set1"
+           ) 
+# m1
+
+# Plot the survival curves
+m2 <- ggsurvplot(survfit(males_fit, 
+                   newdata = males_rp2),
+           data = males_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           # ylim = c(0.35, 1),
+           xlim = c(0, 3650),
+           ggtheme = theme_minimal(),
+           legend.labs = c("Age 40", "Age 50", "Age 60"),
+           legend = "none",
+           title = "Risk Profile 2 Estimated Survival\nHigh BP",
+           font.main = 10,
+           palette = "Set1"
+) 
+# f2
+
+
+# Plot the survival curves
+m3 <- ggsurvplot(survfit(males_fit, 
+                   newdata = males_rp3),
+           data = males_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           # ylim = c(0.90, 1),
+           xlim = c(0, 3650),
+           ggtheme = theme_minimal(),
+           legend = "none",
+           title = "Risk Profile 2 Estimated Survival\nDiabetes",
+           font.main = 10,
+           palette = "Set1"
+) 
+# f3
+
+# Plot the survival curves
+m4 <- ggsurvplot(survfit(males_fit, 
+                   newdata = males_rp4),
+           data = males_df,
+           censor = F,
+           conf.int = FALSE,
+           # Min is 0.35 and max is 0.99
+           # ylim = c(0.95, 1),
+           xlim = c(0, 3650),
+           ggtheme = theme_minimal(),
+           legend.labs = c("Age 40", "Age 50", "Age 60"),
+           legend = "none",
+           title = "Risk Profile 2 Estimated Survival\nHigh BP & Diabetes",
+           font.main = 10,
+           palette = "Set1"
+) 
+# f4
+
+# Plot the survival curves
+m5 <- ggsurvplot(survfit(males_fit, 
+                         newdata = males_rp5),
+                 data = males_df,
+                 censor = F,
+                 conf.int = FALSE,
+                 # Min is 0.35 and max is 0.99
+                 # ylim = c(0.95, 1),
+                 xlim = c(0, 3650),
+                 ggtheme = theme_minimal(),
+                 legend = "none",
+                 title = "Risk Profile 2 Estimated Survival\nSmoker",
+                 font.main = 10,
+                 palette = "Set1"
+) 
+# f5
+
+##### Display all plots together
+
+library(ggpubr)
+# Using ggarrange
+plot2 <- ggarrange(m1$plot, m2$plot, m3$plot, m4$plot, m5$plot,
+          ncol = 3, nrow = 2,
+          common.legend = TRUE,
+          legend = "top",
+          legend.labs = c("Age", "Age 50", "Age 60"),
+          vjust = 0.5
+          ) 
+# Add a note at the bottom of this figure
+annotate_figure(plot2,
+                top = text_grob("Estimated Survival Curves - Males",
+                                size = 12,
+                                face = "bold"),
+                bottom = text_grob("**Y-axis is not the same for every plot",
+                                   size = 10,
+                                   hjust = 1.3,
+                                   face = "italic"))
+  
+
+# With survival package - could not get one legend for all plots
+# arrange_ggsurvplots(list(f1, f2, f3, f4, f5),
+#                     ncol = 3, nrow = 2,
+#                     title = "Estimated Survival Curves - males")
+```
+
+In regard to how much change there is in the risk factors over the 3 periods of data collection, Table 4 displays the N, mean, and SDs for the variables for the three time periods. 
+
+```{r, echo = F}
+
+```
+
+
+
+\vspace{-6mm}
+## Discussion
+\vspace{-6mm}
+
+
 
 ```{r, echo = F, eval = F, message=F, warning=F}
 library(colorspace)
@@ -1406,126 +1532,6 @@ annotate_figure(plot1,
 #                     title = "Estimated Survival Curves - Females")
 ```
 
-
-```{r, echo = F, message = F, warning = F, fig.pos="H", eval =F}
-library(colorspace)
-# Plot the survival curves
-m1 <- ggsurvplot(survfit(males_fit, 
-                   newdata = males_rp1),
-           data = males_df,
-           censor = FALSE,
-           conf.int = FALSE,
-           # ylim = c(0.98, 1),
-           xlim = c(0, 3650),
-           # risk.table = TRUE,
-           ggtheme = theme_minimal(),
-           # legend = "none",
-           legend.labs = c("40", "50", "60"),
-           legend.title = "Age",
-           title = "Risk Profile 1 Estimated Survival\nAverage Individual",
-           font.main = 10,
-           palette = "Set1"
-           ) 
-# m1
-
-# Plot the survival curves
-m2 <- ggsurvplot(survfit(males_fit, 
-                   newdata = males_rp2),
-           data = males_df,
-           censor = F,
-           conf.int = FALSE,
-           # Min is 0.35 and max is 0.99
-           # ylim = c(0.35, 1),
-           xlim = c(0, 3650),
-           ggtheme = theme_minimal(),
-           legend.labs = c("Age 40", "Age 50", "Age 60"),
-           legend = "none",
-           title = "Risk Profile 2 Estimated Survival\nHigh BP",
-           font.main = 10,
-           palette = "Set1"
-) 
-# f2
-
-
-# Plot the survival curves
-m3 <- ggsurvplot(survfit(males_fit, 
-                   newdata = males_rp3),
-           data = males_df,
-           censor = F,
-           conf.int = FALSE,
-           # Min is 0.35 and max is 0.99
-           # ylim = c(0.90, 1),
-           xlim = c(0, 3650),
-           ggtheme = theme_minimal(),
-           legend = "none",
-           title = "Risk Profile 2 Estimated Survival\nDiabetes",
-           font.main = 10,
-           palette = "Set1"
-) 
-# f3
-
-# Plot the survival curves
-m4 <- ggsurvplot(survfit(males_fit, 
-                   newdata = males_rp4),
-           data = males_df,
-           censor = F,
-           conf.int = FALSE,
-           # Min is 0.35 and max is 0.99
-           # ylim = c(0.95, 1),
-           xlim = c(0, 3650),
-           ggtheme = theme_minimal(),
-           legend.labs = c("Age 40", "Age 50", "Age 60"),
-           legend = "none",
-           title = "Risk Profile 2 Estimated Survival\nHigh BP & Diabetes",
-           font.main = 10,
-           palette = "Set1"
-) 
-# f4
-
-# Plot the survival curves
-m5 <- ggsurvplot(survfit(males_fit, 
-                         newdata = males_rp5),
-                 data = males_df,
-                 censor = F,
-                 conf.int = FALSE,
-                 # Min is 0.35 and max is 0.99
-                 # ylim = c(0.95, 1),
-                 xlim = c(0, 3650),
-                 ggtheme = theme_minimal(),
-                 legend = "none",
-                 title = "Risk Profile 2 Estimated Survival\nSmoker",
-                 font.main = 10,
-                 palette = "Set1"
-) 
-# f5
-
-##### Display all plots together
-
-library(ggpubr)
-# Using ggarrange
-plot2 <- ggarrange(m1$plot, m2$plot, m3$plot, m4$plot, m5$plot,
-          ncol = 3, nrow = 2,
-          common.legend = TRUE,
-          legend = "top",
-          legend.labs = c("Age", "Age 50", "Age 60"),
-          vjust = 0.5
-          ) 
-# Add a note at the bottom of this figure
-annotate_figure(plot2,
-                top = text_grob("Estimated Survival Curves - Males",
-                                size = 12,
-                                face = "bold"),
-                bottom = text_grob("**Y-axis is not the same for every plot",
-                                   size = 10,
-                                   hjust = 1.3,
-                                   face = "italic"))
-  
-
-# With survival package - could not get one legend for all plots
-# arrange_ggsurvplots(list(f1, f2, f3, f4, f5),
-#                     ncol = 3, nrow = 2,
-#                     title = "Estimated Survival Curves - males")
-```
 
 
 
