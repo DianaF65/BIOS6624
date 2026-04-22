@@ -1,5 +1,5 @@
 ---
-title: Risk Factors of 10-year Stroke
+title: "\\Large Risk Factors for 10-year Stroke Risk in the Framingham Heart Study"
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -78,7 +78,7 @@ surv_df$STROKE10 <- as.numeric(as.character(surv_df$STROKE10))
 # Introduction
 \vspace{-6mm}
 
-The Framington Heart Study is a longitudinal and prospective study with the overarching goal of investigating the etiology of cardiovascular disease in the community of Framingham, Massachusetts. The study was conducted on an initial population of 5,209 individuals on which data was collected for health behaviors, medication use, clinical measurements such as blood pressure, and more. The primary goal of this analysis is to identify risk factors of stroke within a 10-year period for five different risk profiles of interest: 1.) Subjects with no risk factors for stroke, 2.) Subjects with high blood pressure (BP) (> 60 (mmHg) ), 3.) Subjects with diabetes, 4.) Subjects with high blood pressure and diabetes, 5.) Subjects who were smokers. All risk factors are measured at baseline. Additionally, we will summarize the change in the risk factors over the whole duration of the study period to determine whether a more complex time-varying covariate analysis is warranted. 
+The Framington Heart Study is a longitudinal and prospective study with the overarching goal of investigating the etiology of cardiovascular disease in the community of Framingham, Massachusetts. The study was conducted on an initial population of 5,209 individuals on which data was collected for health behaviors, medication use, clinical measurements such as blood pressure, and more. The primary goal of this analysis is to identify risk factors of stroke within a 10-year period for five different risk profiles of interest: 1.) Subjects with no risk factors for stroke, 2.) Subjects with high blood pressure (BP) (> 60 (mmHg) ), 3.) Subjects with diabetes, 4.) Subjects with high blood pressure and diabetes, 5.) Subjects who were smokers. All risk factors are measured at baseline. Additionally, we summarize the change in the risk factors over the whole duration of the study period to assess whether a more complex time-varying covariate analysis is warranted. 
 This report covers the preliminary findings of our analysis answering the primary question of interest. It fills in the results from the data analysis plan agreed upon in the Data Analysis Plan report.
 
 \vspace{-10mm}
@@ -89,8 +89,8 @@ This report covers the preliminary findings of our analysis answering the primar
 \vspace{-6mm}
 
 The raw data contained 11,627 observations for 4,434 subjects and 38 variables. Missingness was assessed in the whole data set thruogh summaries and visualizations. Regarding the primary variables of interest, BP Medication had ~5% missginness, total cholesterol had 3.5% missingness, and BMI had ~0.5% missingness. We verified that there were no relationships between missingness and any variables and therefore concluded that data was Missing Completely at Random.
-We then proceeded with creating new variables specifically for the 10-year window of interest for the primary analysis. We created an indicator variable for whether subjects had a stroke with 10 years (Yes/No) as well as the time to stroke for these events. 
-The data for sex-specific analyses consisted of 2,378 observations for females and 2,056 observationsfor males. We used a complete case data frame, removing any rows with missing data. 
+We created new variables specifically for the 10-year window of interest for the primary analysis. We created an indicator variable for whether subjects had a stroke with 10 years (Yes/No) as well as the time to stroke for these events. 
+The data for sex-specific analyses consisted of 2,378 observations for females and 1,897 observationsfor males. We used a complete case data frame, removing any rows with missing data. 
 
 \vspace{-8mm}
 ## Data Analysis
@@ -98,16 +98,19 @@ The data for sex-specific analyses consisted of 2,378 observations for females a
 
 We performed a preliminary descriptive analysis of survival curves by sex with visualizations of the Kaplan Meier curves before fitting the primary Cox model.
 The preliminary Kaplan-Meier analysis reveled frequent crossing between the separate male and female survival curves. This indicated a violation of the proportional hazards assumption and therefore necessitates stratified Cox models to obtain the sex-specific risk differences. 
-We performed LASSO variable selection using cross validation separately for each sex. For males, only antihypertensive medication use was retained, suggesting it is the strongest predictor of stroke risk among the variables considered.
-For females, in addition to antihypertensive medication, additional predictors including prevalent CHD, total cholesterol, and BMI were retained in females. 
+To identify risk factors that are associated with stroke in a 10-year period, we conducted a Survival analysis with stroke as the event and days to stroke as the time to event. Specifically, we fit a Cox Proportional Hazards (PH) Survival Model to identify important risk factors of stroke and obtain the 10-year probability of stroke based on the five risk profiles. 
+Age, Diabetes status, and Systolic Blood Pressure (BP) were included in all models for all analyses. 
+The secondary variables of interest were presence of Coronary Heart Disease (CHD), use of anit-hypertensive medication, smoking status, total cholesterol, and BMI. 
+We performed LASSO variable selection using cross validation for the secondary variables separately for each sex. 
+For males, use of antihypertensive medication as well as smoker status was retained, suggesting these were the strongest predictors of stroke risk among the variables considered.
+For females, no additional variables besides the primary variables that were included in the analysis were retained using LASSO. 
 For the primary analysis, we kept the LASSO selected variables specific to each sex. 
 In regard to model assumptions, Schoenfeld residiual test for males and females indicated no evidence of violation of the proportional hazards assumption for individual covariates for globally (global p = 0.714).
-The LML Plot for Diabetes status, use of antihypertensive medication, and prevalent CHD visually satisfied the PH assumption for categorical variables as the curves for the different strata were parallel. 
-To identify risk factors that are associated with stroke in a 10-year period, we conducted a Survival analysis with stroke as the event and days to stroke as the time to event. Specifically, we fit a Cox Proportional Hazards (PH) Survival Model to identify important risk factors of stroke and obtain the 10-year probability of stroke based on the five risk profiles. 
-We adjusted for Age, Diabetes status (Yes/No), and Systolic BP in the models for both sexes and incorporated the LASSO selected variables specific to each sex. 
+The LML Plot for Diabetes status and use of antihypertensive medication visually satisfied the PH assumption for categorical variables as the curves for the different strata were parallel. 
 Lastly, we created a table describing how variables such as Systolic BP and BMI change over over time. 
 We used a significance level of $\alpha = 0.05$ for the significance threshold. All analyses were conducted with R version 4.1.1 using the glmnet, survival, and survminer packages. 
 
+\vspace{-8mm}
 # Results
 \vspace{-6mm}
 
@@ -197,8 +200,8 @@ Table 1 contains a description of the data used for all analyses.
 The data is stratified by sex, n and \% of patients is displayed for the categorical variables, and the mean and standard deviation is shown for each continuous variable.
 We note the small number of subjects across both sexes that had a stroke within the 10 year time span. In addition, the use of Anti-hypertensive medication and prevalent coronary heart disease groups are noticeably unbalanced. 
 Table 2 displays the Hazard Ratios (HRs), 95\% Confidence Intervals (CIs), and p-values for the sex-specific models.
-For females, Age and Systolic BP were significantly associated with a higher risk of stroke. Additional increases in age were associated with a 7% higher risk while higher values of systolic BP were associated with a 3% higher risk of stroke. The remaining variables were not significantly associated with risk of stroke for the 10 year period. 
-For males, Diabetes status and Systolic BP were significantly associated with a higher risk of stroke. Higher values for age were associated with an increased stroke risk of 6% and higher Systolic BP increased stroke risk by 3%. 
+Among females, Age and Systolic BP were significantly associated with a higher risk of stroke. 
+Each additional year in age
 
 <!----------------------------------------------------------------------------->
 <!--------------------------------- KM Curves --------------------------------->
@@ -257,14 +260,17 @@ y_m <- Surv(time = males_df$STROKE10TIME,
             event = males_df$STROKE10)
 
 # Create the model matrix for glmnet
-x_m <- model.matrix(
-  ~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
+x_m <- model.matrix(~ AGE + DIABETES + SYSBP
+  + PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
   data = males_df)[, -1]  # Remove the intercept
 
 # Lasso - cross validation
 cv_m <- cv.glmnet(x_m, y_m, 
                   family = "cox", 
-                  alpha = 1)
+                  alpha = 1,
+                  # Force the first 3 variables to be kept
+                  penalty.factor = c(0, 0, 0, 
+                                     rep(1, ncol(x_m) - 3)))
 
 # Plot to see the optimal lambda value
 plot(cv_m)
@@ -276,17 +282,19 @@ plot(cv_m)
 ## Provides the best simple model!
 
 coef_1se_males <- coef(cv_m, s = "lambda.1se")
-#           1
-# PREVCHD1  .
-# BPMEDS1   .
-# CURSMOKE1 .
-# TOTCHOL   .
-# BMI       .
+# AGE       0.05808631
+# DIABETES1 1.39157280
+# SYSBP     0.03271646
+# PREVCHD1  .         
+# BPMEDS1   .         
+# CURSMOKE1 .         
+# TOTCHOL   .         
+# BMI       .  
 
 # Get the nonzero variables
 m_1se <- which(as.vector(coef_1se_males) != 0)
 m_selected_1se <- rownames(coef_1se_males)[m_1se]
-# character(0)  -----  NO variables kept
+# "AGE"       "DIABETES1" "SYSBP" 
 ## None of the predictors add enough predictve value to justify including them
 
 # Which variables were kept with lambda min
@@ -295,28 +303,22 @@ m_selected_1se <- rownames(coef_1se_males)[m_1se]
 ## Higher risk of overfitting though
 ## Provides the best fit
 coef_min_males <- coef(cv_m, s = "lambda.min")
-# > #           1
-# > # PREVCHD1  .
-# > # BPMEDS1   .
-# > # CURSMOKE1 .
-# > # TOTCHOL   .
-# > # BMI       .
-# > coef(cv_m, s = "lambda.min")
-# 5 x 1 sparse Matrix of class "dgCMatrix"
-#                  1
-# PREVCHD1  .       
-# BPMEDS1   1.217418
-# CURSMOKE1 .       
-# TOTCHOL   .       
+#                    1
+# AGE       0.06165026
+# DIABETES1 1.50155634
+# SYSBP     0.03236087
+# PREVCHD1  .         
+# BPMEDS1   0.30363247
+# CURSMOKE1 0.35060978
+# TOTCHOL   .         
 # BMI       .
 
 # Get the nonzero variables
 m_min <- which(as.vector(coef_min_males) != 0)
 m_selected_min <- rownames(coef_min_males)[m_min]
-# character(0)  -----  NO variables kept
-# [1] "BPMEDS1"
+# [1] "AGE"       "DIABETES1" "SYSBP"     "BPMEDS1"   "CURSMOKE1"
 
-### Based on minimum, keep BPMEDS for males - the only variable with meaningful
+### Based on minimum, keep these vars for males - the only variable with meaningful
 ### predictive signal for males
 ```
 
@@ -339,14 +341,17 @@ y_f <- Surv(time = females_df$STROKE10TIME,
             event = females_df$STROKE10)
 
 # Create the model matrix for glmnet
-x_f <- model.matrix(
-  ~ PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
+x_f <- model.matrix( ~ AGE + DIABETES + SYSBP 
+  +  PREVCHD + BPMEDS + CURSMOKE + TOTCHOL + BMI,
   data = females_df)[, -1]  # Remove the intercept
 
 # Lasso - cross validation
 cv_f <- cv.glmnet(x_f, y_f, 
                   family = "cox", 
-                  alpha = 1)
+                  alpha = 1,
+                  # Force the first 3 variables to be kept
+                  penalty.factor = c(0, 0, 0, 
+                                     rep(1, ncol(x_f) - 3)))
 
 # Plot to see the optimal lambda value
 plot(cv_f)
@@ -358,17 +363,20 @@ plot(cv_f)
 ## Provides the best simple model!
 
 coef_1se_females <- coef(cv_f, s = "lambda.1se")
-#           1
-# PREVCHD1  .
-# BPMEDS1   .
-# CURSMOKE1 .
-# TOTCHOL   .
+#                    1
+# AGE       0.07113834
+# DIABETES1 0.56976402
+# SYSBP     0.02570976
+# PREVCHD1  .         
+# BPMEDS1   .         
+# CURSMOKE1 .         
+# TOTCHOL   .         
 # BMI       .
 
 # Get the nonzero variables
 f_1se <- which(as.vector(coef_1se_females) != 0)
 f_selected_1se <- rownames(coef_1se_females)[f_1se]
-# character(0)  -----  NO variables kept
+# "AGE"       "DIABETES1" "SYSBP" 
 ## None of the predictors add enough predictve value to justify including them
 
 # Which variables were kept with lambda min
@@ -377,17 +385,20 @@ f_selected_1se <- rownames(coef_1se_females)[f_1se]
 ## Higher risk of overfitting though
 ## Provides the best fit
 coef_min_females <- coef(cv_f, s = "lambda.min")
-#                     1
-# PREVCHD1  1.051070381
-# BPMEDS1   1.235644137
-# CURSMOKE1 .          
-# TOTCHOL   0.002948321
-# BMI       0.041851181
+#                    1
+# AGE       0.07113834
+# DIABETES1 0.56976402
+# SYSBP     0.02570976
+# PREVCHD1  .         
+# BPMEDS1   .         
+# CURSMOKE1 .         
+# TOTCHOL   .         
+# BMI       .
 
 # Get the nonzero variables
 f_min <- which(as.vector(coef_min_females) != 0)
 f_selected_min <- rownames(coef_min_females)[f_min]
-# "PREVCHD1" "BPMEDS1"  "TOTCHOL"  "BMI" 
+# "AGE"       "DIABETES1" "SYSBP" 
 
 ### Based on minimum, keep PRECHD, BPMEDS, TOTCHOL, and BMI
 ### Remove CURSMOKE
@@ -406,8 +417,8 @@ f_selected_min <- rownames(coef_min_females)[f_min]
 
 # Model for females
 females_fit <- coxph(Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES 
-                     + SYSBP + PREVCHD + BPMEDS + TOTCHOL + BMI,
-  data = females_df
+                     + SYSBP,
+                     data = females_df
 )
 
 # Summary of general model
@@ -451,7 +462,7 @@ females_prevchd <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~
                                    strata(PREVCHD),
                            data = females_df))
 
-# LML Plot
+# LML Plot - no need actually 
 plot(females_prevchd, 
      fun = "cloglog", 
      col = c("red", "blue"), 
@@ -465,7 +476,7 @@ females_bpmeds <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~
                                   strata(BPMEDS),
                           data = females_df))
 
-# LML Plot
+# LML Plot - no neede actually 
 plot(females_bpmeds, 
      fun = "cloglog", 
      col = c("red", "blue"), 
@@ -484,14 +495,11 @@ females_table <- females_fit %>%
                  exponentiate = TRUE,
                  pvalue_fun = label_style_pvalue(digits = 2),
                  conf.int = TRUE,
-                 show_single_row = c(DIABETES, PREVCHD, BPMEDS),
+                 show_single_row = c(DIABETES, SYSBP),
                  label = list(
                    AGE ~ "Age",
-                   DIABETES ~ "Diabetes Status",
-                   PREVCHD ~ "Prevalent CHD",
-                   BPMEDS ~ "BP Medication",
                    SYSBP ~ "Systolic BP",
-                   TOTCHOL ~ "Total Cholesterol"))
+                   DIABETES ~ "Diabetes Status"))
 ```
 
 
@@ -518,33 +526,40 @@ females_rp1 <- data.frame(
     DIABETES = factor(rep(0, 3), 
                       levels = levels(females_df$DIABETES)),
     SYSBP = rep(mean(females_df$SYSBP), 3),
-    PREVCHD = factor(rep(0, 3), 
-                     levels = levels(females_df$PREVCHD)),
-    BPMEDS = factor(rep(0, 3), 
-                    levels = levels(females_df$BPMEDS)),
     CURSMOKE = factor(rep(0, 3), 
-                      levels = levels(females_df$CURSMOKE)),
-    TOTCHOL = rep(mean(females_df$TOTCHOL, 
-                       na.rm = TRUE), 3),
-    BMI = rep(mean(females_df$BMI), 3)
+                    levels = levels(females_df$CURSMOKE))
 )
+#   AGE DIABETES    SYSBP CURSMOKE
+# 1  40        0 133.5524        0
+# 2  50        0 133.5524        0
+# 3  60        0 133.5524        0
 
 # Fit cox model for risk profile 1
-mrp1_fit <- survfit(females_fit, newdata = females_rp1)
+females_fit_riskprofiles <- coxph(Surv(STROKE10TIME, STROKE10) ~ 
+                                    AGE + DIABETES + SYSBP + CURSMOKE,
+                                  data = females_df
+)
+        
+# Use survfit                          
+frp1_fit <- survfit(females_fit_riskprofiles, newdata = females_rp1)
 
 
 # Estimates for 10 years
-mrp1_summary <- summary(mrp1_fit, times = 365*10)
+frp1_summary <- summary(frp1_fit, times = 365*10)
 # time n.risk n.event survival1 survival2 survival3
-# 3650   2177      57     0.995     0.988     0.976
+#  3650   2177      57     0.994     0.988     0.975
 
 # Data frame of survival 10 years and risk 10 years
-mrp1_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp1_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp1_summary$surv, 3)*100,
+frp1_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp1_summary$surv), 3),
+                           Risk = paste0(round(1 - frp1_summary$surv, 3)*100,
                                          "%")
 )
 
+#   Age Survival Risk
+# 1  40    0.994 0.6%
+# 2  50    0.988 1.2%
+# 3  60    0.975 2.5%
 ```
 
 
@@ -558,42 +573,34 @@ females_rp2 <- data.frame(
   DIABETES = factor(rep(0, 3), 
                     levels = levels(females_df$DIABETES)),
   SYSBP = rep(200, 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(females_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(females_df$BPMEDS)),
   CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(females_df$CURSMOKE)),
-  TOTCHOL = rep(mean(females_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(females_df$BMI), 3)
+                    levels = levels(males_df$CURSMOKE))
 )
 
-# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        0   180       0      0        0 239.5698 25.56664
-# 2  50        0   230       0      0        0 239.5698 25.56664
-# 3  60        0   280       0      0        0 239.5698 25.56664
+#   AGE DIABETES SYSBP CURSMOKE
+# 1  40        0   200        0
+# 2  50        0   200        0
+# 3  60        0   200        0
 
 
 # Fit cox model for risk profile 2
-mrp2_fit <- survfit(females_fit, newdata = females_rp2)
+frp2_fit <- survfit(females_fit_riskprofiles, newdata = females_rp2)
 
-# Estimates for 10 years
-mrp2_summary <- summary(mrp2_fit, times = 365*10)
-# time n.risk n.event survival1 survival2 survival3
-# 3650   2177      57     0.983     0.878     0.382
+# Estimates for 10 yearsf
+frp2_summary <- summary(frp2_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   2177      57     0.969     0.935     0.867
 
 # Create data frame of survival 10 years and risk 10 years
-mrp2_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp2_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp2_summary$surv, 3)*100,
+frp2_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp2_summary$surv), 3),
+                           Risk = paste0(round(1 - frp2_summary$surv, 3)*100,
                                          "%")
 )
-# Age Survival  Risk
-# 1  40    0.983  1.7%
-# 2  50    0.878 12.2%
-# 3  60    0.382 61.8%
-
+#   Age Survival  Risk
+# 1  40    0.969  3.1%
+# 2  50    0.935  6.5%
+# 3  60    0.867 13.3%
 
 ```
 
@@ -609,47 +616,41 @@ females_rp3 <- data.frame(
   DIABETES = factor(rep(1, 3), 
                     levels = levels(females_df$DIABETES)),
   SYSBP = rep(mean(females_df$SYSBP), 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(females_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(females_df$BPMEDS)),
   CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(females_df$CURSMOKE)),
-  TOTCHOL = rep(mean(females_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(females_df$BMI), 3)
+                    levels = levels(females_df$CURSMOKE))
 )
-# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        1 133.5524       0      0        0 239.5698 25.56664
-# 2  50        1 133.5524       0      0        0 239.5698 25.56664
-# 3  60        1 133.5524       0      0        0 239.5698 25.56664
+#   AGE DIABETES    SYSBP CURSMOKE
+# 1  40        1 133.5524        0
+# 2  50        1 133.5524        0
+# 3  60        1 133.5524        0
+
 
 
 # Fit cox model for risk profile 3
-mrp3_fit <- survfit(females_fit, newdata = females_rp3)
+frp3_fit <- survfit(females_fit_riskprofiles, newdata = females_rp3)
 
 # Estimates for 10 years
-mrp3_probs <- summary(mrp3_fit, times = 365*10)
-# time n.risk n.event survival1 survival2 survival3
-# 3650   2177      57      0.99     0.979     0.955
+frp3_probs <- summary(frp3_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   2177      57      0.99     0.979     0.955
 
 
 # Estimates for 10 years
-mrp3_summary <- summary(mrp3_fit, times = 365*10)
-# time n.risk n.event survival1 survival2 survival3
-# 3650   2177      57      0.99     0.979     0.955
+frp3_summary <- summary(frp3_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   2177      57      0.99     0.979     0.955
 
 # Create data frame of survival 10 years and risk 10 years
-mrp3_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp3_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp3_summary$surv, 3)*100,
+frp3_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp3_summary$surv), 3),
+                           Risk = paste0(round(1 - frp3_summary$surv, 3)*100,
                                          "%")
 )
 
-# Age Survival Risk
-# 1  40    0.990   1%
-# 2  50    0.979 2.1%
-# 3  60    0.955 4.5%
+#   Age Survival Risk
+# 1  40    0.988 1.2%
+# 2  50    0.976 2.4%
+# 3  60    0.951 4.9%
 
 ```
 
@@ -658,47 +659,41 @@ mrp3_results <- data.frame(Age = c(40, 50, 60),
 ################################# Risk Profile 4 ###############################
 
 #### Risk profile 4:
-## Diabetes and no other risk factors
+## Diabetes AND high BP
 females_rp4 <- data.frame(
   AGE = c(40, 50, 60),
   DIABETES = factor(rep(1, 3), 
                     levels = levels(females_df$DIABETES)),
   SYSBP = rep(200, 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(females_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(females_df$BPMEDS)),
   CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(females_df$CURSMOKE)),
-  TOTCHOL = rep(mean(females_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(females_df$BMI), 3)
+                    levels = levels(females_df$CURSMOKE))
 )
 # 
-# AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        1   180       0      0        0 239.5698 25.56664
-# 2  50        1   230       0      0        0 239.5698 25.56664
-# 3  60        1   280       0      0        0 239.5698 25.56664
+#   AGE DIABETES    SYSBP CURSMOKE
+# 1  40        1 133.5524        0
+# 2  50        1 133.5524        0
+# 3  60        1 133.5524        0
 
 # Fit cox model for risk profile 3
-mrp4_fit <- survfit(females_fit, newdata = females_rp4)
+frp4_fit <- survfit(females_fit_riskprofiles, newdata = females_rp4)
 
 # Estimates for 10 years
-mrp4_summary <- summary(mrp4_fit, times = 365*10)
+frp4_summary <- summary(frp4_fit, times = 365*10)
 # time n.risk n.event survival1 survival2 survival3
 # 3650   2177      57      0.99     0.979     0.955
 
 # Create data frame of survival 10 years and risk 10 years
-mrp4_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp4_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp4_summary$surv, 3)*100,
+frp4_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp4_summary$surv), 3),
+                           Risk = paste0(round(1 - frp4_summary$surv, 3)*100,
                                          "%")
 )
 
 # Age Survival  Risk
-# 1  40    0.968  3.2%
-# 2  50    0.785 21.5%
-# 3  60    0.167 83.3%
+#   Age Survival  Risk
+# 1  40    0.945  5.5%
+# 2  50    0.886 11.4%
+# 3  60    0.772 22.8%
 
 ```
 
@@ -713,41 +708,35 @@ females_rp5 <- data.frame(
   DIABETES = factor(rep(0, 3), 
                     levels = levels(females_df$DIABETES)),
   SYSBP = rep(mean(females_df$SYSBP), 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(females_df$PREVCHD)),
-  BPMEDS = factor(rep(0, 3), 
-                  levels = levels(females_df$BPMEDS)),
   CURSMOKE = factor(rep(1, 3), 
-                    levels = levels(females_df$CURSMOKE)),
-  TOTCHOL = rep(mean(females_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(females_df$BMI), 3)
+                    levels = levels(females_df$CURSMOKE))
 )
 # 
-# AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
-# 1  40        0 133.5524       0      0        1 239.5698 25.56664
-# 2  50        0 133.5524       0      0        1 239.5698 25.56664
-# 3  60        0 133.5524       0      0        1 239.5698 25.56664
+#  AGE DIABETES    SYSBP CURSMOKE
+# 1  40        0 133.5524        1
+# 2  50        0 133.5524        1
+# 3  60        0 133.5524        1
 
 # Fit cox model for risk profile 3
-mrp5_fit <- survfit(females_fit, newdata = females_rp5)
+frp5_fit <- survfit(females_fit_riskprofiles, newdata = females_rp5)
 
 # Estimates for 10 years
-mrp5_summary <- summary(mrp5_fit, times = 365*10)
-# time n.risk n.event survival1 survival2 survival3
-# 3650   2177      57     0.992     0.984     0.966
+frp5_summary <- summary(frp5_fit, times = 365*10)
+ # time n.risk n.event survival1 survival2 survival3
+ # 3650   2177      57     0.992     0.983     0.964
 
 # Create data frame of survival 10 years and risk 10 years
-mrp5_results <- data.frame(Age = c(40, 50, 60),
-                           Survival = round(as.vector(mrp5_summary$surv), 3),
-                           Risk = paste0(round(1 - mrp5_summary$surv, 3)*100,
+frp5_results <- data.frame(Age = c(40, 50, 60),
+                           Survival = round(as.vector(frp5_summary$surv), 3),
+                           Risk = paste0(round(1 - frp5_summary$surv, 3)*100,
                                          "%")
 )
 
 # Age Survival Risk
+#   Age Survival Risk
 # 1  40    0.992 0.8%
-# 2  50    0.984 1.6%
-# 3  60    0.966 3.4%
+# 2  50    0.983 1.7%
+# 3  60    0.964 3.6%
 ```
 
 
@@ -758,31 +747,31 @@ library(kableExtra)
 
 # Create individual kables for each df
 # Results 1
-fk1 <- kable(mrp1_results, caption = "meow1",
+fk1 <- kable(frp1_results, caption = "meow1",
              format = "html") %>% 
   kable_styling()
 
 # Results 2
-fk2 <- kable(mrp2_results, caption = "meow2",
+fk2 <- kable(frp2_results, caption = "meow2",
              format = "html") %>% 
   kable_styling()
 
 # Results 3
-fk3 <- kable(mrp3_results, caption = "meow3",
+fk3 <- kable(frp3_results, caption = "meow3",
              format = "html") %>% 
   kable_styling()
 
 # Results 4
-fk4 <- kable(mrp4_results, caption = "meow4",
+fk4 <- kable(frp4_results, caption = "meow4",
              format = "html") %>% 
   kable_styling()
 
 # Combimne results into one
-female_results <- cbind(mrp1_results, 
-                       mrp2_results[, 2:3],
-                       mrp3_results[,2:3],
-                       mrp4_results[,2:3],
-                       mrp5_results[,2:3]
+female_results <- cbind(frp1_results, 
+                       frp2_results[, 2:3],
+                       frp3_results[,2:3],
+                       frp4_results[,2:3],
+                       frp5_results[,2:3]
                        )
 
 ```
@@ -800,7 +789,7 @@ female_results <- cbind(mrp1_results,
 # Model for males
 males_fit <- coxph(
   Surv(STROKE10TIME, STROKE10) ~ AGE + DIABETES + SYSBP
-  + BPMEDS,
+  + BPMEDS + CURSMOKE,
   data = males_df
 )
 
@@ -854,7 +843,7 @@ plot(males_diabetes,
      ylab = "Log(-Log(Survival))")
 # Assumption met for Sex
 
-# Fit model for PREVCHD
+# Fit model for PREVCHD - no
 males_prevchd <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~ 
                                    strata(PREVCHD),
                            data = males_df))
@@ -868,7 +857,7 @@ plot(males_prevchd,
      ylab = "Log(-Log(Survival))")
 # Assumption met for prevchd
 
-# Fit Model for BPMEDS
+# Fit Model for BPMEDS - Yes
 males_bpmeds <- survfit(coxph(Surv(STROKE10TIME, STROKE10) ~ 
                                   strata(BPMEDS),
                           data = males_df))
@@ -885,27 +874,6 @@ plot(males_bpmeds,
 
 
 ```{r, echo = F}
-##### Create data frame of results
-females_table <- females_fit %>% 
-  tbl_regression(intercept = TRUE, 
-                 conf.level = .95,
-                 exponentiate = TRUE,
-                 pvalue_fun = label_style_pvalue(digits = 2),
-                 conf.int = TRUE,
-                 show_single_row = c(DIABETES, PREVCHD, BPMEDS),
-                 label = list(
-                   AGE ~ "Age",
-                   DIABETES ~ "Diabetes Status",
-                   PREVCHD ~ "Prevalent CHD",
-                   BPMEDS ~ "BP Medication",
-                   SYSBP ~ "Systolic BP",
-                   TOTCHOL ~ "Total Cholesterol"))
-```
-
-
-```{r, echo = F}
-# Summary of general model
-males_sum1 <- summary(males_fit)
 
 # Create data frame of results
 males_table <- males_fit %>% 
@@ -914,14 +882,16 @@ males_table <- males_fit %>%
                  exponentiate = TRUE,
                  pvalue_fun = label_style_pvalue(digits = 2),
                  conf.int = TRUE,
-                 show_single_row = c(DIABETES, BPMEDS),
+                 show_single_row = c(SYSBP, BPMEDS, DIABETES, CURSMOKE),
                  label = list(
                    AGE ~ "Age",
-                   DIABETES ~ "Diabetes Status",
                    SYSBP ~ "Systolic BP",
-                   BPMEDS ~ "BP Medication")) 
+                   DIABETES ~ "Diabetes Status",
+                   BPMEDS ~ "BP Medication",
+                   CURSMOKE ~ "Smoker Status")) 
 ```
 
+\newpage
 
 ```{r, echo = F}
 
@@ -958,19 +928,24 @@ males_rp1 <- data.frame(
     DIABETES = factor(rep(0, 3), 
                       levels = levels(males_df$DIABETES)),
     SYSBP = rep(mean(males_df$SYSBP), 3),
-    PREVCHD = factor(rep(0, 3), 
-                     levels = levels(males_df$PREVCHD)),
     BPMEDS = factor(rep(0, 3), 
                     levels = levels(males_df$BPMEDS)),
     CURSMOKE = factor(rep(0, 3), 
-                      levels = levels(males_df$CURSMOKE)),
-    TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                       na.rm = TRUE), 3),
-    BMI = rep(mean(males_df$BMI), 3)
+                      levels = levels(males_df$CURSMOKE))
 )
+#   AGE DIABETES    SYSBP BPMEDS CURSMOKE
+# 1  40        0 131.5422      0        0
+# 2  50        0 131.5422      0        0
+# 3  60        0 131.5422      0        0
 
 # Fit cox model for risk profile 1
-mrp1_fit <- survfit(males_fit, newdata = males_rp1)
+males_fit_riskprofiles <- coxph(Surv(STROKE10TIME, STROKE10) ~ 
+                                    AGE + DIABETES + SYSBP + CURSMOKE,
+                                  data = males_df
+)
+        
+# Use survfit                          
+mrp1_fit <- survfit(males_fit_riskprofiles, newdata = males_rp1)
 
 
 # Estimates for 10 years
@@ -998,15 +973,10 @@ males_rp2 <- data.frame(
   DIABETES = factor(rep(0, 3), 
                     levels = levels(males_df$DIABETES)),
   SYSBP = rep(200, 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
   BPMEDS = factor(rep(0, 3), 
                   levels = levels(males_df$BPMEDS)),
   CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
+                    levels = levels(males_df$CURSMOKE))
 )
 
 # AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
@@ -1016,7 +986,7 @@ males_rp2 <- data.frame(
 
 
 # Fit cox model for risk profile 2
-mrp2_fit <- survfit(males_fit, newdata = males_rp2)
+mrp2_fit <- survfit(males_fit_riskprofiles, newdata = males_rp2)
 
 # Estimates for 10 years
 mrp2_summary <- summary(mrp2_fit, times = 365*10)
@@ -1049,15 +1019,10 @@ males_rp3 <- data.frame(
   DIABETES = factor(rep(1, 3), 
                     levels = levels(males_df$DIABETES)),
   SYSBP = rep(mean(males_df$SYSBP), 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
   BPMEDS = factor(rep(0, 3), 
                   levels = levels(males_df$BPMEDS)),
   CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
+                    levels = levels(males_df$CURSMOKE))
 )
 # AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
 # 1  40        1 131.5422       0      0        0 233.7359 26.16627
@@ -1066,7 +1031,7 @@ males_rp3 <- data.frame(
 
 
 # Fit cox model for risk profile 3
-mrp3_fit <- survfit(males_fit, newdata = males_rp3)
+mrp3_fit <- survfit(males_fit_riskprofiles, newdata = males_rp3)
 
 # Estimates for 10 years
 mrp3_probs <- summary(mrp3_fit, times = 365*10)
@@ -1104,15 +1069,10 @@ males_rp4 <- data.frame(
   DIABETES = factor(rep(1, 3), 
                     levels = levels(males_df$DIABETES)),
   SYSBP = rep(200, 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
   BPMEDS = factor(rep(0, 3), 
                   levels = levels(males_df$BPMEDS)),
   CURSMOKE = factor(rep(0, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
+                    levels = levels(males_df$CURSMOKE))
 )
 # 
 # AGE DIABETES SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
@@ -1121,7 +1081,7 @@ males_rp4 <- data.frame(
 # 3  60        1   280       0      0        0 233.7359 26.16627
 
 # Fit cox model for risk profile 3
-mrp4_fit <- survfit(males_fit, newdata = males_rp4)
+mrp4_fit <- survfit(males_fit_riskprofiles, newdata = males_rp4)
 
 # Estimates for 10 years
 mrp4_summary <- summary(mrp4_fit, times = 365*10)
@@ -1154,16 +1114,10 @@ males_rp5 <- data.frame(
   DIABETES = factor(rep(0, 3), 
                     levels = levels(males_df$DIABETES)),
   SYSBP = rep(mean(males_df$SYSBP), 3),
-  PREVCHD = factor(rep(0, 3), 
-                   levels = levels(males_df$PREVCHD)),
   BPMEDS = factor(rep(0, 3), 
                   levels = levels(males_df$BPMEDS)),
-  CURSMOKE = factor(rep(1, 3), 
-                    levels = levels(males_df$CURSMOKE)),
-  TOTCHOL = rep(mean(males_df$TOTCHOL, 
-                     na.rm = TRUE), 3),
-  BMI = rep(mean(males_df$BMI), 3)
-)
+  CURSMOKE = factor(rep(1, 3)
+))
 # 
 # AGE DIABETES    SYSBP PREVCHD BPMEDS CURSMOKE  TOTCHOL      BMI
 # 1  40        0 131.5422       0      0        1 233.7359 26.16627
@@ -1171,7 +1125,7 @@ males_rp5 <- data.frame(
 # 3  60        0 131.5422       0      0        1 233.7359 26.16627
 
 # Fit cox model for risk profile 3
-mrp5_fit <- survfit(males_fit, newdata = males_rp5)
+mrp5_fit <- survfit(males_fit_riskprofiles, newdata = males_rp5)
 
 # Estimates for 10 years
 mrp5_summary <- summary(mrp5_fit, times = 365*10)
@@ -1269,54 +1223,50 @@ kable(male_results,
 
 ```
 
-\newpage
 
 <!------------------------------- Results continued -------------------------->
 
-\vspace*{0.6mm}
+\vspace{-1mm}
+was associated with a 7% higher hazard of stroke (95% CI: 3%, 12%) and each additional one-unit increase in systolic BP was associated with a 3%  higher hazard of stroke (95% CI: 2%, 3%).
+For males, age, Diabetes status, and Systolic BP were significantly associated with a higher risk of stroke. 
+Each one year increase in age was associated with a 7% higher hazard of stroke (95% CI: 3%, 11%), diabetes was associated with a 409% or 5.09 times increase in hazard (95% CI: 2.21, 11.7) compared to those without diabetes, and each one unit increase in systolic BP was associated with a 3.2% increase in hazard of stroke (95% CI: 2%, 4%). The use of antihypertensive medication was not significantly associated with risk of stroke for males. 
 
-Age and Diabetes status were not significantly associated with risk of stroke for males. 
-Table 3 displays the predicted survival and $\%$ risk over 10 years for males and females aged 40, 50, and 60 for the 5 risk profiles of interest. Figure 1 visualizes the survival probability curves for males.
-Comparing the survival probabilities and risks for males and females, 
-we see that individuals with no risk factors have survival probabilities greater than 97$\%$ and risks lower than $3\%$. 
-The probabilities and risk $\%$ is identical to that of subjects who identifed as being current smokers at baseline. 
-The survival probabilities decrease and risk percentages increase for both sexes with high blood pressure, diabetes, or high BP and diabetes.  We observe the sharpest contrast from Risk Profile 1 with Risk Profile 4 with noticeable decreases in survival probabilites and increases in risk. 
-Overall, sex differences in survival probabilites and risk are apparent, each additional increment of age from 40 to 60 evidently affects these numbers, and high blood pressure and diabetes appear to be the biggest risk factors for stroke. 
+Table 3 displays the predicted survival probabilities and 10-year risk estimates for males and females aged 40, 50, and 60 across the five risk profiles of interest for this investigation. Figure 1 displays survival probability curves for males. Individuals with no risk factors had 10-year survival probabilities above 90% and corresponding risks below 3%. These estimates were similar to those observed among current smokers at baseline, although smokers did show slightly lower survival probabilities and higher risk.
 
-```{r, echo = F, message = F, warning = F, fig.pos="H", eval =F}
+```{r, echo = F, message = F, warning = F, fig.cap="Survival Curves for the 5 Risk Profiles for Males"}
 library(colorspace)
 # Plot the survival curves
-m1 <- ggsurvplot(survfit(males_fit, 
+m1 <- ggsurvplot(survfit(males_fit_riskprofiles, 
                    newdata = males_rp1),
            data = males_df,
            censor = FALSE,
            conf.int = FALSE,
-           # ylim = c(0.98, 1),
+           ylim = c(0.98, 1),
            xlim = c(0, 3650),
            # risk.table = TRUE,
            ggtheme = theme_minimal(),
            # legend = "none",
            legend.labs = c("40", "50", "60"),
            legend.title = "Age",
-           title = "Risk Profile 1 Estimated Survival\nAverage Individual",
+           title = "Risk Profile 1\nAverage Individual",
            font.main = 10,
            palette = "Set1"
            ) 
 # m1
 
 # Plot the survival curves
-m2 <- ggsurvplot(survfit(males_fit, 
+m2 <- ggsurvplot(survfit(males_fit_riskprofiles, 
                    newdata = males_rp2),
            data = males_df,
            censor = F,
            conf.int = FALSE,
            # Min is 0.35 and max is 0.99
-           # ylim = c(0.35, 1),
+           ylim = c(0.8, 1),
            xlim = c(0, 3650),
            ggtheme = theme_minimal(),
            legend.labs = c("Age 40", "Age 50", "Age 60"),
            legend = "none",
-           title = "Risk Profile 2 Estimated Survival\nHigh BP",
+           title = "Risk Profile 2\nHigh BP",
            font.main = 10,
            palette = "Set1"
 ) 
@@ -1324,52 +1274,52 @@ m2 <- ggsurvplot(survfit(males_fit,
 
 
 # Plot the survival curves
-m3 <- ggsurvplot(survfit(males_fit, 
+m3 <- ggsurvplot(survfit(males_fit_riskprofiles, 
                    newdata = males_rp3),
            data = males_df,
            censor = F,
            conf.int = FALSE,
            # Min is 0.35 and max is 0.99
-           # ylim = c(0.90, 1),
+           ylim = c(0.90, 1),
            xlim = c(0, 3650),
            ggtheme = theme_minimal(),
            legend = "none",
-           title = "Risk Profile 2 Estimated Survival\nDiabetes",
+           title = "Risk Profile 3\nDiabetes",
            font.main = 10,
            palette = "Set1"
 ) 
 # f3
 
 # Plot the survival curves
-m4 <- ggsurvplot(survfit(males_fit, 
+m4 <- ggsurvplot(survfit(males_fit_riskprofiles, 
                    newdata = males_rp4),
            data = males_df,
            censor = F,
            conf.int = FALSE,
            # Min is 0.35 and max is 0.99
-           # ylim = c(0.95, 1),
+           ylim = c(0.35, 1),
            xlim = c(0, 3650),
            ggtheme = theme_minimal(),
            legend.labs = c("Age 40", "Age 50", "Age 60"),
            legend = "none",
-           title = "Risk Profile 2 Estimated Survival\nHigh BP & Diabetes",
+           title = "Risk Profile 4\nHigh BP & Diabetes",
            font.main = 10,
            palette = "Set1"
 ) 
 # f4
 
 # Plot the survival curves
-m5 <- ggsurvplot(survfit(males_fit, 
+m5 <- ggsurvplot(survfit(males_fit_riskprofiles, 
                          newdata = males_rp5),
                  data = males_df,
                  censor = F,
                  conf.int = FALSE,
                  # Min is 0.35 and max is 0.99
-                 # ylim = c(0.95, 1),
+                 ylim = c(0.95, 1),
                  xlim = c(0, 3650),
                  ggtheme = theme_minimal(),
                  legend = "none",
-                 title = "Risk Profile 2 Estimated Survival\nSmoker",
+                 title = "Risk Profile 5\nSmoker",
                  font.main = 10,
                  palette = "Set1"
 ) 
@@ -1403,12 +1353,13 @@ annotate_figure(plot2,
 #                     title = "Estimated Survival Curves - males")
 ```
 
-In regard to how much change there is in the risk factors over the 3 periods of data collection, Table 4 displays the N, mean, and SDs for the variables for the three time periods. 
-As to be expected, we do observe a steady decline in the number of study participants for both males and females over time. 
-We also note the increase in missing values over time with anti-hypertensive medication, total cholesterol, and BMI. 
-We observe increases in the number of subjects using anti-hypertensive medication and prevalent CHD as well as decreases in the number of subjects who smoke over time. Regarding the continuous covariates, Systolic BP steadily increases with time whereas total cholesterol and BMI have relatively flat trends across time. 
+In contrast, survival probabilities decreased and risk increased substantially among individuals with high blood pressure, diabetes, and especially the combination of both conditions. The greatest differences were observed between Risk Profile 1 (no risk factors) and Risk Profile 4 (high blood pressure and diabetes). For example, among males aged 60, the predicted 10-year stroke risk increased from approximately 2% for individuals with no risk factors to approximately 62% for those with both high blood pressure and diabetes. Notable differences between males and females were observed across all age groups within this risk profile.
+Overall, stroke risk increased with age for both sexes, and high blood pressure and diabetes appeared to be the strongest predictors of stroke risk. 
 
-```{r, echo = F, fig.pos='H'}
+Table 4 summarizes descriptive statistics across the three study periods. As expected, the number of participants decreased over time, with increasing missingness observed for anti-hypertensive medication use, total cholesterol, and BMI. The prevalence of anti-hypertensive medication use and CHD increased over time, while the proportion of current smokers decreased. Among continuous variables, systolic blood pressure showed a steady increase across periods, whereas total cholesterol and BMI remained relatively stable.
+
+
+```{r, echo = F}
 ##################################### Table 4 ##################################
 
 # Table describing the change in the risk factors over time
@@ -1416,6 +1367,12 @@ We observe increases in the number of subjects using anti-hypertensive medicatio
 # Fix levels for categorical variables for Table1
 # Data frame for table1
 tab3_data <- frame_data
+
+# Remove those that had a stroke at baseline
+tab3_data <- tab3_data %>% 
+  group_by(RANDID) %>% 
+  filter(!(STROKE == 1 & TIMESTRK == 0))
+
 
 # Make sure the factor variables are factors
 
@@ -1501,12 +1458,26 @@ tab3_data %>%
 ## Discussion
 \vspace{-6mm}
 
-And then meow meow moew moew moew moew moew mowem ewomeow meow moew
+Our results highlight both differences and similarities in stroke risk between males and females during the first 10 years of follow-up in the Framingham Heart Study. Across both sexes, age and systolic blood pressure were consistently associated with increased stroke risk. Specifically, each additional year of age was associated with approximately a 7% increase in hazard, while each 1 mmHg increase in systolic blood pressure was associated with an approximate 3% increase in hazard for both sexes.
+Diabetes was strongly associated with stroke risk among males but not among females. Among males, diabetes was associated with a substantial increase in hazard, suggesting that its impact on stroke risk may differ by sex. Overall, the survival analysis identified key predictors of stroke, with some differences in significance across sex-specific models.
 
-```{r, echo = F, eval = F, message=F, warning=F}
+Evaluation of survival probabilities across the five risk profiles showed some clear patterns. Older individuals and males generally showed higher predicted stroke risk compared to younger individuals and females. Within each sex, stroke risk increased markedly with age, particularly when comparing individuals aged 40, 50, and 60 years. Across both sexes, high blood pressure and diabetes appear to be the most influential risk factors, with the combination of these conditions producing the highest predicted risks.
+Interestingly, we did not observe a significant association between smoking status and stroke risk in this analysis. This may be due to limitations in the data or model specification instead of a true absence of effect, given that there is a well-established relationship between smoking and cardiovascular outcomes.
+These findings underscore the importance of age and blood pressure in stroke risk, as well as potential sex-specific differences in the impact of diabetes. From a public health perspective, these results reinforce the importance of managing blood pressure and metabolic conditions, particularly among older individuals.
+
+Several limitations should be considered. First, the small number of stroke events may have limited statistical power, particularly for detecting associations within subgroups. 
+Second, the distributions of anti-hypertensive medication use and prevalent coronary heart disease were unbalanced, which may have affected the stability and interpretation of model estimates. 
+Third, potential residual confounding may be present, as not all relevant risk factors (e.g., lifestyle factors, socioeconomic status, or treatment adherence) were included in the models.
+Additionally, risk factors were assessed at baseline, and changes over time were not incorporated into the survival models, which may lead to misclassification of exposure. 
+Given the information presented in Table 4, a survival model incorporating the time-varying covariates is warranted and should be considered in the future. 
+Finally, the Framingham Heart Study population may limit generalizability,
+as it does not fully represent more diverse populations.
+
+
+```{r, echo = F, message=F, warning=F, results='hide', eval = F}
 library(colorspace)
 # Plot the survival curves
-f1 <- ggsurvplot(survfit(females_fit, 
+f1 <- ggsurvplot(survfit(females_fit_riskprofiles, 
                    newdata = females_rp1),
            data = females_df,
            censor = FALSE,
@@ -1525,7 +1496,7 @@ f1 <- ggsurvplot(survfit(females_fit,
 # f1
 
 # Plot the survival curves
-f2 <- ggsurvplot(survfit(females_fit, 
+f2 <- ggsurvplot(survfit(females_fit_riskprofiles, 
                    newdata = females_rp2),
            data = females_df,
            censor = F,
@@ -1544,7 +1515,7 @@ f2 <- ggsurvplot(survfit(females_fit,
 
 
 # Plot the survival curves
-f3 <- ggsurvplot(survfit(females_fit, 
+f3 <- ggsurvplot(survfit(females_fit_riskprofiles, 
                    newdata = females_rp3),
            data = females_df,
            censor = F,
@@ -1561,7 +1532,7 @@ f3 <- ggsurvplot(survfit(females_fit,
 # f3
 
 # Plot the survival curves
-f4 <- ggsurvplot(survfit(females_fit, 
+f4 <- ggsurvplot(survfit(females_fit_riskprofiles, 
                    newdata = females_rp4),
            data = females_df,
            censor = F,
@@ -1579,7 +1550,7 @@ f4 <- ggsurvplot(survfit(females_fit,
 # f4
 
 # Plot the survival curves
-f5 <- ggsurvplot(survfit(females_fit, 
+f5 <- ggsurvplot(survfit(females_fit_riskprofiles, 
                          newdata = females_rp5),
                  data = females_df,
                  censor = F,
@@ -1624,6 +1595,29 @@ annotate_figure(plot1,
 ```
 
 
+\newpage
+
+# Data and Code Availability
+
+The data and statistical code used to generate the results and figures in this report are available in the following GitHub repository:
+
+- GitHub repository: [https://github.com/DianaF65/BIOS6624](https://github.com/DianaF65/BIOS6624)
+
+Directory structure:
+
+- Background/ - A description of the background of the project.
+
+- Code/ 
+  - The "Project3.R" file contains initial data exploration as well as code for construction of the final data set used for all analyses.
+  - The R Markdown file 'Project3_FinalReport.Rmd' consists of all Code used for the Frequentist and Bayesian analyses.
+
+- RawData/ – Raw data files. Because this data is not publicly available, it is not available on GitHub. The raw data was originally obtained from the BIOS 6624 P3 module. The raw and processed datasets to generate these results are available on my local computer at this file path: 
+"/Users/dianafelipe/Desktop/BIOS 6624/BIOS6624/Project3/Data/frmghaml2.csv"
+
+- Reports/ The "Project13_FinalReport.Rmd" R Markdown file was used to generate this final report of analyses.
+
+All analyses and figures were generated using the R statistical programming language v. 4.4.1, and the repository contains the R scripts
+and R Markdown files used to produce this report
 
 
 
