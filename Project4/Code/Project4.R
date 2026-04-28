@@ -47,6 +47,7 @@ sim1_data0 <- gen_data(n = 250,
                       rho = 0)
 
 ### Functions for model selection techniques
+# Maybe ii crazy..
 
 
 
