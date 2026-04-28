@@ -1,0 +1,268 @@
+---
+title: "Simulating from a GLM"
+author: "Carter Sevick"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(MASS)
+```
+
+In a generalized linear model (GLM) we have three main components, which are?
+
+
+
+
+In the case of a logistic regression we have: 
+
+1. a random variable (our outcome)
+$$y_i\sim Bernouli(p_i), i.i.d.$$ 
+
+
+
+
+2. a linear predictor
+$$\nu_i= \beta_0 + \beta_1x_{1i}+\dots$$
+
+3. the link function
+$$log(\frac{p_i}{1-p_1}) = \nu_i$$
+
+and its inverse:
+
+$$p_i = \Phi(\nu_i) = \frac{1}{1+e^{-\nu_i}}$$
+
+
+
+
+To get inspiration for a simulation let's build a model for the effect of smoking in pregnancy on low birth weight delivery using the birth weight data in the MASS package:
+
+```{r}
+lb_fit <- glm(low~smoke, data = MASS::birthwt, family = binomial())
+s_lb_fit <- summary(lb_fit)
+s_lb_fit 
+
+# inverse logit function:
+invlogit <- function(v) 1/(1+exp(-v))
+
+#risk in non-smokers:
+invlogit(-1.0871)
+
+#risk in smokers:
+invlogit(-1.0871 + 0.7041)
+
+# check
+by(MASS::birthwt$low, MASS::birthwt$smoke, function(x){mean(x)})
+
+# proportion of smokers
+mean(MASS::birthwt$smoke)
+```
+
+
+Construct the data generating mechanism
+
+```{r}
+sim_lowbwt <- function(n = 189 # sample size to generate
+                       , B = c(-1.0871, 0.7041) # parameter effects for the distribution
+                       , p_e = 0.4 # proportion of subjects to generate as exposed
+                       ) {
+  # generate exposure
+  x <- ifelse(
+    qnorm(1-p_e) < rnorm(n=n) # strange... but you will see why...
+    , 1
+    , 0)
+  
+  # assemble the predictor model matrix
+  x_matrix <- cbind(intercept = rep(1, n), x1 = x)
+  
+  # the linear predictor
+  v = as.vector(x_matrix %*% B)
+  
+  # generate the outcome
+  low = sapply(v, function(x){rbinom(1,1,invlogit(x))})
+  
+  # return a simulated data set
+  simdat <- data.frame(
+    low = low,
+    smoke = x
+  )
+
+  return(simdat)
+}
+
+```
+
+Build a simulation to test glm()
+
+```{r}
+
+sim <- function(N = 1000 # number of simulation iterations
+              , n = 189 # size of each simulation dataset
+              , B = c(-1.0871, 0.7041) # true model parameters
+              , p_e = 0.4 # probability of exposure (being a smoker)
+              , n_vars # number of variables 1:n_vars to model
+              , alpha = 0.05 
+                ) {
+  
+  # generate N simulated data sets and run the model to be tested
+  if(missing(n_vars)) {n_vars <- length(B)}
+  res <- list()
+  for(i in 1:N) {
+    dat <- sim_lowbwt(n = n, B = B, p_e = p_e)
+    vnames <- names(dat)
+    res[[i]] <- glm(paste(vnames[1],'~', paste(vnames[2:n_vars], collapse = '+')), data = dat, family = binomial())
+  }
+  
+  # performance
+  bias <- list()
+  cover <- list()
+  power <- list()
+  for(i in 1:N) {
+    bias[[i]]  <- (coef(res[[i]]) - B) / B
+    ci         <- confint.default(res[[i]] , level = 1-alpha)
+    cover[[i]] <- ci[,1]  <= B  & B  <= ci[,2] 
+    power[[i]] <- summary(res[[i]])$coefficients[,4] < alpha
+  }
+  bias  <- colMeans(do.call('rbind', bias))
+  cover <- colMeans(do.call('rbind', cover))
+  power <- colMeans(do.call('rbind', power))
+   
+  return(data.frame(bias = bias, cover = cover, power = power))
+  
+}
+
+```
+
+Bias and coverage probability for the effect of smoking (at simulation settings)
+```{r}
+set.seed(54321)
+simu1 <- sim( )
+simu1
+ 
+```
+
+
+an alternative to the smoking effect
+```{r}
+set.seed(54321)
+simu1 <- sim( B = c(-1.0871, 0.9041) )
+simu1
+ 
+```
+
+
+Construct the data generating mechanism, with a covariate
+
+```{r}
+sim_lowbwt2 <- function( n = 189 # size of each simulation dataset
+                     , B = c(-1.0871, 0.7041, 0)# true model parameters
+                     , p_e = 0.4         # probability of exposure (being a smoker)
+                     , cov_mu = c(0, 0)  # means of x variables
+                     , cov_var = diag(2) # covariance matrix of X variables
+                     ) {
+  
+  # add generation of multiple, possibly correlated variables using the multivariate normal distribution (first variable still dichotomous)
+  x <- MASS::mvrnorm(n=n, mu = cov_mu, Sigma = cov_var)
+  x[,1] <- ifelse(
+    qnorm(1-p_e) < x[,1]  
+    , 1
+    , 0)
+  
+  x_matrix <- cbind(intercept = rep(1, n), x)
+  
+  v = as.vector(x_matrix %*% B)
+  low = sapply(v, function(x){rbinom(1,1,invlogit(x))})
+  
+  simdat <- as.data.frame(cbind(low, x))
+  vnames <- c('low','smoke')
+  if(length(B)>2) {vnames <- c(vnames,paste0('x',2:(length(B)-1)))}
+  names(simdat) <- vnames
+  
+  return(simdat)
+}
+
+testit <- sim_lowbwt2()
+```
+
+
+Expand the simulation to test glm()
+
+```{r}
+
+sim2 <- function(N = 1000 # number of simulation iterations
+              , n = 189 # size of each simulation dataset
+              , B = c(-1.0871, 0.7041, 0) # true model parameters
+              , p_e = 0.4 # probability of exposure (being a smoker)
+              , n_vars # number of variables 1:n_vars to model
+              , cov_mu = c(0, 0)  # means of x variables
+              , cov_var = diag(2) # covariance matrix of X variables
+              , alpha = 0.05
+
+                ) {
+  if(missing(n_vars)) {n_vars <- length(B)}
+  res <- list()
+  for(i in 1:N) {
+    dat <- sim_lowbwt2(n = n, B = B, p_e = p_e, cov_mu = cov_mu, cov_var = cov_var)
+    vnames <- names(dat)
+    res[[i]] <- glm(paste(vnames[1],'~', paste(vnames[2:n_vars], collapse = '+')), data = dat, family = binomial())
+  }
+  
+  # performance
+  bias <- list()
+  cover <- list()
+  power <- list()
+  for(i in 1:N) {
+    bias[[i]]  <- (coef(res[[i]]) - B[1:n_vars])/ B[1:n_vars]
+    ci         <- confint.default(res[[i]] , level = 1-alpha)
+    cover[[i]] <- ci[,1]  <= B[1:n_vars]  & B[1:n_vars]  <= ci[,2] 
+    power[[i]] <- summary(res[[i]])$coefficients[,4] < alpha
+  }
+  bias  <- colMeans(do.call('rbind', bias))
+  cover <- colMeans(do.call('rbind', cover))
+  power <- colMeans(do.call('rbind', power))
+   
+  return(data.frame(bias = bias, cover = cover, power = power))
+  
+}
+
+```
+
+```{r}
+
+set.seed(54321)
+simu2 <- sim2(n_vars = 2) 
+simu2
+```
+
+ 
+
+
+Add correlation between smoke and x2
+```{r}
+
+set.seed(54321)
+simu3 <- sim2(n_vars = 2, B = c(-1.0871, 0.7041, 0.25), cov_var = matrix(c(1,.75,.75,1), 2, 2)) 
+simu3
+```
+
+
+
+QUESTION: do you think the increase in power for the effect of smoking if fair?
+
+
+
+
+Add correlation between smoke and x2, but correct for x2
+```{r}
+
+
+simu4 <- sim2(n_vars = 3, B = c(-1.0871, 0.7041, 0.25), cov_var = matrix(c(1,.75,.75,1), 2, 2)) 
+simu4
+```
+
+
+QUESTION: power for the effect of smoking is less than in simu2, why?
+
+QUESTION: could this measure of power be used for study design?
+
