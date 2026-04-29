@@ -1,0 +1,28 @@
+################################################################################
+###                                Project 4 Notes                           ###
+################################################################################
+
+### Questions
+  - Is specifying a correlation of 0 equivalent to having all variables independent
+  of each other? Is case 1a part of case 1b?
+  - 
+
+### Notes from Class
+
+# 4/?
+# Ex: Linear regression. 
+# My professor says that the estimators for the regression coefficients are unbiased. 
+How would I evaluate if that were true in practice for small, medium, and large
+datasets?
+# Sketch out the simulation plan
+- What question is to be investigated?
+   - What is the bias of the regression coefficients for varying sample sizes?
+- Define the data generating mechanism and what factors to vary
+  - We will generate data from the normal distribution with varying sample sizes
+  
+##### 4/27 Notes
+- Goal by wednesday is to create shell of function needed for simulations
+- How to set the correlation among the predicots in the simulation model
+  - Exchangeable with settings 0, 0.35, and 0.7
+  
+  
