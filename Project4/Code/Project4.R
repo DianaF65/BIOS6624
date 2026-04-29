@@ -38,19 +38,6 @@ library(olsrr) # Backwards variable selection
 sim_betas <- c(0.5/3, 1/3, 1.5/3, 2/3, 2.5/3,
                rep(0, 15))
 
-set.seed(646)
-sim1_data0 <- gen_data(n = 250,
-                      # Number of predictors
-                      p = 20, 
-                      # Non-zero predictors
-                      p1 = 5,
-                      # Vector of non-zero betas
-                      beta = sim_betas,
-                      # Correlation structure
-                      corr = "exchangeable",
-                      # Correlation coefficient
-                      rho = 0)
-
 ### Functions for model selection techniques
 
 ############################### Backwards Selection ############################
@@ -63,14 +50,16 @@ set.seed(646)
 # Specify correlation coefficient values
 rho_vec <- c(0, 0.35, 0.7)
 
-# List of data frames for different rhos
-dat_list <- list()
-
 # Use function from olsrr R package
 sim1 <- function(n = 10000) {
+  # Create list of data frame for different rhos
+  dat_list <- vector("list", length(rho_vec))
+  # Add names to list items
+  names(dat_list) <- paste0("rho_", rho_vec)
+  
   # For range of correlation values
-  for (i in 1:3) {
-    for(j in rho_vec) {
+  for(i in seq_along(rho_vec)) {
+    
       # Simulate data
       dat_list[[i]] <- gen_data(n = 250,
                                 # Number of predictors
@@ -82,9 +71,8 @@ sim1 <- function(n = 10000) {
                                 # Correlation structure
                                 corr = "exchangeable",
                                 # Correlation coefficient
-                                rho = j)
+                                rho = rho_vec[i])
     }
-  }
   # Extract outcome
   y <- sim1_data0$y # 
   
@@ -103,16 +91,43 @@ sim1 <- function(n = 10000) {
   backwards_sel <- ols_step_backward_p(sim_model,
                         include = c("X1", "X2", "X3", "X4", "X5"))
   
-  # 
+  ### COME Back here
+  # Summarize results
+  
+  # True positive
+  
+  # False positive rates
+  
+  # For variables remaining in model: 
+  # Bias
+  
+  # Coverage of the 95% CI
+  
+  # Type I error of vars selected
+  
+  # Type II error of vars selected
 }
 
-#### Checks
-# Checking correlations between Xs and y
-a <- data.frame(dat_list[[1]]$y, dat_list[[1]]$X)
-cor(a)
-b <- data.frame(dat_list[[2]]$y, dat_list[[2]]$X)
-cor(b)
+#### Checks/Playing around
+# Creating simulated data
+set.seed(646)
+sim1_data0 <- gen_data(n = 250,
+                       # Number of predictors
+                       p = 20, 
+                       # Non-zero predictors
+                       p1 = 5,
+                       # Vector of non-zero betas
+                       beta = sim_betas,
+                       # Correlation structure
+                       corr = "exchangeable",
+                       # Correlation coefficient
+                       rho = 0)
 
+# Checking correlations between Xs and y
+mean(cor(dat_list[[1]]$X)) # [1] 0.04970694
+mean(cor(dat_list[[2]]$X)) # [1] 0.3970614
+mean(cor(dat_list[[3]]$X)) # [1] 0.7335126
+# Looks good
 
 ###################################### AIC #####################################
 
