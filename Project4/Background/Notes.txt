@@ -25,4 +25,14 @@ datasets?
 - How to set the correlation among the predicots in the simulation model
   - Exchangeable with settings 0, 0.35, and 0.7
   
-  
+#### 4/29
+- Make sure you are writing for clinician or non-stats audience
+- Use an alpha of 0.5 for this project
+- Ridge > lasso when variables are correlated
+- Paper in Week 12 for picking the N for simulations 
+  - Table that contains info for selecting N for what is primarily of interest
+- glmnet does not provide info for calculating Type 1/ Type II errors
+  - Hmmm gonna have to think about it, he said something about looking at the estimates
+  - Ones that are not significant, how often do they appear as signifcant in the 
+  model
+  - 
