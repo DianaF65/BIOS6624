@@ -1,0 +1,78 @@
+---
+title: Project 4 Data Analysis Plan
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \usepackage{enumitem}
+  - \setlength{\droptitle}{-4cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-2.5cm}}
+  - \setlist{nosep}
+---
+
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tinytex)
+library(readr)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+library(readr)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(naniar)
+library(see)
+library(pillar)
+library(visdat)
+library(finalfit)
+library(table1)
+library(here)
+library(expss)
+
+# Read in raw data
+raw_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
+
+# Read in modified data
+surv_df <- read_csv(here("Project3", "Data", "pre_surv_df.csv"))
+
+opts_chunk$set(tidy = F)
+```
+
+# Introduction
+
+# Methods
+
+# Simulation
+
+
