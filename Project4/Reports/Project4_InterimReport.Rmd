@@ -59,20 +59,35 @@ library(finalfit)
 library(table1)
 library(here)
 library(expss)
-
-# Read in raw data
-raw_data <- read_csv(here("Project3", "Data", "frmgham2.csv"))
-
-# Read in modified data
-surv_df <- read_csv(here("Project3", "Data", "pre_surv_df.csv"))
+library(hdrm)
 
 opts_chunk$set(tidy = F)
 ```
 
+\vspace{-6mm}
 # Introduction
+\vspace{-6mm}
+<!-- Review the problem and perhaps cite some papers posted or others -->
 
 # Methods
+<!-- Describe model selection approaches and provide references if necessary -->
+
 
 # Simulation
+<!-- Write on how you will simulate the data and how we are fitting those data. How will you summarize and present results? -->
+We will run 10,000 iterations of the simulation to obtain - come back here after reading that one paper.
+We will be using the gen_data() function from the High-Dimensional Regression Modeling (hdrm) package in R to simulate the data for model fitting. We will specify n = 10,000 data frames, 5 non-zero predictors, 15 predictors that have a null value of 0, an exchangeable correlation structure (forces the correlation between each pair of variables to be the same), and correlation coefficients of 0, 0.35, and 0.70. The different correlation coefficients will allow us to assess how varying amounts of correlation between variables may affect results from model selection techniques. 
+We will fit a linear regression model using the lm() function from the stats R package with the the simulated data frame which will contain the outcome and 20 predictors. 
+Following this, the model will be put into each of the 5 model selection approaches. We will extract the selected variables from each technique and summarize results. Specifically, we will calculate the percentage of times X1-X5 are in the final model after applying the variable selection technique (True Positives) and 
+the percentage of times X15-X20 are included in the final model after variable selection (False Positives). 
+These numbers will allow us to assess how different model selection techniques perform in regard to these. 
+For the variables that are retained in the model, 
+we will calculate the deviation of the model estimates from the "true" or expected estimate defined (Bias), the coverage of the 95% Confidence Interval (CI), as well as the Type I and Type II error of the variables.
+
+
+
+
+
+
 
 
