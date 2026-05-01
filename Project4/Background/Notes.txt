@@ -46,6 +46,18 @@ a 0 in the denominoator. Chat says to calculate raw bias for ALL variables
    nonzero_idx <- which(B != 0)
   rel_bias <- (coef(final_fit)[-1][nonzero_idx] - B[nonzero_idx]) / B[nonzero_idx]
   
+##### Interin Report Notes 
+- I'm going to include Introduction, Methods, and Simulation sections for 
+interim plan: 
+  - Introduction: Review the problem and perhaps cite some papers posted or others
+  - Methods: Describe model selection approaches and provide references if necessary
+  - Simulation: Write on how you will simulate the data and how we are fitting
+  those data. How will you summarize and present results?
+**** PERHAPS include section on: 
+  - Model Notation: Here give the notation for the model
+  
+  
+  
   
   
   
