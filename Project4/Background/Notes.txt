@@ -35,4 +35,20 @@ datasets?
   - Hmmm gonna have to think about it, he said something about looking at the estimates
   - Ones that are not significant, how often do they appear as signifcant in the 
   model
-  - 
+
+#### Outside of class: 
+- I was getting confused and my bias calculations were not working using Dr. S's
+code. He was calculating relative bias but in our case because are dealing with 
+0s in the vector of betas, we can't calculate relative bias because that gives us
+a 0 in the denominoator. Chat says to calculate raw bias for ALL variables 
+ and to also calculate relative bias but just for the NON-ZERO betas.
+   - Code for relative bias: 
+   nonzero_idx <- which(B != 0)
+  rel_bias <- (coef(final_fit)[-1][nonzero_idx] - B[nonzero_idx]) / B[nonzero_idx]
+  
+  
+  
+  
+  
+  
+  
