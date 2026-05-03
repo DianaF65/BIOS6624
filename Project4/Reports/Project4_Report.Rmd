@@ -1,0 +1,115 @@
+---
+title: Project 4 Data Analysis Plan
+author: Diana Felipe
+output: 
+  bookdown::pdf_document2:
+    toc: false
+    number_sections: false
+    latex_engine: xelatex
+    extra_dependencies: ["longtable", "float"]
+mainfont: Arial
+fontsize: 12pt
+geometry: margin=1in
+header-includes:
+  - \usepackage{setspace}
+  - \doublespacing
+  - \usepackage{float}
+  - \usepackage{caption}
+  - \usepackage{titling}
+  - \usepackage{enumitem}
+  - \setlength{\droptitle}{-4cm}
+  - \preauthor{\vspace{-0.6cm}}
+  - \postauthor{\vspace{-2.5cm}}
+  - \setlist{nosep}
+---
+
+
+```{r, echo = F, warning=F, message = F}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tinytex)
+library(readr)
+library(knitr)
+library(ggplot2)
+library(kableExtra)
+library(stats)
+library(dplyr)
+library(tibble)
+library(labelled)
+library(tableone)
+library(gtsummary)
+library(gt)
+library(ggeffects)
+library(UpSetR)
+library(visdat)
+library(lubridate)
+library(see)
+library(data.table)
+library(gridExtra)
+library(kableExtra)
+library(readr)
+library(here)
+library(dplyr)
+library(ggplot2)
+library(naniar)
+library(see)
+library(pillar)
+library(visdat)
+library(finalfit)
+library(table1)
+library(here)
+library(expss)
+library(hdrm)
+
+opts_chunk$set(tidy = F)
+```
+
+# Introduction
+<!-- Review the problem and perhaps cite some papers posted or others -->
+Selecting the most appropriate models in variable selection is one of the most important and challenging parts of model building. 
+
+# Methods
+\vspace{-6mm}
+<!-- Describe model selection approaches and provide references if necessary -->
+We will assess 5 model selection techniques in linear regression. We briefly describe them here: 
+
+\vspace{-3mm}
+\begin{itemize}
+  \item[1.)] Backwards Selection: This method begins with all variables being considered and variables are deleted one by one from the full model until all remaining variables are considered to have some significant contribution to the outcome.We will be using the ols\_step\_backward\_p() function from the stats package for this. This function removes predictors based on p-values in a stepwise manner until there are no remaining variables to remove. 
+  \item[2.)] AIC
+  \item[3.)] BIC
+  \item[4.)] Least Absolute Shrinkage and Selection Operator (LASSO)
+  \item[5.)] Elastic Net
+\end{itemize}
+\vspace{-3mm}
+
+We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. We will specify the 5 covariates to have coefficients of $\approx$ 0.17, 0.33, 0.5, 0.67, and 0.83 and the remaining 15 variables to have coefficients of 0. 
+The 5 non-zero covariates are essentially what we are setting to be as the most important predictors of the outcome and simulation will allow us to assess how the different variable selection techniques do in regard to selecting predictors that actually matter.
+
+\vspace{-6mm}
+# Simulation
+\vspace{-6mm}
+<!-- Write on how you will simulate the data and how we are fitting those data. How will you summarize and present results? -->
+We will run 10,000 iterations or simulations to obtain - come back here after reading that one paper.
+We will be using the gen_data() function from the High-Dimensional Regression Modeling (hdrm) package in R to simulate the data for model fitting. We will specify n = 10,000 data frames, 5 non-zero predictors, 15 predictors that have a null value of 0, an exchangeable correlation structure (forces the correlation between each pair of variables to be the same), and correlation coefficients of 0, 0.35, and 0.70. The different correlation coefficients will allow us to assess how varying amounts of linear relationships or correlations between variables may affect results from model selection techniques. 
+We will repeat this for a sample size of 250 and a sample size of 500 to assess the effect of sample size as well.
+For each iteration of the simulation, 
+we will fit a linear regression model using the lm() function from the stats R package. 
+Following this, the model will be put into each of the 5 model selection approaches. We will extract the selected variables from each technique and summarize results. Specifically, we will calculate the percentage of times X1-X5 are in the final model after applying the variable selection technique (True Positives) and 
+the percentage of times X15-X20 are included in the final model after variable selection (False Positives). 
+For the variables that are retained in the model, 
+we will calculate the deviation of the model estimates from the "true" or expected estimate defined (Bias), the long run probability a given 95% Confidence Interval (CI) will contain the true parameter (Coverage), as well as the Type I and Type II error of the variables.
+In addition, for each of the five variable selection techniques, 
+we will re-fit a final linear regression model with all the variables that 
+a given technique identified as important predictors.
+Alternatively, we may consider another appropriate approach as re-fitting models as if no variable selection was performed does introduce bias.
+
+In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
+We will use a significance level of $\alpha = 0.5$ for all analyses.  
+All analyses will be conducted with R veresion 4.4.1.
+
+
+
+
+
+
