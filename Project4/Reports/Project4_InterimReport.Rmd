@@ -1,5 +1,5 @@
 ---
-title: Project 4 Data Analysis Plan
+title: Project 4 Simulation Study Plan
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -64,24 +64,38 @@ library(hdrm)
 opts_chunk$set(tidy = F)
 ```
 
-\vspace{-6mm}
 # Introduction
 \vspace{-6mm}
 <!-- Review the problem and perhaps cite some papers posted or others -->
+Whether we are interested in predictive research questions, explanatory models, or descriptive models, variable selection is applicable to any purpose for building a statistical model.
+Selecting the most appropriate predictors in variable selection is one of the most important and challenging parts of model building.
+Variable selection is necessary when there are a large number of variables being considered/available and the challenge is in identifying the most relevant predictors for the outcome of interest.
+Variable selection can be done through automated selection techniques with the incorporation of background knowledge for the research question of interest.
+However, the automated variable selection techniques may lead to false inclusion or exclusion of important predictors, both of which may influence the variance and accuracy of the estimates obtained from the final model as well as model robustness (Heinze et al. 2017). 
+The aim of this simulation study is to investigate a variety of variable selection techniques and assess, compare, and summarize their performance.
+The purpose of this report is to develop the study plan of the simulation study.
 
+\vspace{-9mm}
 # Methods
+\vspace{-6mm}
 <!-- Describe model selection approaches and provide references if necessary -->
+Simulation studies are a general term for analyses where data are repeatedly generated from a specified data-generating mechanism and analyzed to assess the performance of statistical methods under controlled conditions.
+We will be using simulation to investigate the performance of different variable selection techniques.
+Specifically, we will look at 4 model selection techniques in linear regression: Backwards Variable Selection, Alkaline Information Criteria (AIC), Bikbikbik Alkaline Criteria (BIC), Least Absolute Shrinkage and Selection Operator (LASSO), and Elastic Net.
+We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. We will specify the 5 covariates to have coefficients of $\approx$ 0.17, 0.33, 0.5, 0.67, and 0.83 and the remaining 15 variables to have coefficients of 0. 
+The 5 non-zero covariates are essentially what we are setting to be as the most important predictors of the outcome and simulation will allow us to assess how the different variable selection techniques do in regard to selecting predictors that actually matter.
 
-
+\vspace{-9mm}
 # Simulation
+\vspace{-6mm}
 <!-- Write on how you will simulate the data and how we are fitting those data. How will you summarize and present results? -->
-We will run 10,000 iterations or simulations to obtain - come back here after reading that one paper.
-We will be using the gen_data() function from the High-Dimensional Regression Modeling (hdrm) package in R to simulate the data for model fitting. We will specify n = 10,000 data frames, 5 non-zero predictors, 15 predictors that have a null value of 0, an exchangeable correlation structure (forces the correlation between each pair of variables to be the same), and correlation coefficients of 0, 0.35, and 0.70. The different correlation coefficients will allow us to assess how varying amounts of linear relationships or correlations between variables may affect results from model selection techniques. 
+We will run 10,000 iterations for this simulation study using the gen_data() function from the High-Dimensional Regression Modeling (hdrm) package in R to simulate the data for model fitting. We will specify the range of correlations for the 20 predictors, 
+an exchangeable correlation structure (forces the correlation between each pair of variables to be the same), and correlation coefficients of 0, 0.35, and 0.70. The different correlation coefficients will allow us to assess how varying amounts of linear relationships or correlations between variables may affect results from model selection techniques. 
+We will repeat this for a sample size of 250 and a sample size of 500 to assess the effect of sample size as well.
 For each iteration of the simulation, 
-we will fit a linear regression model using the lm() function from the stats R package with the the simulated data frame which will contain the outcome and 20 predictors. 
+we will fit a linear regression model using the lm() function from the stats R package. 
 Following this, the model will be put into each of the 5 model selection approaches. We will extract the selected variables from each technique and summarize results. Specifically, we will calculate the percentage of times X1-X5 are in the final model after applying the variable selection technique (True Positives) and 
 the percentage of times X15-X20 are included in the final model after variable selection (False Positives). 
-These numbers will allow us to assess how different model selection techniques perform in regard to these. 
 For the variables that are retained in the model, 
 we will calculate the deviation of the model estimates from the "true" or expected estimate defined (Bias), the long run probability a given 95% Confidence Interval (CI) will contain the true parameter (Coverage), as well as the Type I and Type II error of the variables.
 In addition, for each of the five variable selection techniques, 
@@ -90,8 +104,7 @@ a given technique identified as important predictors.
 Alternatively, we may consider another appropriate approach as re-fitting models as if no variable selection was performed does introduce bias.
 
 In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
-We will use a significance level of $\alpha = 0.5$ for all analyses.  
-All analyses will be conducted with R veresion 4.4.1.
+We will use a significance level of $\alpha = 0.5$ for all analyses. All analyses will be conducted with R veresion 4.4.1.
 
 
 
