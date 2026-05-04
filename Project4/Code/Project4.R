@@ -70,8 +70,8 @@ sim1 <- function(N = 10,
                  alpha = 0.05) {
   # Get the number of vars
   if(missing(n_vars)) {n_vars <- length(B)}
-  # List of models 
-  results <- list()
+  # List of model estimates for fit with lm
+  model_results <- list()
   # List of selection results
   backward_sel <- list()
   # Define counter 
@@ -103,12 +103,12 @@ sim1 <- function(N = 10,
       # Get all variable names
       vnames <- names(model_dat)
       # Fit regression model - exclude intercept
-      lm_fit <- lm(as.formula(paste(vnames[1], '~', 
+      model_results[[i]] <- lm(as.formula(paste(vnames[1], '~', 
                                   paste(vnames[2:(n_vars + 1)],
                                   collapse = '+'))),
                          data = model_dat)
-      # Apply backwards stepwise selection on covariates
-      backwards_sel <- ols_step_backward_p(lm_fit) # use include arg here?
+      ### Backwards selection
+      backwards_sel <- ols_step_backward_p(model_results[[i]]) # use include arg here?
       # Extract model
       backwards_fit <- backwards_sel$model
       # Get the selected variables and remove intercept
@@ -117,6 +117,13 @@ sim1 <- function(N = 10,
       true_vars <- paste0("X", 1:5)
       # Get the remaining vars
       null_vars <- paste0("X", 6:n_vars)
+      
+      ### AIC selection
+      aic_sel <- step(model_results[[i]],
+                      trace = 0,
+                      direction = "backward",
+                      k = 2) # AIC
+      
       # Summarize results
       # Calculate true positives
       tp <- sum(true_vars %in% selected_vars)
@@ -124,51 +131,62 @@ sim1 <- function(N = 10,
       fp <- sum(null_vars %in% selected_vars)
       
       # Add tp, fp to resuts list
-      results[[counter]] <- final_fit
+      # results[[counter]] <- final_fit
       
       # Create data frame containing results
-      selection_results[[counter]] <- data.frame(
-        sim = i,
-        rho = rho_vec[j],
-        true_positives = tp,
-        false_positives = fp)
-      # Increase counter by 1
-      counter <- counter + 1
+      # results[[counter]] <- data.frame(
+      #   sim = i,
+      #   rho = rho_vec[j],
+      #   true_positives = tp,
+      #   false_positives = fp)
+      # 
+      # # Increase counter by 1
+      # counter <- counter + 1
     }
     
   }
   
   # Summarize results
   # Create lists to store info
-  bias <- list()
+  bias <- list(); coverage <- list()
   
   for (i in 1:N) {
     # True positive - % of time are vars X1-X5 in the model
     # Get the true positives
-    selection_results <- do.call(rbind, selection_results)
+    # selection_results <- do.call(rbind, results)
     
-    aggregate(true_positives ~ rho, data = selection_results, mean)
-    aggregate(false_positives ~ rho, data = selection_results, mean)
-    
+    # aggregate(true_positives ~ rho, data = results, mean)
+    # aggregate(false_positives ~ rho, data = results, mean)
+     
     # False positive rates
     
     # For variables remaining in model: 
+    ### Backwards
     # Bias - Raw bias and not relative bias
-    bias[[i]] <- coef(res[[i]])[-1] - B  # Remove the intercept term
+    bias[[i]] <- coef(model_results[[i]])[-1] - B  # Remove the intercept term
     # Coverage of the 95% CI
+    ci <- confint.default(model_results[[i]], level = 1 - alpha)
+    coverage[[i]] <-  ci[, 1][-1] <= B & B <= ci[, 2][-1]
     
     # Type I error of vars selected
     
     # Type II error of vars selected
+    
   }
-  # Calculate values
+  # Calculate colmeans 
   bias <- colMeans(do.call('rbind', bias))
+  coverage <- colMeans(do.call('rbind', coverage))
+  
+  # Create a data frame of model performance
+  model_performance_df <- data.frame(bias = bias, 
+                                     coverage = coverage)
   
   # Return results
-  return(data.frame(bias = bias))
+  return(model_performance_df)
 }
 
-
+# Run simulation
+sim_results <- sim1()
 
 ##################### Checks/Playing around
 # Creating simulated data
