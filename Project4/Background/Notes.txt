@@ -20,12 +20,12 @@ datasets?
 - Define the data generating mechanism and what factors to vary
   - We will generate data from the normal distribution with varying sample sizes
   
-##### 4/27 Notes
+##### 4/27 Class Notes
 - Goal by wednesday is to create shell of function needed for simulations
 - How to set the correlation among the predicots in the simulation model
   - Exchangeable with settings 0, 0.35, and 0.7
   
-#### 4/29
+#### 4/29 Class Notes
 - Make sure you are writing for clinician or non-stats audience
 - Use an alpha of 0.5 for this project
 - Ridge > lasso when variables are correlated
@@ -35,6 +35,27 @@ datasets?
   - Hmmm gonna have to think about it, he said something about looking at the estimates
   - Ones that are not significant, how often do they appear as signifcant in the 
   model
+  
+#### 5/4 Class Notes
+- Due date for project extended to 5/13
+- Do not have to turn in slides for final project
+- Type I and Type II per variable per method
+- TP and FP per method or variable by variable basis - valid either way
+## Interim presentations
+- Criteria for lasso/glmnet - use mse which is the default
+- olsrr vs. ols_step_backwards
+- TP and FP: Variable by variable basis or ANY of X1-X5 variables in the model
+  - Going to stick with any of the 5 variables for this
+    - But could consider each variable separately...
+  - What proportion of the 5 variables were captured? Which method will get
+  highest proportion of the 5 variables?
+- Mention key questions and hypotheses in final report
+- Using step() function from backwards selection
+- Refit models with lm() for lasso/glmnet to get p-values and CIs
+- 5 approaches
+  - Backwards selection with pvals and f-test are basically the same
+- Use feature/future package for parallelization
+  - Might have to be careful about seed placement?
 
 #### Outside of class: 
 - I was getting confused and my bias calculations were not working using Dr. S's
