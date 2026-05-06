@@ -37,11 +37,44 @@ library(glmnet) # LASSO
 # Simulate the data using the hdrm package
 
 ################################################################################
-###                                Backwards Selection                       ###
+###                             Simulation Functions                         ###
 ################################################################################
 
+### Be a copy cat and copy Dr. Sevick's strategy 
+# Three functions for three purposes: 
 
-################################ Simulation 1 Data #############################
+# 1.) Innermost nested function that will extract model results from variable 
+# selection method and calculate model performance and variable selection numbers
+
+# 2.) Outer function that will generate data, fit the lm() model, and use the
+# innermost function to obtain summaries
+
+# 3.) Outermost function that will run through the 6 different possible profiles
+
+############################### Innermost function #############################
+
+# This function will extract results from a given model selection and calculate
+# model performance and variable selection performance numbers
+
+model_var_performance <- function(# Resulting model from variable sel method
+                                  selection_results,
+                                  # Define values for betas
+                                  betas = c(0.5/3, 1/3, 1.5/3, 2/3, 2.5/3,
+                                            rep(0, 15)),
+                                  # Define alpha for calculations
+                                  alpha = 0.05) {
+  
+  # Get the model results
+  
+}
+
+
+
+
+
+
+##############
+
 
 # Define betas
 sim_betas <- c(0.5/3, 1/3, 1.5/3, 2/3, 2.5/3,
@@ -58,7 +91,7 @@ set.seed(646)
 # Specify correlation coefficient values
 rho_vec <- c(0, 0.35, 0.7)
 
-# Use function from olsrr R package
+# Simulation function that will iterate N times
 sim1 <- function(N = 10,
                  # Subjects in each sim
                  n = 250,
@@ -68,6 +101,8 @@ sim1 <- function(N = 10,
                  n_vars = 20,
                  # Significance level
                  alpha = 0.05) {
+  
+  
   
   # Lists to store model results and rho values
   model_results <- list(); rho_results <- c()
@@ -89,6 +124,8 @@ sim1 <- function(N = 10,
                           p1 = 5,
                           # Vector of non-zero betas
                           beta = B,
+                          # Distribution
+                          family = "gaussian",
                           # Correlation structure
                           corr = "exchangeable",
                           # Correlation coefficient
@@ -142,7 +179,7 @@ sim1 <- function(N = 10,
   # Specify the "true" vars - vars that are associated with y
   true_vars <- paste0("X", 1:5)
   # Specify the null fars - vars not associated with y
-  null_Vars <- paste0("X", 6:n_vars)
+  null_vars <- paste0("X", 6:n_vars)
   
   # Add names to the vector of betas
   names(B) <- paste0("X", 1:n_vars)
@@ -250,11 +287,13 @@ sim1 <- function(N = 10,
 }
 
 # Run simulation
-sim_results <- sim1()
+sim_results <- sim1(N = 100)
 # Model performance
 sim_model_performance <- sim_results$model_performance
 # Variable selection performance
 sim_varsel_performance <- sim_results$selection_performance
+
+
 
 ############################## Checks/Playing around ##########################
 # Creating simulated data
