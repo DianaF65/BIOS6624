@@ -51,6 +51,32 @@ library(glmnet) # LASSO
 
 # 3.) Outermost function that will run through the 6 different possible profiles
 
+#################################### For Checking ##############################
+
+# Simulate data
+sim_dat <- gen_data(n = n,
+                    # Number of predictors
+                    p = n_vars, 
+                    # Non-zero predictors
+                    p1 = 5,
+                    # Vector of non-zero betas
+                    beta = betas,
+                    # Distribution
+                    family = "gaussian",
+                    # Correlation structure
+                    corr = "exchangeable",
+                    # Correlation coefficient
+                    rho = rho_vec[j])
+
+# Extract outcome for model
+y <- sim_dat$y
+# Extract predictors
+X <- sim_dat$X
+# Change colnames
+colnames(X) <-  paste0("X", 1:n_vars)
+
+# Create data frame with outcome and predictors
+model_dat <- data.frame(y = y, X)
 
 ################################################################################
 ###   Function for: 
@@ -62,42 +88,37 @@ library(glmnet) # LASSO
 # model performance and variable selection performance numbers
 ## Calculate metrics for ONE model
 
-model_var_performance <- function(# Resulting model from variable sel method
-                                  selection_results,
-                                  # Define values for betas
-                                  true_betas = c(0.5/3, 1/3, 1.5/3, 
-                                                 2/3, 2.5/3,
-                                            rep(0, 15)),
-                                  # Define number of variables
-                                  n_vars = 20,
-                                  # Define alpha for calculations
-                                  alpha = 0.05) {
+
+model_var_performance <- function(# Variables that were selected from method
+                                  selected_vars,
+                                  # Coefs of variables that were selected
+                                  selected_coefs,
+                                  # Number of variables
+                                  n_vars = 20, # Default value of 20
+                                  # Alpha level
+                                  alpha = 0.05
+                                  ) {
+  
+  # Define values for betas
+  true_betas = c(0.5/3, 1/3, 1.5/3, 2/3, 2.5/3,
+                        rep(0, 15))
   
   # Name the true betas vector for further down
   names(true_betas) <- paste0("X", 1:n_vars)
   
   # Specify the "true" vars - vars that are associated with y
   true_vars <- paste0("X", 1:5)
-  # Specify the null fars - vars not associated with y
+  # Specify the null vars - vars not associated with y
   null_vars <- paste0("X", 6:n_vars)
   
-  # Get the model results
-  varsel_model <- selection_results$model
-  
-  # Get the variables that were selected
-  selected_vars <- names(coef(varsel_model))[-1] # Remove intercept
-  
-  # Summarize results
-  # Create lists to store results
-  
-  
+  # Calculate metrics
   ### Bias
   # Create vector for betas, with NAs for vars not selected
-  bhat <- as.vector(rep(0, n_vars))
+  bhat <- as.vector(rep(NA, n_vars))
   names(bhat) <- paste0("X", 1:n_vars) # Add names to vector
   
   # Populate bhat vector with the vars from selection method - rest as NA
-  bhat[selected_vars] <- as.numeric(varsel_model$coefficients)
+  bhat[selected_vars] <- as.numeric(selected_coefs)
   
   # Calculate bias
   bias <- bhat - true_betas
@@ -116,7 +137,7 @@ model_var_performance <- function(# Resulting model from variable sel method
   ci_vars <- rownames(ci)
   # Populate cover_vec with T/F if 95% CI covered true param value
   coverage[ci_vars] <- ci[, 1] <= true_betas[ci_vars] & # Greater than lower bound
-     true_betas[ci_vars] <= ci[, 2] # Less than upper bound
+    true_betas[ci_vars] <= ci[, 2] # Less than upper bound
   # Fill coverage list with these results
   # coverage <-  ifelse(is.na(cover_vec), 0, 1)
   
@@ -134,7 +155,6 @@ model_var_performance <- function(# Resulting model from variable sel method
   # Were X6-X20 selected
   fp <- null_vars %in% selected_vars
   fp_vec[null_vars] <- fp
-
   
   ### Type I Error
   # Type I error - FP - Times backwards var picked X6-X20
@@ -146,6 +166,9 @@ model_var_performance <- function(# Resulting model from variable sel method
   # Not selecting the true variables X1-X5
   typeII <- !(true_vars %in% selected_vars)
   typeII_vec[true_vars] <- typeII
+  
+  # Create data frame results depending on 
+  
   
   # Create data frame of model performance results
   model_performance_df <- data.frame(
@@ -168,6 +191,68 @@ model_var_performance <- function(# Resulting model from variable sel method
     model_performance = model_performance_df,
     selection_performance = selection_df
   ))
+}
+
+
+################################################################################
+###   Function for: 
+###   Summarizing model and variable selection performance
+################################################################################
+
+
+model_var_summary <- function(# Resulting model from variable sel method
+                                  selection_results) {
+
+  # Create data frames to return - will vary based on which type of variable sel
+  # First check which object we are working with:
+  # LASSO
+  if (class(selection_results) == "cv.glmnet") {
+    
+    # List to store results for lambda.1se and lamnda.min
+    lambdas_results <- list()
+    
+    # For loop for lambda.1se and lambda.min
+    
+    for (i in c("lambda.1se", "lambda.min" )) {
+      
+      # Get estimates for all variables 
+      sol <- coef(selection_results, s = i)
+      # Remove intercept and convert to vector
+      coefficients <- as.numeric(sol[-1, 1])
+      names(coefficients) <- rownames(sol)[-1]
+      
+      # Variables that were selected
+      selected_vars <- names(coefficients)[coefficients != 0]
+      
+      # Coefficients only for selected variables
+      selected_coefs <- coefficients[selected_vars]
+      
+      # Return the summaries
+      lambdas_results[[i]] <- model_var_performance(selected_vars = selected_vars,
+                                                   selected_coefs = selected_coefs)
+      
+    }
+    # Return list of results with different lamdbdas
+    return(lambdas_results)
+    
+    # For Backwards, AIC, BIC
+  } else { 
+    
+    # Get the model results
+    varsel_model <- selection_results$model
+    
+    # Get the variables that were selected
+    selected_vars <- names(coef(varsel_model))[-1] # Remove intercept
+    
+    # Estimates for vars that were selected
+    selected_coefs <- varsel_model$coefficients[-1]
+    
+    # Obtain model performance and variable sel metrics
+    performance_df <- model_var_performance(selected_vars = selected_vars,
+                          selected_coefs = selected_coefs)
+    # Return df of performance
+    return(performance_df)
+  }
   
 }
 
@@ -176,14 +261,27 @@ full_fit <- lm(y ~ ., data = model_dat)
 
 # Backwards selection
 backwards_sel <- ols_step_backward_p(full_fit)
-test_eval <- model_var_performance(backwards_sel)
-model_performance <- test_eval$model_performance
-var_sel_performance <- test_eval$selection_performance
+bk_test_eval <- model_var_summary(backwards_sel)
+bk_model_performance <- bk_test_eval$model_performance
+bk_var_sel_performance <- bk_test_eval$selection_performance
 
 #### CONTINUE HERE
 # LASSO
-lasso_sel <- 
-
+# Create predictor matrix
+x <- model.matrix(y ~ ., data = model_dat)[,-1] # Remove the intercept
+# Extract outcome
+y <- model_dat$y
+# Call to cv.glmnet
+lasso_sel <- cv.glmnet(x, y, 
+                       alpha = 1, # Lasso
+                       standardize = TRUE)
+lasso_test_eval <- model_var_summary(lasso_sel)
+# Get 1se results
+lasso_1se_model_perf <- lasso_test_eval$lambda.1se$model_performance
+lasso_1se_var_perf <- lasso_test_eval$lambda.1se$selection_performance
+# Get min results
+lasso_min_model_perf <- lasso_test_eval$lambda.min$model_performance
+lasso_min_var_perf <- lasso_test_eval$lambda.min$selection_performance
 
 ################################################################################
 ###   Function for: 
@@ -273,7 +371,9 @@ sim1_data0 <- gen_data(n = 250,
                        # Non-zero predictors
                        p1 = 5,
                        # Vector of non-zero betas
-                       beta = sim_betas,
+                       beta = c(0.5/3, 1/3, 1.5/3, 
+                                2/3, 2.5/3,
+                                rep(0, 15)),
                        # Correlation structure
                        corr = "exchangeable",
                        # Correlation coefficient
