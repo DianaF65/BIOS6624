@@ -226,7 +226,10 @@ model_var_performance <- function(# Model from selection method
 
 ################################################################################
 ###   Function for: 
-###   Summarizing model and variable selection performance
+###   Handling the different variable selection methods
+###   If else statements for: 
+###     - (1) Backwards, (2) AIC/BIC, (3) LASSO/Elastic Net
+### The 
 ################################################################################
 
 
@@ -379,17 +382,6 @@ elastic_1se_var_perf <- elastic_test_eval$lambda.1se$selection_performance
 elastic_min_model_perf <- elastic_test_eval$lambda.min$model_performance
 elastic_min_var_perf <- elastic_test_eval$lambda.min$selection_performance
 
-
-################################################################################
-###   Function for: 
-###   Summarizing results for simulation run
-##      - Aggregating/combining results for each method
-################################################################################
-
-# Function for summarizing a given profile
-
-
-
 ################################################################################
 ###   Function for: 
 ###   Generating data
@@ -403,12 +395,12 @@ elastic_min_var_perf <- elastic_test_eval$lambda.min$selection_performance
 
 
 # Simulation function that will iterate N times
-simulation_sampsize_rho <- function(# Desired sample size
-                                    n = 250,
+all_var_sel_methods <- function(# Desired sample size
+                                    n = n,
                                     # Number of variables
                                     n_vars = 20,
                                     # Desired rho
-                                    rho = 0.35 ) {
+                                    rho = rho ) {
   
   # List to store results from variable selection methods
   selection_list <- list()
@@ -496,7 +488,7 @@ simulation_sampsize_rho <- function(# Desired sample size
 
 
 # Test run this
-sim1_test <- simulation_sampsize_rho()
+sim1_test <- all_var_sel_methods()
 
 
 ################################################################################
@@ -518,14 +510,13 @@ sim_one_profile <- function(nsim = 10, profile) {
   # Iterate through number of sims
   for (iteration in 1:nsim) {
     # Temporary holder for given profile
-    tmp <- simulation_sampsize_rho(
+    one_profile[[iteration]] <- all_var_sel_methods(
       n = profile[, "N"],
       rho = profile[, "rho"]
     )
     
-    # Add to the one profile list
-    one_profile[[iteration]] <- tmp
-    
+    # Return results
+    return(one_profile)
   }
   
   # Return the list for one profile
@@ -540,25 +531,183 @@ test_one_profile <- sim_one_profile(nsim = 50,
 
 # This contains results for all 5 variable selection methods for 10 sims
 
-
-
 ################################################################################
-###   For loop for simulation: 
+###   For loop for: 
 ### Iterating through the 6 different profiles
 ###     - 3 rhos and 2 sample sizes
 ################################################################################
 
-# For loop to run through full simulation
-res <- list()
-for(i in 1:6) {
-  profile <- profiles[i,]
-  print(profile)
+# List to store results for all 6 profiles
+all_profiles_results <- list()
+
+# Iterate through the 6 profiles
+for (p in 1:nrow(profiles)) {
   
-  res[[i]] <- profiles(nsim = 5, profile = profile)
+  # Append results to list
+  all_profiles_results[[p]] <- sim_one_profile(
+    nsim = 10,
+    profile = profiles[p, ]
+  )
+}
+
+# Name the output
+names(all_profiles_results) <- paste0("n", profiles$N, "_rho", profiles$rho)
+
+################################################################################
+###   Function for: 
+###   Summarizing results for simulation run for given profile
+##      - Aggregating/combining results for each method
+################################################################################
+
+# Function for summarizing a given profile
+summarize_profiles <- function(profile_results) {
+  
+  # Create vectors for the 3 types of selecion methods
+  methods <- c("backward", "AIC", "BIC")
+  lambda_methods <- c("lasso", "elastic_net")
+  lambdas <- c("lambda.1se", "lambda.min")
+  
+  # List to store the summary
+  summary_list <- list()
+  
+  # Backward, AIC, BIC
+  for (method in methods) {
+    
+    # Row bind all results for model performance
+    model_perf <- do.call(
+      rbind,
+      lapply(profile_results, function(x) x[[method]]$model_performance)
+    )
+    
+    # Combine results for selection performance
+    selection_perf <- do.call(
+      rbind,
+      lapply(profile_results, function(x) x[[method]]$selection_performance)
+    )
+    
+    # Column bind the bias and coverage from model_perf df above
+    model_summary <- aggregate(
+      cbind(bias, coverage) ~ variable,
+      data = model_perf,
+      FUN = mean,
+      na.rm = TRUE
+    )
+    
+    # Columb nind the FP, TP, error rates from selection_perf df above
+    selection_summary <- aggregate(
+      cbind(true_positives, false_positives, typeI_error, typeII_error) ~
+        variable,
+      data = selection_perf,
+      FUN = mean,
+      na.rm = TRUE
+    )
+    
+    # Combine everything, model performance and selection performance into one obj
+    summary_list[[method]] <- list(
+      model_performance = model_summary,
+      selection_performance = selection_summary
+    )
+  }
+  
+  # Lasso and Elastic Net
+  for (method in lambda_methods) {
+    
+    for (lambda in lambdas) {
+      # Row bind all results for model performance
+      model_perf <- do.call(
+        rbind,
+        lapply(profile_results, function(x) x[[method]][[lambda]]$model_performance)
+      )
+      
+      # Row bind all results for var sel performance
+      selection_perf <- do.call(
+        rbind,
+        lapply(profile_results, function(x) x[[method]][[lambda]]$selection_performance)
+      )
+      
+      # Column bind the bias and coverage from model_perf df above
+      model_summary <- aggregate(
+        cbind(bias, coverage) ~ variable,
+        data = model_perf,
+        FUN = mean,
+        na.rm = TRUE
+      )
+      
+      # Column nind the FP, TP, error rates from selection_perf df above
+      selection_summary <- aggregate(
+        cbind(true_positives, false_positives, typeI_error, typeII_error) ~ variable,
+        data = selection_perf,
+        FUN = mean,
+        na.rm = TRUE
+      )
+      
+      # Combine everything, model performance and selection performance into one obj
+      summary_list[[paste(method, lambda, sep = "_")]] <- list(
+        model_performance = model_summary,
+        selection_performance = selection_summary
+      )
+    }
+  }
+  
+  return(summary_list)
 }
 
 
 
+################################################################################
+###   Function for: 
+###   Summarizing results for ALL 6 profiles
+################################################################################
+
+# Simulation results
+sim_results <- function(nsim = 10,
+                        profile) {
+  # List to store results from all profiles
+  all_profile_summaries <- list()
+  
+  # For loop to go through all profile results
+  for (p in seq_along(all_profiles_results)) {
+    all_profile_summaries[[p]] <- summarize_profiles(all_profiles_results[[p]])
+  }
+  
+}
+
+### Test
+# Look at one profile
+all_profile_summaries$n250_rho0.35$backward$model_performance
+
+################################################################################
+###                               Testing                                    ###
+################################################################################
+
+### 1. One simulated dataset
+test_one <- all_var_sel_methods(n = 250, rho = 0.35)
+
+### 2. One profile, two iterations
+test_profile <- sim_one_profile(nsim = 10, profile = profiles[1, ])
+
+### 3. Two profiles, two iterations each
+test_profiles <- profiles[1:2, ]
+# rho   N
+# 1 0.00 250
+# 2 0.35 250
+
+# List
+test_all_profiles <- list()
+
+# Run simulation
+for (p in 1:nrow(test_profiles)) {
+  test_all_profiles[[p]] <- sim_one_profile(
+    nsim = 2,
+    profile = test_profiles[p, ]
+  )
+}
+
+names(test_all_profiles) <- paste0("n", test_profiles$N, "_rho", 
+                                   test_profiles$rho)
+
+# 4. Summarize one profile
+test_summary <- summarize_profiles(test_all_profiles[[1]])
 
 ############################## Checks/Playing around ##########################
 # Creating simulated data
