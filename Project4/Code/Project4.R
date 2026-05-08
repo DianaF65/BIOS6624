@@ -82,7 +82,7 @@ model_dat <- data.frame(y = y, X)
 ################################################################################
 ###   Function for: 
 ###   Extracting variable selection method results
-###   Summarizing model and variable selection performance
+###   Calculating model and variable selection performance for one model
 ################################################################################
 
 # This function will extract results from a given model selection and calculate
@@ -379,11 +379,22 @@ elastic_1se_var_perf <- elastic_test_eval$lambda.1se$selection_performance
 elastic_min_model_perf <- elastic_test_eval$lambda.min$model_performance
 elastic_min_var_perf <- elastic_test_eval$lambda.min$selection_performance
 
+
+################################################################################
+###   Function for: 
+###   Summarizing results for simulation run
+##      - Aggregating/combining results for each method
+################################################################################
+
+# Function for summarizing a given profile
+
+
+
 ################################################################################
 ###   Function for: 
 ###   Generating data
 ###   Fitting lm() model
-###   Using model_var_performance() on variable selection method
+###   Using model_var_summary() on variable selection method
 ################################################################################
 
 
@@ -488,12 +499,9 @@ simulation_sampsize_rho <- function(# Desired sample size
 sim1_test <- simulation_sampsize_rho()
 
 
-
-
 ################################################################################
 ###   Function for: 
-###   Iterating through the 6 different profiles
-###     - 3 rhos and 2 sample sizes
+###   Results for one profile 
 ################################################################################
 
 # Create all 6 possible profiles
@@ -503,25 +511,41 @@ profiles <- expand.grid(
 )
 
 # Create function to iterate through the profiles
-sim_all_profiles <- function(nsim = 10, profile) {
-  
+sim_one_profile <- function(nsim = 10, profile) {
   # List to store results
-  all_sim_results <- list()
-
+  one_profile <- list() 
+  
+  # Iterate through number of sims
   for (iteration in 1:nsim) {
-    # Assign one profile temporarily
-    tmp <- simfunc(n = profile[,'N'], rho = profile[,'rho'])
-    tmp$iter <- iter
-    res[[iter]] <- tmp
+    # Temporary holder for given profile
+    tmp <- simulation_sampsize_rho(
+      n = profile[, "N"],
+      rho = profile[, "rho"]
+    )
+    
+    # Add to the one profile list
+    one_profile[[iteration]] <- tmp
+    
   }
-  # Combine results into a list
-  res <- do.call('rbind', res)
+  
+  # Return the list for one profile
+  one_profile[[iteration]]
 }
   
 
+### Test
+test_one_profile <- sim_one_profile(nsim = 50, 
+                                # rho = 0 and n = 250
+                                profile = profiles[1, ])
+
+# This contains results for all 5 variable selection methods for 10 sims
+
+
+
 ################################################################################
 ###   For loop for simulation: 
-###   Iterating through the 6 different profiles
+### Iterating through the 6 different profiles
+###     - 3 rhos and 2 sample sizes
 ################################################################################
 
 # For loop to run through full simulation
@@ -532,6 +556,8 @@ for(i in 1:6) {
   
   res[[i]] <- profiles(nsim = 5, profile = profile)
 }
+
+
 
 
 ############################## Checks/Playing around ##########################
