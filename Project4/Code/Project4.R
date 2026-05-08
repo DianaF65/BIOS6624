@@ -54,26 +54,27 @@ library(glmnet) # LASSO
 #################################### For Checking ##############################
 
 # Simulate data
-sim_dat <- gen_data(n = n,
+sim_dat <- gen_data(n = 50,
                     # Number of predictors
-                    p = n_vars, 
+                    p = 20, 
                     # Non-zero predictors
                     p1 = 5,
                     # Vector of non-zero betas
-                    beta = betas,
+                    beta = c(0.5/3, 1/3, 1.5/3, 2/3, 2.5/3,
+                             rep(0, 15)),
                     # Distribution
                     family = "gaussian",
                     # Correlation structure
                     corr = "exchangeable",
                     # Correlation coefficient
-                    rho = rho_vec[j])
+                    rho = 0.7)
 
 # Extract outcome for model
 y <- sim_dat$y
 # Extract predictors
 X <- sim_dat$X
 # Change colnames
-colnames(X) <-  paste0("X", 1:n_vars)
+colnames(X) <-  paste0("X", 1:20)
 
 # Create data frame with outcome and predictors
 model_dat <- data.frame(y = y, X)
@@ -89,10 +90,14 @@ model_dat <- data.frame(y = y, X)
 ## Calculate metrics for ONE model
 
 
-model_var_performance <- function(# Variables that were selected from method
+model_var_performance <- function(# Model from selection method
+                                  selection_results,
+                                  # Variables that were selected from method
                                   selected_vars,
                                   # Coefs of variables that were selected
                                   selected_coefs,
+                                  # Model data for CIs (lasso,elastic net)
+                                  model_dat = NULL,
                                   # Number of variables
                                   n_vars = 20, # Default value of 20
                                   # Alpha level
@@ -124,22 +129,48 @@ model_var_performance <- function(# Variables that were selected from method
   bias <- bhat - true_betas
   
   ### Coverage
-  # Get the 95% CI
-  ci <- confint.default(varsel_model, level = 1 - alpha)
-  # Remove the intercept from tis
-  ci <- ci[-1, , drop = FALSE]
-  
   # Create vector for coverage, NAs for vars not selected
   coverage <- rep(NA, n_vars)
   names(coverage) <- paste0("X", 1:n_vars) # Name this vector
   
-  # Name CI vector with selected vars
-  ci_vars <- rownames(ci)
-  # Populate cover_vec with T/F if 95% CI covered true param value
-  coverage[ci_vars] <- ci[, 1] <= true_betas[ci_vars] & # Greater than lower bound
-    true_betas[ci_vars] <= ci[, 2] # Less than upper bound
-  # Fill coverage list with these results
-  # coverage <-  ifelse(is.na(cover_vec), 0, 1)
+  # Determine if we are working with lasso/elastic net
+  if (inherits(selection_results, "cv.glmnet")){
+    
+    # Check if vars were indeed selected and that modeldat is not null
+    if (length(selected_vars) > 0 && !is.null(model_dat)) {
+      
+      
+      # Refit the selected vars with lm()
+      refit_model <- lm(as.formula(paste("y ~", paste(selected_vars, 
+                                           collapse = " + "))), 
+                        data = model_dat)
+      
+      # Obtain the CI from the refit model
+      ci <- confint.default(refit_model, level = 1 - alpha)
+      # Remove the intercept
+      ci <- ci[-1, , drop = FALSE] 
+      
+      # Populate coverage vectorwith T/F if 95% CI covered true param value
+      coverage[rownames(ci)] <- ci[, 1] <= true_betas[rownames(ci)] & 
+        true_betas[rownames(ci)] <= ci[, 2]
+    
+    
+    
+    } else {
+      # Backwards, AIC, or BIC
+      
+      # Get the 95% CI
+      ci <- confint.default(selection_results, level = 1 - alpha)
+      # Remove the intercept from tis
+      ci <- ci[-1, , drop = FALSE]
+      
+      # Name CI vector with selected vars
+      ci_vars <- rownames(ci)
+      # Populate cover_vec with T/F if 95% CI covered true param value
+      coverage[ci_vars] <- ci[, 1] <= true_betas[ci_vars] & # Greater than lower bound
+        true_betas[ci_vars] <= ci[, 2] # Less than upper bound
+     }
+  }
   
   ### True Positives
   # Vector of length 20
@@ -174,8 +205,7 @@ model_var_performance <- function(# Variables that were selected from method
   model_performance_df <- data.frame(
     variable = c(true_vars, null_vars),
     bias = bias,
-    coverage = coverage
-  )
+    coverage = coverage)
   
   # Create data frame of variable selection results
   selection_df <- data.frame(
@@ -201,12 +231,15 @@ model_var_performance <- function(# Variables that were selected from method
 
 
 model_var_summary <- function(# Resulting model from variable sel method
-                                  selection_results) {
+                                  selection_results,
+                                  # Model data
+                                  model_dat = NULL) {
 
   # Create data frames to return - will vary based on which type of variable sel
   # First check which object we are working with:
   # LASSO
-  if (class(selection_results) == "cv.glmnet") {
+  if (inherits(selection_results, "cv.glmnet")) {
+    # Better than (class(selection_results) == "cv.glmnet")
     
     # List to store results for lambda.1se and lamnda.min
     lambdas_results <- list()
@@ -228,16 +261,38 @@ model_var_summary <- function(# Resulting model from variable sel method
       selected_coefs <- coefficients[selected_vars]
       
       # Return the summaries
-      lambdas_results[[i]] <- model_var_performance(selected_vars = selected_vars,
-                                                   selected_coefs = selected_coefs)
+      lambdas_results[[i]] <- model_var_performance(
+                                  selection_results = selection_results,
+                                  selected_vars = selected_vars,
+                                  selected_coefs = selected_coefs,
+                                  model_dat = model_dat)
       
     }
     # Return list of results with different lamdbdas
     return(lambdas_results)
     
-    # For Backwards, AIC, BIC
-  } else { 
+    # For AIC and BIC
+  } else  if (inherits(selection_results, "lm")) { 
     
+    # AIC/BIC from step() returns lm model
+    varsel_model <- selection_results
+    
+    selected_vars <- names(coef(varsel_model))[-1]
+    selected_coefs <- coef(varsel_model)[-1]
+    
+    performance_df <- model_var_performance(
+      selection_results = varsel_model,
+      selected_vars = selected_vars,
+      selected_coefs = selected_coefs,
+      model_dat = model_dat
+    )
+    
+    return(performance_df)
+    
+    
+  } else {
+    
+    # For backwards selection
     # Get the model results
     varsel_model <- selection_results$model
     
@@ -248,10 +303,15 @@ model_var_summary <- function(# Resulting model from variable sel method
     selected_coefs <- varsel_model$coefficients[-1]
     
     # Obtain model performance and variable sel metrics
-    performance_df <- model_var_performance(selected_vars = selected_vars,
-                          selected_coefs = selected_coefs)
+    performance_df <- model_var_performance(
+      selection_results = varsel_model,
+      selected_vars = selected_vars,
+      selected_coefs = selected_coefs,
+      model_dat = model_dat)
+    
     # Return df of performance
     return(performance_df)
+    
   }
   
 }
@@ -259,13 +319,33 @@ model_var_summary <- function(# Resulting model from variable sel method
 # Do a test run
 full_fit <- lm(y ~ ., data = model_dat)
 
-# Backwards selection
+# BACKWARDS
 backwards_sel <- ols_step_backward_p(full_fit)
 bk_test_eval <- model_var_summary(backwards_sel)
 bk_model_performance <- bk_test_eval$model_performance
 bk_var_sel_performance <- bk_test_eval$selection_performance
 
-#### CONTINUE HERE
+# AIC
+aic_sel <- step(full_fit,
+                trace = 0,
+                direction = 'backward',
+                k = 2 # AIC
+)
+aic_test_eval <- model_var_summary(aic_sel)
+aic_model_performance <- aic_test_eval$model_performance
+aic_var_sel_performance <- aic_test_eval$selection_performance
+
+
+# BIC
+bic_sel <- step(full_fit,
+                trace = 0,
+                direction = 'backward',
+                k = log(nrow(model_dat)) # BIC
+)
+bic_test_eval <- model_var_summary(bic_sel)
+bic_model_performance <- bic_test_eval$model_performance
+bic_var_sel_performance <- bic_test_eval$selection_performance
+
 # LASSO
 # Create predictor matrix
 x <- model.matrix(y ~ ., data = model_dat)[,-1] # Remove the intercept
@@ -275,13 +355,29 @@ y <- model_dat$y
 lasso_sel <- cv.glmnet(x, y, 
                        alpha = 1, # Lasso
                        standardize = TRUE)
-lasso_test_eval <- model_var_summary(lasso_sel)
+
+lasso_test_eval <- model_var_summary(lasso_sel, model_dat = model_dat)
 # Get 1se results
 lasso_1se_model_perf <- lasso_test_eval$lambda.1se$model_performance
 lasso_1se_var_perf <- lasso_test_eval$lambda.1se$selection_performance
 # Get min results
 lasso_min_model_perf <- lasso_test_eval$lambda.min$model_performance
 lasso_min_var_perf <- lasso_test_eval$lambda.min$selection_performance
+
+# ELASTIC NET
+# Call to cv.glmnet
+elastic_sel <- cv.glmnet(x, y, 
+                       alpha = 0.5, # Elastic net
+                       standardize = TRUE)
+
+elastic_test_eval <- model_var_summary(elastic_sel, 
+                                       model_dat = model_dat)
+# Get 1se results
+elastic_1se_model_perf <- elastic_test_eval$lambda.1se$model_performance
+elastic_1se_var_perf <- elastic_test_eval$lambda.1se$selection_performance
+# Get min results
+elastic_min_model_perf <- elastic_test_eval$lambda.min$model_performance
+elastic_min_var_perf <- elastic_test_eval$lambda.min$selection_performance
 
 ################################################################################
 ###   Function for: 
@@ -298,22 +394,26 @@ lasso_min_var_perf <- lasso_test_eval$lambda.min$selection_performance
 # Simulation function that will iterate N times
 simulation_sampsize_rho <- function(# Desired sample size
                                     n = 250,
+                                    # Number of variables
+                                    n_vars = 20,
                                     # Desired rho
                                     rho = 0.35 ) {
+  
+  # List to store results from variable selection methods
+  selection_list <- list()
+  
   # Simulate data
   sim_dat <- gen_data(n = n,
                       # Number of predictors
                       p = n_vars, 
                       # Non-zero predictors
                       p1 = 5,
-                      # Vector of non-zero betas
-                      beta = betas,
                       # Distribution
                       family = "gaussian",
                       # Correlation structure
                       corr = "exchangeable",
                       # Correlation coefficient
-                      rho = rho_vec[j])
+                      rho = rho)
   
   # Extract outcome for model
   y <- sim_dat$y
@@ -336,20 +436,43 @@ simulation_sampsize_rho <- function(# Desired sample size
                                         collapse = '+'))),
                  data = model_dat)
   
-  ### Backwards selection
+  ### BACKWARDS SELECTION
   backwards_sel <- ols_step_backward_p(full_fit) 
+  # Get model metrics n shit
+  # backwards_result <- model_var_summary(backwards_sel)
+  selection_list[["backward"]] <- model_var_summary(backwards_sel)
+  
+  ### AIC
+  
+  ### BIC
+  aic
   
   ### LASSO
+  # Create predictor matrix
+  x <- model.matrix(y ~ ., data = model_dat)[,-1] # Remove the intercept
+  # Extract outcome
+  y <- model_dat$y
+  # Call to cv.glmnet
+  lasso_sel <- cv.glmnet(x, y, 
+                         alpha = 1, # Lasso
+                         standardize = TRUE)
+  # Get model metrics
+  selection_list[["lasso"]] <- model_var_summary(lasso_sel)
+  
+  ### ELASTIC NET
+  # Call to cv.glmnet
+  elastic_sel <- cv.glmnet(x, y, 
+                         alpha = 0.5, # Elastic
+                         standardize = TRUE)
+  # Get model metrics
+  selection_list[["elastic_net"]] <- model_var_summary(elastic_sel)
   
 }
 
 
-# Run simulation
-sim_results <- sim1(N = 100)
-# Model performance
-sim_model_performance <- sim_results$model_performance
-# Variable selection performance
-sim_varsel_performance <- sim_results$selection_performance
+# Test run this
+sim1_test <- simulation_sampsize_rho()
+
 
 
 
