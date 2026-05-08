@@ -3,9 +3,8 @@
 ################################################################################
 
 ### Questions
-  - Is specifying a correlation of 0 equivalent to having all variables independent
-  of each other? Is case 1a part of case 1b?
-  - 
+  - CIs for lasso/elastic net: Should we refit the model with lm() or not 
+  provide them?
 
 ### Notes from Class
 
@@ -56,6 +55,15 @@ datasets?
   - Backwards selection with pvals and f-test are basically the same
 - Use feature/future package for parallelization
   - Might have to be careful about seed placement?
+  
+#### 5/6 Class Notes
+- Consider adding error handling, checks, etc.
+- Focus on unconditional bias
+  - For bias, if it does not get selected, impute a 0 for all calculations and that
+  is the unconditional bias
+- Condense tables down/ split into what you want to focus on in specific sections
+  in report
+- 
 
 #### Outside of class: 
 - I was getting confused and my bias calculations were not working using Dr. S's
@@ -66,8 +74,24 @@ a 0 in the denominoator. Chat says to calculate raw bias for ALL variables
    - Code for relative bias: 
    nonzero_idx <- which(B != 0)
   rel_bias <- (coef(final_fit)[-1][nonzero_idx] - B[nonzero_idx]) / B[nonzero_idx]
+- Power = 1 - beta = 1 - Type II error
+
+### Notes on model performance measures
+FOR X1-X5:
+- True Positve Rate = Proportion of times that X1-X5 are selected
+  - TPR = mean(X1–X5 selected)
+- Type II Error - Proportion of times that X1 - X5 are NOT selected
+  - FTR H0 given the H0 is false
+  - Type II error = 1 - TPR
+FOR X6-X20:
+- False Positive Rate - Proportion of times that X6-X20 are selected
+  - FPR = mean(X6–X20 selected)
+- Type I Error - Proportion of times that X6-X20 are selected
+  -- Here, FPR = Type I Error
+The FPR and TPR tell us how good the model is at selecting variables
+The Type I and Type II error tell us how often we are making statistical mistakes
   
-##### Interin Report Notes 
+##### Interim Report Notes 
 - I'm going to include Introduction, Methods, and Simulation sections for 
 interim plan: 
   - Introduction: Review the problem and perhaps cite some papers posted or others
@@ -77,7 +101,30 @@ interim plan:
 **** PERHAPS include section on: 
   - Model Notation: Here give the notation for the model
   
+#### Simulation Overview
+We broke the simulation down into 5 functions/steps or so: 
+  1.) Function for calculating the model performance/var sel performance for ONE 
+  model
+    - model_var_performance()
   
+  2.) Function for handling the different methods of the variable selection 
+  methods. Getting the model results from each one and putting it into the 
+  model_var_performance() function. This is for one model.
+    - model_var_summary()
+  
+  3.) Function for summarizing generating the data, fitting the lm() model, 
+  fitting the 5 different variable selection methods, and putting results into
+  model_var_summary() function
+    - all_var_sel_methods() - although 
+  
+  4.) Function that will iterate through 1 of 6 profiles. For this function we 
+  will specify which profile we want to look at.
+    - sim_one_profile()
+  
+  5.) Not a function, but the last step is to use a for loop to run through 
+  the 6 different profiles. This function will use the sim_one_profiles() function
+  in the for loop for this.
+    - The list all_profiles_results() will contain this information
   
   
   
