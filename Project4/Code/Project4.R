@@ -396,11 +396,11 @@ elastic_min_var_perf <- elastic_test_eval$lambda.min$selection_performance
 
 # Simulation function that will iterate N times
 all_var_sel_methods <- function(# Desired sample size
-                                    n = n,
+                                    n = 250,
                                     # Number of variables
                                     n_vars = 20,
                                     # Desired rho
-                                    rho = rho ) {
+                                    rho = 0.35 ) {
   
   # List to store results from variable selection methods
   selection_list <- list()
@@ -443,7 +443,8 @@ all_var_sel_methods <- function(# Desired sample size
   backwards_sel <- ols_step_backward_p(full_fit) 
   # Get model metrics n shit
   # backwards_result <- model_var_summary(backwards_sel)
-  selection_list[["backward"]] <- model_var_summary(backwards_sel)
+  selection_list[["backward"]] <- model_var_summary(backwards_sel,
+                                                    model_dat = model_dat)
   
   ### AIC
   aic_sel <- step(full_fit,
@@ -451,7 +452,8 @@ all_var_sel_methods <- function(# Desired sample size
                   direction = 'backward',
                   k = 2 # AIC
   )
-  selection_list[["AIC"]] <- model_var_summary(aic_sel)
+  selection_list[["AIC"]] <- model_var_summary(aic_sel,
+                                               model_dat = model_dat)
   
   ### BIC
   bic_sel <- step(full_fit,
@@ -459,7 +461,8 @@ all_var_sel_methods <- function(# Desired sample size
                   direction = 'backward',
                   k = log(nrow(model_dat)) # BIC
   )
-  selection_list[["BIC"]] <- model_var_summary(bic_sel)
+  selection_list[["BIC"]] <- model_var_summary(bic_sel,
+                                               model_dat = model_dat)
   
   ### LASSO
   # Create predictor matrix
@@ -482,7 +485,7 @@ all_var_sel_methods <- function(# Desired sample size
   # Get model metrics
   selection_list[["elastic_net"]] <- model_var_summary(elastic_sel,
                                                        model_dat = model_dat)
-  
+
   return(selection_list)
 }
 
@@ -504,23 +507,29 @@ profiles <- expand.grid(
 
 # Create function to iterate through the profiles
 sim_one_profile <- function(nsim = 10, profile) {
+  
+  # Make sure we only evaluating one profile
+  stopifnot(nrow(profile) == 1)
+  
   # List to store results
   one_profile <- list() 
   
   # Iterate through number of sims
   for (iteration in 1:nsim) {
+    
     # Temporary holder for given profile
-    one_profile[[iteration]] <- all_var_sel_methods(
+    tmp <- all_var_sel_methods(
       n = profile[, "N"],
       rho = profile[, "rho"]
     )
     
-    # Return results
-    return(one_profile)
+    # Append this iteration to the list
+    one_profile[[iteration]] <- tmp
+    
   }
   
-  # Return the list for one profile
-  one_profile[[iteration]]
+  # Return results for one profile
+  return(one_profile)
 }
   
 
@@ -530,28 +539,6 @@ test_one_profile <- sim_one_profile(nsim = 50,
                                 profile = profiles[1, ])
 
 # This contains results for all 5 variable selection methods for 10 sims
-
-################################################################################
-###   For loop for: 
-### Iterating through the 6 different profiles
-###     - 3 rhos and 2 sample sizes
-################################################################################
-
-# List to store results for all 6 profiles
-all_profiles_results <- list()
-
-# Iterate through the 6 profiles
-for (p in 1:nrow(profiles)) {
-  
-  # Append results to list
-  all_profiles_results[[p]] <- sim_one_profile(
-    nsim = 10,
-    profile = profiles[p, ]
-  )
-}
-
-# Name the output
-names(all_profiles_results) <- paste0("n", profiles$N, "_rho", profiles$rho)
 
 ################################################################################
 ###   Function for: 
@@ -660,21 +647,58 @@ summarize_profiles <- function(profile_results) {
 ################################################################################
 
 # Simulation results
-sim_results <- function(nsim = 10,
-                        profile) {
-  # List to store results from all profiles
-  all_profile_summaries <- list()
+sim_results <- function(# Simulations
+                        nsim = 10,
+                        # Profile
+                        profiles) {
   
-  # For loop to go through all profile results
-  for (p in seq_along(all_profiles_results)) {
-    all_profile_summaries[[p]] <- summarize_profiles(all_profiles_results[[p]])
+  # List to store results from all profiles
+  all_profiles_results <- list()
+  
+  # Iterate through the profiles
+  for (p in 1:nrow(profiles)) {
+    
+    # Apply sim_one_profile to the pth profile
+    all_profiles_results[[p]] <- sim_one_profile(
+      nsim = nsim, # Take in nsim argument
+      profile = profiles[p, ] # pth profile
+    )
   }
   
+  # Name the results
+  names(all_profiles_results) <- paste0(
+    "n", profiles$N, "_rho", profiles$rho
+  )
+  
+  return(all_profiles_results)
 }
 
 ### Test
 # Look at one profile
 all_profile_summaries$n250_rho0.35$backward$model_performance
+
+################################################################################
+###   For loop for ALL profiles: - big boss?
+### Iterating through the 6 different profiles
+###     - 3 rhos and 2 sample sizes
+################################################################################
+
+# List to store results for all 6 profiles
+all_profiles_results <- list()
+
+# Iterate through the 6 profiles
+for (p in 1:nrow(profiles)) {
+  
+  # Append results to list
+  all_profiles_results[[p]] <- sim_one_profile(
+    nsim = 10,
+    profile = profiles[p, ]
+  )
+}
+
+# Name the output
+names(all_profiles_results) <- paste0("n", profiles$N, "_rho", profiles$rho)
+
 
 ################################################################################
 ###                               Testing                                    ###
@@ -684,8 +708,10 @@ all_profile_summaries$n250_rho0.35$backward$model_performance
 test_one <- all_var_sel_methods(n = 250, rho = 0.35)
 
 ### 2. One profile, two iterations
-test_profile <- sim_one_profile(nsim = 10, profile = profiles[1, ])
+test_profile <- sim_one_profile(nsim = 5, profile = profiles[1, ])
 
+
+############### 
 ### 3. Two profiles, two iterations each
 test_profiles <- profiles[1:2, ]
 # rho   N
@@ -693,21 +719,29 @@ test_profiles <- profiles[1:2, ]
 # 2 0.35 250
 
 # List
-test_all_profiles <- list()
+test <- list()
 
-# Run simulation
-for (p in 1:nrow(test_profiles)) {
-  test_all_profiles[[p]] <- sim_one_profile(
-    nsim = 2,
-    profile = test_profiles[p, ]
-  )
-}
-
-names(test_all_profiles) <- paste0("n", test_profiles$N, "_rho", 
-                                   test_profiles$rho)
+# Test profiles
+test_all_profiles <- sim_results(
+  nsim = 5,
+  profiles = test_profiles
+)
+  
+  
+length(test_all_profiles)
+length(test_all_profiles[[1]])
+length(test_all_profiles[[2]])
 
 # 4. Summarize one profile
 test_summary <- summarize_profiles(test_all_profiles[[1]])
+
+
+# 
+
+# Remove
+rm(test_one)
+rm(test_profile)
+rm(test_all_profiles)
 
 ############################## Checks/Playing around ##########################
 # Creating simulated data
