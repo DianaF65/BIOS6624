@@ -153,10 +153,9 @@ model_var_performance <- function(# Model from selection method
       # Populate coverage vectorwith T/F if 95% CI covered true param value
       coverage[rownames(ci)] <- ci[, 1] <= true_betas[rownames(ci)] & 
         true_betas[rownames(ci)] <= ci[, 2]
+    } 
     
-    
-    
-    } else {
+  } else {
       # Backwards, AIC, or BIC
       
       # Get the 95% CI
@@ -164,12 +163,9 @@ model_var_performance <- function(# Model from selection method
       # Remove the intercept from tis
       ci <- ci[-1, , drop = FALSE]
       
-      # Name CI vector with selected vars
-      ci_vars <- rownames(ci)
       # Populate cover_vec with T/F if 95% CI covered true param value
-      coverage[ci_vars] <- ci[, 1] <= true_betas[ci_vars] & # Greater than lower bound
-        true_betas[ci_vars] <= ci[, 2] # Less than upper bound
-     }
+      coverage[rownames(ci)] <- ci[, 1] <= true_betas[rownames(ci)] & # Greater than lower bound
+        true_betas[rownames(ci)] <= ci[, 2] # Less than upper bound
   }
   
   ### True Positives
@@ -544,7 +540,13 @@ test_one_profile <- sim_one_profile(nsim = 50,
 ###   Function for: 
 ###   Summarizing results for simulation run for given profile
 ##      - Aggregating/combining results for each method
+###   Input will be the list of profiles of interest
+###     - 
 ################################################################################
+
+# Within each profile, a list the length of the nsims, within these 
+# the results for each variable selection method
+
 
 # Function for summarizing a given profile
 summarize_profiles <- function(profile_results) {
@@ -557,36 +559,53 @@ summarize_profiles <- function(profile_results) {
   # List to store the summary
   summary_list <- list()
   
+  # I was encountering errors due to NAs with some of the calculations
+  ## Create a helper function to return means without accounting for NAs
+  mean_na <- function(x) {
+    if(all(is.na(x))) {
+      return(NA) 
+    } else {
+      return(mean(x, na.rm = TRUE))
+    }
+  }
+  
+  
   # Backward, AIC, BIC
   for (method in methods) {
     
     # Row bind all results for model performance
     model_perf <- do.call(
       rbind,
+      # Access the model performance results in the list
       lapply(profile_results, function(x) x[[method]]$model_performance)
     )
     
     # Combine results for selection performance
     selection_perf <- do.call(
       rbind,
+      # Access the selection performance results in the list
       lapply(profile_results, function(x) x[[method]]$selection_performance)
     )
     
     # Column bind the bias and coverage from model_perf df above
     model_summary <- aggregate(
+      # One column for each variable
       cbind(bias, coverage) ~ variable,
       data = model_perf,
-      FUN = mean,
-      na.rm = TRUE
+      # Find the column means
+      FUN = mean_na,
+      na.action = na.pass
     )
     
     # Columb nind the FP, TP, error rates from selection_perf df above
     selection_summary <- aggregate(
+      # One column for each variable
       cbind(true_positives, false_positives, typeI_error, typeII_error) ~
         variable,
       data = selection_perf,
-      FUN = mean,
-      na.rm = TRUE
+      # Find the column means
+      FUN = mean_na,
+      na.action = na.pass
     )
     
     # Combine everything, model performance and selection performance into one obj
@@ -616,16 +635,16 @@ summarize_profiles <- function(profile_results) {
       model_summary <- aggregate(
         cbind(bias, coverage) ~ variable,
         data = model_perf,
-        FUN = mean,
-        na.rm = TRUE
+        FUN = mean_na,
+        na.action = na.pass
       )
       
       # Column nind the FP, TP, error rates from selection_perf df above
       selection_summary <- aggregate(
         cbind(true_positives, false_positives, typeI_error, typeII_error) ~ variable,
         data = selection_perf,
-        FUN = mean,
-        na.rm = TRUE
+        FUN = mean_na,
+        na.action = na.pass
       )
       
       # Combine everything, model performance and selection performance into one obj
@@ -733,10 +752,27 @@ length(test_all_profiles[[1]])
 length(test_all_profiles[[2]])
 
 # 4. Summarize one profile
-test_summary <- summarize_profiles(test_all_profiles[[1]])
+test_summary1 <- summarize_profiles(test_all_profiles[[1]])
+# Summarize the n = 250 and rho = 0
 
+# Create data frame to assess multiple methods
+model_performance <- rbind(
+  data.frame(method = "Backward", test_summary1$backward$model_performance),
+  data.frame(method = "AIC", test_summary1$AIC$model_performance),
+  data.frame(method = "BIC", test_summary1$BIC$model_performance),
+  data.frame(method = "LASSO_lambda.1se", test_summary1$lasso_lambda.1se$model_performance),
+  data.frame(method = "LASSO_lambda.min", test_summary1$lasso_lambda.min$model_performance),
+  data.frame(method = "Elastic_lambda.1se", test_summary1$elastic_net_lambda.1se$model_performance),
+  data.frame(method = "Elastic_lambda.min", test_summary1$elastic_net_lambda.min$model_performance)
+)
 
-# 
+# Adjust the order of the variables
+# Make variable a factor
+model_performance$variable <- factor(model_performance$variable,
+                                     levels = paste0("X", 1:20))
+# Sort
+model_performance <- model_performance[order(model_performance$variable,
+                                             model_performance$method), ]
 
 # Remove
 rm(test_one)
