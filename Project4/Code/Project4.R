@@ -443,9 +443,20 @@ simulation_sampsize_rho <- function(# Desired sample size
   selection_list[["backward"]] <- model_var_summary(backwards_sel)
   
   ### AIC
+  aic_sel <- step(full_fit,
+                  trace = 0,
+                  direction = 'backward',
+                  k = 2 # AIC
+  )
+  selection_list[["AIC"]] <- model_var_summary(aic_sel)
   
   ### BIC
-  aic
+  bic_sel <- step(full_fit,
+                  trace = 0,
+                  direction = 'backward',
+                  k = log(nrow(model_dat)) # BIC
+  )
+  selection_list[["BIC"]] <- model_var_summary(bic_sel)
   
   ### LASSO
   # Create predictor matrix
@@ -457,7 +468,8 @@ simulation_sampsize_rho <- function(# Desired sample size
                          alpha = 1, # Lasso
                          standardize = TRUE)
   # Get model metrics
-  selection_list[["lasso"]] <- model_var_summary(lasso_sel)
+  selection_list[["lasso"]] <- model_var_summary(lasso_sel, 
+                                                 model_dat = model_dat)
   
   ### ELASTIC NET
   # Call to cv.glmnet
@@ -465,8 +477,10 @@ simulation_sampsize_rho <- function(# Desired sample size
                          alpha = 0.5, # Elastic
                          standardize = TRUE)
   # Get model metrics
-  selection_list[["elastic_net"]] <- model_var_summary(elastic_sel)
+  selection_list[["elastic_net"]] <- model_var_summary(elastic_sel,
+                                                       model_dat = model_dat)
   
+  return(selection_list)
 }
 
 
@@ -482,7 +496,42 @@ sim1_test <- simulation_sampsize_rho()
 ###     - 3 rhos and 2 sample sizes
 ################################################################################
 
-# 
+# Create all 6 possible profiles
+profiles <- expand.grid(
+  rho = c(0, 0.35, 0.7),
+  N = c(250, 500)
+)
+
+# Create function to iterate through the profiles
+sim_all_profiles <- function(nsim = 10, profile) {
+  
+  # List to store results
+  all_sim_results <- list()
+
+  for (iteration in 1:nsim) {
+    # Assign one profile temporarily
+    tmp <- simfunc(n = profile[,'N'], rho = profile[,'rho'])
+    tmp$iter <- iter
+    res[[iter]] <- tmp
+  }
+  # Combine results into a list
+  res <- do.call('rbind', res)
+}
+  
+
+################################################################################
+###   For loop for simulation: 
+###   Iterating through the 6 different profiles
+################################################################################
+
+# For loop to run through full simulation
+res <- list()
+for(i in 1:6) {
+  profile <- profiles[i,]
+  print(profile)
+  
+  res[[i]] <- profiles(nsim = 5, profile = profile)
+}
 
 
 ############################## Checks/Playing around ##########################
@@ -557,75 +606,5 @@ mean(cor(dat_list[[1]]$X)) # [1] 0.04970694
 mean(cor(dat_list[[2]]$X)) # [1] 0.3970614
 mean(cor(dat_list[[3]]$X)) # [1] 0.7335126
 # Looks good
-
-###################################### AIC #####################################
-
-
-###################################### BIC #####################################
-
-
-##################################### LASSO ###################################
-
-
-
-################################## Elastic Net #################################
-
-
-
-
-################################ Simulation 2 Data #############################
-
-
-
-############################# Backwards Selection ##############################
-
-
-###################################### AIC #####################################
-
-
-###################################### BIC #####################################
-
-
-##################################### LASSO ###################################
-
-##################### Checks/Playing around
-# Creating simulated data
-set.seed(646)
-sim1_data0 <- gen_data(n = 250,
-                       # Number of predictors
-                       p = 20, 
-                       # Non-zero predictors
-                       p1 = 5,
-                       # Vector of non-zero betas
-                       beta = sim_betas,
-                       # Correlation structure
-                       corr = "exchangeable",
-                       # Correlation coefficient
-                       rho = 0)
-
-# Checking correlations between Xs and y
-mean(cor(dat_list[[1]]$X)) # [1] 0.04970694
-mean(cor(dat_list[[2]]$X)) # [1] 0.3970614
-mean(cor(dat_list[[3]]$X)) # [1] 0.7335126
-# Looks good
-
-
-# Fit model for lasso
-glmnet_model <- glmnet(y , x, 
-                       family = c("gaussian"),
-                       alpha = 1)
-
-
-################################## Elastic Net #################################
-
-
-
-
-
-
-
-
-
-
 
 
