@@ -38,7 +38,7 @@ For each case first simulate the data using the hdrm package that can be found
 on github. Then fit each model using the 5 model fitting approaches above.
 
 There are different choices for how to choose lambda for lasso and elastic net. 
-Investigate at least 2 choices (we’ll have to specify the choices as a group). 
+Investigate at least 2 choices  
   - Can use 1se and min as the options
   - Can investigate another 2nd option besides these two
 
