@@ -9,6 +9,8 @@ library(hdrm)
 library(MASS) # AIC/BIC variable selection
 library(olsrr) # Backwards variable selection
 library(glmnet) # LASSO
+library(tidyverse)
+library(kableExtra)
 
  
 ################################################################################
@@ -119,7 +121,7 @@ model_var_performance <- function(# Model from selection method
   # Calculate metrics
   ### Bias
   # Create vector for betas, with NAs for vars not selected
-  bhat <- as.vector(rep(NA, n_vars))
+  bhat <- rep(0, n_vars)
   names(bhat) <- paste0("X", 1:n_vars) # Add names to vector
   
   # Populate bhat vector with the vars from selection method - rest as NA
@@ -130,7 +132,7 @@ model_var_performance <- function(# Model from selection method
   
   ### Coverage
   # Create vector for coverage, NAs for vars not selected
-  coverage <- rep(NA, n_vars)
+  coverage <- rep(0, n_vars)
   names(coverage) <- paste0("X", 1:n_vars) # Name this vector
   
   # Determine if we are working with lasso/elastic net
@@ -153,7 +155,19 @@ model_var_performance <- function(# Model from selection method
       # Populate coverage vectorwith T/F if 95% CI covered true param value
       coverage[rownames(ci)] <- ci[, 1] <= true_betas[rownames(ci)] & 
         true_betas[rownames(ci)] <= ci[, 2]
+      
     } 
+    
+    ### Get unconditional coverage
+    # Variables not selected
+    not_selected <- setdiff(paste0("X", 1:n_vars), selected_vars)
+    
+    # If true variable X1-X5 was not selected, coverage = 0
+    coverage[intersect(not_selected, true_vars)] <- 0
+    
+    # If null variable X6-X20 was not selected, coverage = 1
+    coverage[intersect(not_selected, null_vars)] <- 1
+    
     
   } else {
       # Backwards, AIC, or BIC
@@ -166,6 +180,15 @@ model_var_performance <- function(# Model from selection method
       # Populate cover_vec with T/F if 95% CI covered true param value
       coverage[rownames(ci)] <- ci[, 1] <= true_betas[rownames(ci)] & # Greater than lower bound
         true_betas[rownames(ci)] <= ci[, 2] # Less than upper bound
+      
+      # Variables not selected
+      not_selected <- setdiff(paste0("X", 1:n_vars), selected_vars)
+      
+      # If a true variable X1-X5 was not selected, coverage = 0
+      coverage[intersect(not_selected, true_vars)] <- 0
+      
+      # If a null variable X6-X20 was not selected, coverage = 1
+      coverage[intersect(not_selected, null_vars)] <- 1
   }
   
   ### True Positives
@@ -389,6 +412,7 @@ elastic_min_var_perf <- elastic_test_eval$lambda.min$selection_performance
 # This function will specify the sample size and rhos, fit the lm() model, 
 # and will use the model_var_performance() function
 
+# 
 
 # Simulation function that will iterate N times
 all_var_sel_methods <- function(# Desired sample size
@@ -405,6 +429,9 @@ all_var_sel_methods <- function(# Desired sample size
   sim_dat <- gen_data(n = n,
                       # Number of predictors
                       p = n_vars, 
+                      # The values for the "true" betas
+                      beta = c(0.5/3, 1/3, 1.5/3, 2/3, 2.5/3,
+                               rep(0, 15)),
                       # Non-zero predictors
                       p1 = 5,
                       # Distribution
@@ -459,16 +486,23 @@ all_var_sel_methods <- function(# Desired sample size
   )
   selection_list[["BIC"]] <- model_var_summary(bic_sel,
                                                model_dat = model_dat)
+  #### SHRINKAGE METHODS
   
   ### LASSO
   # Create predictor matrix
   x <- model.matrix(y ~ ., data = model_dat)[,-1] # Remove the intercept
+  
   # Extract outcome
   y <- model_dat$y
+  
+  # Use the same fold id for lasso and elatic net for better comparison
+  foldid <- sample(rep(1:10, length.out = nrow(x)))
+  
   # Call to cv.glmnet
   lasso_sel <- cv.glmnet(x, y, 
                          alpha = 1, # Lasso
-                         standardize = TRUE)
+                         standardize = TRUE,
+                         foldid = foldid)
   # Get model metrics
   selection_list[["lasso"]] <- model_var_summary(lasso_sel, 
                                                  model_dat = model_dat)
@@ -477,7 +511,8 @@ all_var_sel_methods <- function(# Desired sample size
   # Call to cv.glmnet
   elastic_sel <- cv.glmnet(x, y, 
                          alpha = 0.5, # Elastic
-                         standardize = TRUE)
+                         standardize = TRUE,
+                         foldid = foldid)
   # Get model metrics
   selection_list[["elastic_net"]] <- model_var_summary(elastic_sel,
                                                        model_dat = model_dat)
@@ -696,6 +731,213 @@ sim_results <- function(# Simulations
 # Look at one profile
 all_profile_summaries$n250_rho0.35$backward$model_performance
 
+
+################################################################################
+###                               Testing                                    ###
+################################################################################
+
+### 1. One simulated dataset
+test_one <- all_var_sel_methods(n = 250, rho = 0.35)
+
+### 2. One profile, nsim iterations
+test_profile <- sim_one_profile(nsim = 10, profile = profiles[1, ])
+
+
+############### 
+### 3. Two profiles, two iterations each
+test_profiles <- profiles[1:6, ]
+# rho   N
+# 1 0.00 250
+# 2 0.35 250
+
+# List
+test <- list()
+
+# Test profiles
+test_all_profiles <- sim_results(
+  nsim = 20,
+  profiles = test_profiles
+)
+  
+  
+length(test_all_profiles)
+length(test_all_profiles[[1]])
+length(test_all_profiles[[2]])
+
+# 4. Summarize one profile
+test_summary1 <- summarize_profiles(test_all_profiles[[1]])
+# Summarize the n = 250 and rho = 0
+
+# Create data frame to assess multiple methods
+all_model_performance <- list()
+
+# For the 2 profiles
+for (p in seq_along(test_all_profiles)) {
+  # Get the pth profile summary
+  profile_summary <- summarize_profiles(test_all_profiles[[p]])
+  # The pth profile info
+  profile_info <- test_profiles[p, ]
+  
+  # List of all model performance for all selection methods
+  model_perf_list <- list(
+    Backward = profile_summary$backward$model_performance,
+    AIC = profile_summary$AIC$model_performance,
+    BIC = profile_summary$BIC$model_performance,
+    LASSO_lambda.1se = profile_summary$lasso_lambda.1se$model_performance,
+    LASSO_lambda.min = profile_summary$lasso_lambda.min$model_performance,
+    Elastic_lambda.1se = profile_summary$elastic_net_lambda.1se$model_performance,
+    Elastic_lambda.min = profile_summary$elastic_net_lambda.min$model_performance
+  )
+  
+  # Create a data frame
+  all_model_performance[[p]] <- do.call(
+    # Combine into rows
+    rbind,
+    # Create data frame with the cols of interst
+    lapply(names(model_perf_list), function(m) {
+      data.frame(
+        n = profile_info$N,
+        rho = profile_info$rho,
+        method = m,
+        model_perf_list[[m]]
+      )
+    })
+  )
+}
+
+all_model_performance <- do.call(rbind, all_model_performance)
+row.names(all_model_performance) <- NULL
+
+# Adjust the order of the variables
+# Make variable a factor
+all_model_performance$variable <- factor(all_model_performance$variable,
+                                     levels = paste0("X", 1:20))
+# Sort
+all_model_performance <- all_model_performance[order(all_model_performance$variable,
+                                            all_model_performance$method), ]
+
+### Display something Dr. S has..
+# Coverage for X1-X5 for backwards, AIC, BIC
+coverage <- all_model_performance %>% 
+  filter(variable %in% paste0("X", 1:5)) %>% 
+  # filter(method %in% c("Backward", "AIC", "BIC")) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_cover = mean(coverage) * 100)
+
+# Df for now to look at
+cov_df <- pivot_wider(coverage,
+                      names_from = variable,
+                      values_from = prob_cover)
+
+# Display with kable
+knitr::kable(
+  coverage,
+    pivot_wider(
+      names_from = variable,
+      values_from = prob_cover,
+      format = "html"
+    ),
+  digits = 3
+)
+
+# Bias for X1-X5 for backwards, AIC, BIC
+bias <- all_model_performance %>% 
+  # filter(variable %in% paste0("X", 1:5)) %>% 
+  # filter(method %in% c("Backward", "AIC", "BIC")) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_bias = mean(bias))
+
+# Df for now to look at
+bias_df <- pivot_wider(bias,
+                      names_from = variable,
+                      values_from = prob_bias)
+
+
+# Selection performance
+# Create data frame to assess multiple methods
+all_selection_performance <- list()
+
+# For the 2 profiles
+for (p in seq_along(test_all_profiles)) {
+  # Get the pth profile summary
+  profile_summary <- summarize_profiles(test_all_profiles[[p]])
+  # The pth profile info
+  profile_info <- test_profiles[p, ]
+  
+  # List of all selection performance for all selection methods
+  selection_perf_list <- list(
+    Backward = profile_summary$backward$selection_performance,
+    AIC = profile_summary$AIC$selection_performance,
+    BIC = profile_summary$BIC$selection_performance,
+    LASSO_lambda.1se = profile_summary$lasso_lambda.1se$selection_performance,
+    LASSO_lambda.min = profile_summary$lasso_lambda.min$selection_performance,
+    Elastic_lambda.1se = profile_summary$elastic_net_lambda.1se$selection_performance,
+    Elastic_lambda.min = profile_summary$elastic_net_lambda.min$selection_performance
+  )
+  
+  # Create a data frame
+  all_selection_performance[[p]] <- do.call(
+    # Combine into rows
+    rbind,
+    # Create data frame with the cols of interst
+    lapply(names(selection_perf_list), function(m) {
+      data.frame(
+        n = profile_info$N,
+        rho = profile_info$rho,
+        method = m,
+        selection_perf_list[[m]]
+      )
+    })
+  )
+}
+
+all_selection_performance <- do.call(rbind, all_selection_performance)
+row.names(all_selection_performance) <- NULL
+
+# Adjust the order of the variables
+# Make variable a factor
+all_selection_performance$variable <- factor(all_selection_performance$variable,
+                                         levels = paste0("X", 1:20))
+# Sort
+all_selection_performance <- all_selection_performance[order(all_selection_performance$variable,
+                                                     all_selection_performance$method), ]
+
+# False postiives ==TYPE I ERROR 
+fps <- all_selection_performance %>% 
+  filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_fps = mean(false_positives) * 100)
+
+# Df for now to look at
+fps_df <- pivot_wider(fps,
+                      names_from = variable,
+                      values_from = prob_fps)
+
+# Type II error
+errorII <- all_selection_performance %>% 
+  filter(variable %in% c("X1", "X2", "X3", "X4", "X5")) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_errorII = mean(typeII_error) * 100)
+
+errorII_df <- pivot_wider(
+  errorII, 
+  names_from = variable,
+  values_from = prob_errorII
+)
+
+# Type I error
+errorI <- all_selection_performance %>% 
+  filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_errorI = mean(typeI_error) * 100)
+
+errorI_df <- pivot_wider(
+  errorI, 
+  names_from = variable,
+  values_from = prob_errorI
+)
+
+
 ################################################################################
 ###   For loop for ALL profiles: - big boss?
 ### Iterating through the 6 different profiles
@@ -719,65 +961,6 @@ for (p in 1:nrow(profiles)) {
 names(all_profiles_results) <- paste0("n", profiles$N, "_rho", profiles$rho)
 
 
-################################################################################
-###                               Testing                                    ###
-################################################################################
-
-### 1. One simulated dataset
-test_one <- all_var_sel_methods(n = 250, rho = 0.35)
-
-### 2. One profile, two iterations
-test_profile <- sim_one_profile(nsim = 5, profile = profiles[1, ])
-
-
-############### 
-### 3. Two profiles, two iterations each
-test_profiles <- profiles[1:2, ]
-# rho   N
-# 1 0.00 250
-# 2 0.35 250
-
-# List
-test <- list()
-
-# Test profiles
-test_all_profiles <- sim_results(
-  nsim = 5,
-  profiles = test_profiles
-)
-  
-  
-length(test_all_profiles)
-length(test_all_profiles[[1]])
-length(test_all_profiles[[2]])
-
-# 4. Summarize one profile
-test_summary1 <- summarize_profiles(test_all_profiles[[1]])
-# Summarize the n = 250 and rho = 0
-
-# Create data frame to assess multiple methods
-model_performance <- rbind(
-  data.frame(method = "Backward", test_summary1$backward$model_performance),
-  data.frame(method = "AIC", test_summary1$AIC$model_performance),
-  data.frame(method = "BIC", test_summary1$BIC$model_performance),
-  data.frame(method = "LASSO_lambda.1se", test_summary1$lasso_lambda.1se$model_performance),
-  data.frame(method = "LASSO_lambda.min", test_summary1$lasso_lambda.min$model_performance),
-  data.frame(method = "Elastic_lambda.1se", test_summary1$elastic_net_lambda.1se$model_performance),
-  data.frame(method = "Elastic_lambda.min", test_summary1$elastic_net_lambda.min$model_performance)
-)
-
-# Adjust the order of the variables
-# Make variable a factor
-model_performance$variable <- factor(model_performance$variable,
-                                     levels = paste0("X", 1:20))
-# Sort
-model_performance <- model_performance[order(model_performance$variable,
-                                             model_performance$method), ]
-
-# Remove
-rm(test_one)
-rm(test_profile)
-rm(test_all_profiles)
 
 ############################## Checks/Playing around ##########################
 # Creating simulated data
