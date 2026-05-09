@@ -223,6 +223,8 @@ model_var_performance <- function(# Model from selection method
   # Create data frame of model performance results
   model_performance_df <- data.frame(
     variable = c(true_vars, null_vars),
+    # Add the beta hats to assess samp size for final sim run
+    beta_hat = bhat,
     bias = bias,
     coverage = coverage)
   
@@ -745,6 +747,8 @@ test_profile <- sim_one_profile(nsim = 10, profile = profiles[1, ])
 
 ############### 
 ### 3. Two profiles, two iterations each
+### Doing a pilot run go get sampe size for sim run
+
 test_profiles <- profiles[1:6, ]
 # rho   N
 # 1 0.00 250
@@ -754,15 +758,12 @@ test_profiles <- profiles[1:6, ]
 test <- list()
 
 # Test profiles
-test_all_profiles <- sim_results(
-  nsim = 20,
+pilot_results <- sim_results(
+  nsim = 200,
   profiles = test_profiles
 )
   
   
-length(test_all_profiles)
-length(test_all_profiles[[1]])
-length(test_all_profiles[[2]])
 
 # 4. Summarize one profile
 test_summary1 <- summarize_profiles(test_all_profiles[[1]])
@@ -939,26 +940,139 @@ errorI_df <- pivot_wider(
 
 
 ################################################################################
-###   For loop for ALL profiles: - big boss?
-### Iterating through the 6 different profiles
-###     - 3 rhos and 2 sample sizes
+###                               SIMULATION RUN                             ###
 ################################################################################
 
-# List to store results for all 6 profiles
-all_profiles_results <- list()
+# Load the future library for parallelization
+library(future)
+library(future.apply)
 
-# Iterate through the 6 profiles
-for (p in 1:nrow(profiles)) {
+# Define the number of profiles 
+n_profiles <- nrow(profiles)
+
+plan(multisession, workers = 5)
+# I have 8 cores on my computer, this leaves 2 for doing other work
+
+# List to store results for all 6 profiles
+sim_results <- list()
+
+# Seed for reproducibility
+set.seed(6456)
+
+## SIMULATION RUN
+run_time <- system.time({
   
-  # Append results to list
-  all_profiles_results[[p]] <- sim_one_profile(
-    nsim = 10,
-    profile = profiles[p, ]
+  sim_results <- future_lapply(
+    1:n_profiles,
+    function(i) {
+      sim_one_profile(
+        nsim = 2500, 
+        profile = profiles[i, ]
+      )
+    },
+    future.seed = TRUE
+  )
+  
+})
+
+# Name the results by profile
+names(sim_results) <- paste0("n", profiles$N, "_rho", profiles$rho)
+
+# Save results immediately
+saveRDS(sim_results, "simulation_results_2500.rds")
+
+# Return to sequential plan when done
+plan(sequential)
+
+# Print run time
+run_time
+
+# Then check
+
+length(sim_results)
+length(sim_results[[1]])
+names(sim_results)
+
+
+## Note on nsim - I am mainly interested in evaluating bias, therefore
+# I will run 2500 repititions for the simulation
+# 
+
+
+###### DATA FRAME CREATION FOR SIMULATION RUN RESULTS
+# Create data frame to assess multiple methods
+sim_model_performance <- list()
+
+# For the 2 profiles
+for (p in seq_along(sim_results) {
+  # Get the pth profile summary
+  profile_summary <- summarize_profiles(sim_results[[p]])
+  # The pth profile info
+  profile_info <- profiles[p, ]
+  
+  # List of all model performance for all selection methods
+  model_perf_list <- list(
+    Backward = profile_summary$backward$model_performance,
+    AIC = profile_summary$AIC$model_performance,
+    BIC = profile_summary$BIC$model_performance,
+    LASSO_lambda.1se = profile_summary$lasso_lambda.1se$model_performance,
+    LASSO_lambda.min = profile_summary$lasso_lambda.min$model_performance,
+    Elastic_lambda.1se = profile_summary$elastic_net_lambda.1se$model_performance,
+    Elastic_lambda.min = profile_summary$elastic_net_lambda.min$model_performance
+  )
+  
+  # Create a data frame
+  model_performance[[p]] <- do.call(
+    # Combine into rows
+    rbind,
+    # Create data frame with the cols of interst
+    lapply(names(model_perf_list), function(m) {
+      data.frame(
+        n = profile_info$N,
+        rho = profile_info$rho,
+        method = m,
+        model_perf_list[[m]]
+      )
+    })
   )
 }
 
-# Name the output
-names(all_profiles_results) <- paste0("n", profiles$N, "_rho", profiles$rho)
+all_model_performance <- do.call(rbind, all_model_performance)
+row.names(all_model_performance) <- NULL
+
+# Adjust the order of the variables
+# Make variable a factor
+siml_model_performance$variable <- factor(sim_model_performance$variable,
+                                         levels = paste0("X", 1:20))
+# Sort
+sim_model_performance <- sim_model_performance[order(sim_model_performance$variable,
+                                                     sim_model_performance$method), ]
+
+### Display something Dr. S has..
+# Coverage for X1-X5 for backwards, AIC, BIC
+coverage <- sim_model_performance %>% 
+  filter(variable %in% paste0("X", 1:5)) %>% 
+  # filter(method %in% c("Backward", "AIC", "BIC")) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_cover = mean(coverage) * 100)
+
+# Df for now to look at
+cov_df <- pivot_wider(coverage,
+                      names_from = variable,
+                      values_from = prob_cover)
+
+
+# Bias for X1-X5 for backwards, AIC, BIC
+bias <- sim_model_performance %>% 
+  # filter(variable %in% paste0("X", 1:5)) %>% 
+  # filter(method %in% c("Backward", "AIC", "BIC")) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_bias = mean(bias))
+
+# Df for now to look at
+bias_df <- pivot_wider(bias,
+                       names_from = variable,
+                       values_from = prob_bias)
 
 
 
