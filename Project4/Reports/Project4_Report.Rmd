@@ -88,6 +88,9 @@ Performance will be evaluated using bias, coverage of 95% confidence intervals, 
 We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. We will specify the 5 covariates to have coefficients of $\approx$ 0.17, 0.33, 0.5, 0.67, and 0.83 and the remaining 15 variables to have coefficients of 0. 
 The 5 non-zero covariates are essentially what we are setting to be as the most important predictors of the outcome and simulation will allow us to assess how the different variable selection techniques do in regard to selecting predictors that actually matter.
 
+<!-- - MAKE SURE U MENTION THAT FOR VARIABLE PERFORMANCE YOU ARE DONG PER VAR PER METHOD!! -->
+<!-- NOT FOR ANY OF X1-X5 OR X6-X20 but for ALL -->
+
 \vspace{-6mm}
 ## Simulation
 <!-- 1-1.5 PAGES -->
@@ -295,7 +298,7 @@ ggplot(coverage_plot_df, aes(y = fct_rev(method),
   )
 ```
 
-```{r, echo = F}
+```{r, echo = F, warning = F, message = F}
 ### VARIABLE SELECTION METHOD PERFORMANCE
 # Create data frame to assess multiple methods
 sim_selection_performance <- list()
@@ -345,7 +348,7 @@ selection_performance$variable <- factor(selection_performance$variable,
 selection_performance <- selection_performance[order(selection_performance$variable,
                                                      selection_performance$method), ]
 
-# False postiives == TYPE I ERROR 
+# False postiives == TYPE I ERROR since we are looking at individual vars for each method
 fps <- selection_performance %>% 
   filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
   group_by(n, rho, method, variable) %>% 
@@ -355,38 +358,108 @@ fps <- selection_performance %>%
 fps_df <- pivot_wider(fps,
                       names_from = variable,
                       values_from = prob_fps)
-fps_df
+# fps_df
+
+# Looking at these results, seems that vals for X6-X20 are pretty similar
+# Going to summarise with mean to digest it better yummm
+# 
+
+# fps %>% 
+#   group_by(n, rho, method) %>% 
+#   summarise(mean_fp = mean(prob_fps))
+
+# Create a df to visualize bias
+fps_plot_df <- selection_performance %>% 
+  filter(variable %in% paste0("X", 6:20)) %>% 
+  group_by(n, rho, method) %>% 
+  summarise(
+    mean_fpr = mean(false_positives, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Rename the method labels
+fps_plot_df$method <- factor(fps_plot_df$method,
+                                  levels = c("AIC", "Backward",
+                                             "BIC",
+                                    "Elastic_lambda.1se", "Elastic_lambda.min",
+                                    "LASSO_lambda.1se", "LASSO_lambda.min" ),
+                                  labels = c("AIC", "Backward",
+                                             "BIC",
+                                             "Elastic 1se", "Elastic Min",
+                                             "LASSO 1se", "LASSO Min"))
+
+# Plot
+ggplot(fps_plot_df, aes(y = fct_rev(method), 
+                         x = mean_fpr,
+                         color = method,
+                         shape = factor(rho))) +
+  theme_lucid(legend.position = "bottom") +
+  guides(color = "none") +
+  # geom_vline(xintercept = 0.95, linetype = "dashed", color = "red") +
+  geom_point(size = 2) +
+  facet_grid(~ n,
+             labeller = labeller(
+               variable = c(
+                 "X1" = "X1 (rho=0.17)",
+                 "X2" = "X2 (rho=0.33)",
+                 "X3" = "X3 (rho=0.5)",
+                 "X4" = "X4 (rho=0.67)",
+                 "X5" = "X5 (rho=0.83)"))) +
+  labs(
+    x = "False Positive Rate",
+    y = "Method",
+    shape = expression(rho),
+    title = "FPR by Variable Selection Method"
+  )
+
+# There does not appear to be a difference for different rhos
+# There is no difference for different rhos for AIC,BIC,Backwards but there
+# is a difference with shrinkage methods for different rhos, specifically
+# most apparent with lamdab = 1se where rho = 0 results in lowest FPR and
+# rho = 0.7 results in highest FPR aka so higher correlation with outcome tends # to result in more false positives which makes sense
+# Samp size does not seem to have an effect
 ```
 
 
-```{r, echo = F}
-# Type II error
-errorII <- selection_performance %>% 
-  filter(variable %in% c("X1", "X2", "X3", "X4", "X5")) %>% 
+```{r, echo = F, warning = F, message=F}
+# Type II error summary - get the percentage
+errorII_summary <- selection_performance %>% 
+  filter(variable %in% paste0("X", 1:5)) %>% 
   group_by(n, rho, method, variable) %>% 
-  summarise(prob_errorII = mean(typeII_error) * 100)
+  summarise(
+    errorII_rate = mean(typeII_error, na.rm = TRUE),
+    errorII_percent = 100 * errorII_rate,
+    .groups = "drop"
+  )
 
-errorII_df <- pivot_wider(
-  errorII, 
-  names_from = variable,
-  values_from = prob_errorII
-)
+# A df or table to look at
+errorII_df <- errorII_summary %>% 
+  select(n, rho, method, variable, errorII_percent) %>% 
+  pivot_wider(
+    names_from = variable,
+    values_from = errorII_percent
+  )
 
-errorII_df
+# Plot
+ggplot(errorII_summary, aes(y = fct_rev(method),
+                            x = errorII_percent,
+                            shape = factor(rho),
+                            color = method)) +
+  theme_lucid(legend.position = "bottom") +
+  geom_point(size = 2) +
+  facet_grid(~ n) +
+  guides(color = "none") +
+  labs(
+    x = "Type II Error (%)",
+    y = "Method",
+    shape = expression(rho),
+    title = "Type II Error by Variable Selection Method"
+  )
+
 ```
 
-```{r, echo = F}
-# Type I error
-errorI <- all_selection_performance %>% 
-  filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
-  group_by(n, rho, method, variable) %>% 
-  summarise(prob_errorI = mean(typeI_error) * 100)
+```{r, echo = F, warning=F, message=F}
 
-errorI_df <- pivot_wider(
-  errorI, 
-  names_from = variable,
-  values_from = prob_errorI
-)
 ```
 
 
