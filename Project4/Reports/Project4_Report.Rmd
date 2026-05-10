@@ -36,58 +36,61 @@ library(stats)
 library(dplyr)
 library(tibble)
 library(labelled)
-library(tableone)
-library(gtsummary)
-library(gt)
-library(ggeffects)
-library(UpSetR)
-library(visdat)
-library(lubridate)
 library(see)
-library(data.table)
-library(gridExtra)
-library(kableExtra)
-library(readr)
-library(here)
-library(dplyr)
-library(ggplot2)
-library(naniar)
-library(see)
-library(pillar)
-library(visdat)
-library(finalfit)
-library(table1)
 library(here)
 library(expss)
 library(hdrm)
+library(MASS) # AIC/BIC variable selection
+library(olsrr) # Backwards variable selection
+library(glmnet) # LASSO
+library(tidyverse)
+library(kableExtra)
+library(here)
 
 opts_chunk$set(tidy = F)
 ```
 
-# Introduction
-<!-- Review the problem and perhaps cite some papers posted or others -->
-Selecting the most appropriate models in variable selection is one of the most important and challenging parts of model building. 
+```{r, echo = F}
+# Read in the rds file from the simulation run
+simu_results <- readRDS("simulation_results_2500.rds")
 
-# Methods
+# Source the functions from Project4.R
+source("../Code/Project4_Functions.R")
+```
+
+
+
+## Introduction
+<!-- 1/2 PAGE -->
+<!-- Review the problem and perhaps cite some papers posted or others -->
+Variable selection is important whether we are interested in prediction, explanation, or description for a given research question when building a statistical model.
+Selecting the most appropriate predictors is one of the most important and difficult parts of model building.
+Variable selection is necessary when there are a large number of variables being considered/available and it can be a challenge to identify the most relevant predictors for the outcome of interest.
+Variable selection can be done through automated selection techniques, often alongside background knowledge of the research question.
+However, these automated approaches can lead to the incorrect inclusion or exclusion of predictors, which may affect the accuracy, variability, and overall robustness of the final model (Heinze et al., 2017).
+The primary aim of this simulation study is to investigate five variable selection methods and compare their performance. Ultimately, we aimed to provide the recommended variable selection methods and under which specific circumstances. This report covers the findings of our simulation study. It fills in the results from the simulation plan agreed upon in the prior interim simulation plan report. 
+
+## Model Notation
+<!-- 1/2 PAGE -->
+<!-- here give the notation for the model -->
+
+## Methods
+<!-- 1 PAGE -->
 \vspace{-6mm}
 <!-- Describe model selection approaches and provide references if necessary -->
-We will assess 5 model selection techniques in linear regression. We briefly describe them here: 
-
-\vspace{-3mm}
-\begin{itemize}
-  \item[1.)] Backwards Selection: This method begins with all variables being considered and variables are deleted one by one from the full model until all remaining variables are considered to have some significant contribution to the outcome.We will be using the ols\_step\_backward\_p() function from the stats package for this. This function removes predictors based on p-values in a stepwise manner until there are no remaining variables to remove. 
-  \item[2.)] AIC
-  \item[3.)] BIC
-  \item[4.)] Least Absolute Shrinkage and Selection Operator (LASSO)
-  \item[5.)] Elastic Net
-\end{itemize}
-\vspace{-3mm}
+Simulation studies involve repeatedly generated from a specified data-generating mechanism and analyzing it to assess the performance of statistical methods under controlled conditions (Morris et al., 2017).
+In this study, simulation will be used to investigate the performance of different variable selection techniques.
+Specifically, we will look at five model selection techniques in linear regression: Backwards Variable Selection, Akaike Information Criteria (AIC), Bayesia Alkaline Criteria (BIC), Least Absolute Shrinkage and Selection Operator (LASSO), and Elastic Net.
+We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. These 5 variables will have coefficients of approximately 0.17, 0.33, 0.5, 0.67, and 0.83, while the remaining 15 variables will have coefficients of 0.
+The variables with non-zero coefficients represent the true predictors of the outcome. This setup allows us to evaluate how well each variable selection method identifies important predictors and avoids selecting variables that do not contribute to the model.
+Performance will be evaluated using bias, coverage of 95% confidence intervals, and measures of variable selection performance including true and false positive rates and type I and II error.
 
 We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. We will specify the 5 covariates to have coefficients of $\approx$ 0.17, 0.33, 0.5, 0.67, and 0.83 and the remaining 15 variables to have coefficients of 0. 
 The 5 non-zero covariates are essentially what we are setting to be as the most important predictors of the outcome and simulation will allow us to assess how the different variable selection techniques do in regard to selecting predictors that actually matter.
 
 \vspace{-6mm}
-# Simulation
+## Simulation
+<!-- 1-1.5 PAGES -->
 \vspace{-6mm}
 <!-- Write on how you will simulate the data and how we are fitting those data. How will you summarize and present results? -->
 We will run 10,000 iterations or simulations to obtain - come back here after reading that one paper.
@@ -108,7 +111,303 @@ In the final report, we will include a table summarizing the performance of the 
 We will use a significance level of $\alpha = 0.5$ for all analyses.  
 All analyses will be conducted with R veresion 4.4.1.
 
+\vspace{-6mm}
+## Results and Discussion
+\vspace{-6mm}
+<!-- 2 PAGES -->
+<!-- Summarize findings. Organization of findings is very important.  -->
+<!-- What method do I recommend and under what cases. Cover the big picture  -->
+<!-- recommendations after giving the results. -->
 
+```{r, echo = F}
+##### MODEL PERFORMANCE
+# Create data frame to assess multiple methods
+sim_model_performance <- list()
+
+# For the 2 profiles
+for (p in seq_along(simu_results)) {
+  # Get the pth profile summary
+  profile_summary <- summarize_profiles(simu_results[[p]])
+  # The pth profile info
+  profile_info <- profiles[p, ]
+  
+  # List of all model performance for all selection methods
+  model_perf_list <- list(
+    Backward = profile_summary$backward$model_performance,
+    AIC = profile_summary$AIC$model_performance,
+    BIC = profile_summary$BIC$model_performance,
+    LASSO_lambda.1se = profile_summary$lasso_lambda.1se$model_performance,
+    LASSO_lambda.min = profile_summary$lasso_lambda.min$model_performance,
+    Elastic_lambda.1se = profile_summary$elastic_net_lambda.1se$model_performance,
+    Elastic_lambda.min = profile_summary$elastic_net_lambda.min$model_performance
+  )
+  
+  # Create a data frame
+  sim_model_performance[[p]] <- do.call(
+    # Combine into rows
+    rbind,
+    # Create data frame with the cols of interst
+    lapply(names(model_perf_list), function(m) {
+      data.frame(
+        n = profile_info$N,
+        rho = profile_info$rho,
+        method = m,
+        model_perf_list[[m]]
+      )
+    })
+  )
+}
+
+model_performance <- do.call(rbind, sim_model_performance)
+row.names(model_performance) <- NULL
+
+# Adjust the order of the variables
+# Make variable a factor
+model_performance$variable <- factor(model_performance$variable,
+                                         levels = paste0("X", 1:20))
+# Sort
+model_performance <- model_performance[order(model_performance$variable,
+                                                     model_performance$method), ]
+
+### Display something Dr. S has..
+# Coverage for all vars for all sel methods
+coverage <- model_performance %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_cover = mean(coverage) * 100)
+
+# Df for now to look at
+cov_df <- pivot_wider(coverage,
+                      names_from = variable,
+                      values_from = prob_cover)
+
+# Create some forest plots as done in Morris et al. paper
+## A separate color for each of the 5 var sel methods
+## A row for bias and a row for CI coverage
+## A col for each sample size
+
+```
+
+```{r, echo = F, warning=F,message=F, fig.cap="The bias by variable selection method. Circle points corresond to sample size of 250 while square points correspond to 500."}
+#### Visualization of bias for the different sel methods
+# Create a df to visualize bias
+bias_plot_df <- model_performance %>% 
+  filter(variable %in% paste0("X", 1:5)) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(
+    mean_bias = mean(bias, na.rm = TRUE),
+    lower = quantile(bias, 0.025, na.rm = TRUE),
+    upper = quantile(bias, 0.975, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Rename the method labels
+bias_plot_df$method <- factor(bias_plot_df$method,
+                                  levels = c("AIC", "Backward",
+                                             "BIC",
+                                    "Elastic_lambda.1se", "Elastic_lambda.min",
+                                    "LASSO_lambda.1se", "LASSO_lambda.min" ),
+                                  labels = c("AIC", "Backward",
+                                             "BIC",
+                                             "Elastic 1se", "Elastic Min",
+                                             "LASSO 1se", "LASSO Min"))
+
+# Plot
+ggplot(bias_plot_df, aes(y = fct_rev(method), 
+                         x = mean_bias,
+                         color = method,
+                         shape = factor(n))) +
+  theme_lucid(legend.position = "none") +
+  geom_vline(xintercept = 0, linetype = "dashed", color = "red") +
+  geom_segment(aes(x = lower, 
+                   xend = upper,
+                   y = fct_rev(method), 
+                   yend = fct_rev(method)),
+               linewidth = 0.8) +
+  geom_point(size = 2) +
+  facet_grid(rho ~ variable,
+             labeller = labeller(
+               variable = c(
+                 "X1" = "X1 (rho=0.17)",
+                 "X2" = "X2 (rho=0.33)",
+                 "X3" = "X3 (rho=0.5)",
+                 "X4" = "X4 (rho=0.67)",
+                 "X5" = "X5 (rho=0.83)"))) +
+  labs(
+    x = "Bias",
+    y = "Method"
+  )
+   
+## Perhaps just use this for interpreting results
+
+
+```
+
+
+```{r, echo = F, results='hide', warning=F, message=F}
+### Visaulization of coverage for the different sel methods
+# Create a df to visualize bias
+coverage_plot_df <- model_performance %>% 
+  filter(variable %in% paste0("X", 1:5)) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(
+    mean_coverage = mean(coverage, na.rm = TRUE),
+    lower = quantile(coverage, 0.025, na.rm = TRUE),
+    upper = quantile(coverage, 0.975, na.rm = TRUE),
+    .groups = "drop"
+  )
+
+# Rename the method labels
+coverage_plot_df$method <- factor(coverage_plot_df$method,
+                                  levels = c("AIC", "Backward",
+                                             "BIC",
+                                    "Elastic_lambda.1se", "Elastic_lambda.min",
+                                    "LASSO_lambda.1se", "LASSO_lambda.min" ),
+                                  labels = c("AIC", "Backward",
+                                             "BIC",
+                                             "Elastic 1se", "Elastic Min",
+                                             "LASSO 1se", "LASSO Min"))
+
+# Plot
+ggplot(coverage_plot_df, aes(y = fct_rev(method), 
+                         x = mean_coverage,
+                         color = method,
+                         shape = factor(n))) +
+  theme_lucid(legend.position = "none") +
+  geom_vline(xintercept = 0.95, linetype = "dashed", color = "red") +
+  geom_segment(aes(x = lower, 
+                   xend = upper,
+                   y = fct_rev(method), 
+                   yend = fct_rev(method)),
+               linewidth = 0.8) +
+  geom_point(size = 2) +
+  facet_grid(rho ~ variable,
+             labeller = labeller(
+               variable = c(
+                 "X1" = "X1 (rho=0.17)",
+                 "X2" = "X2 (rho=0.33)",
+                 "X3" = "X3 (rho=0.5)",
+                 "X4" = "X4 (rho=0.67)",
+                 "X5" = "X5 (rho=0.83)"))) +
+  labs(
+    x = "Coverage",
+    y = "Method",
+    title = "Coverage by Variable Selection Method"
+  )
+```
+
+```{r, echo = F}
+### VARIABLE SELECTION METHOD PERFORMANCE
+# Create data frame to assess multiple methods
+sim_selection_performance <- list()
+
+# For the 2 profiles
+for (p in seq_along(simu_results)) {
+  # Get the pth profile summary
+  profile_summary <- summarize_profiles(simu_results[[p]])
+  # The pth profile info
+  profile_info <- profiles[p, ]
+  
+  # List of all varsel performance for all selection methods
+  varsel_perf_list <- list(
+    Backward = profile_summary$backward$selection_performance,
+    AIC = profile_summary$AIC$selection_performance,
+    BIC = profile_summary$BIC$selection_performance,
+    LASSO_lambda.1se = profile_summary$lasso_lambda.1se$selection_performance,
+    LASSO_lambda.min = profile_summary$lasso_lambda.min$selection_performance,
+    Elastic_lambda.1se = profile_summary$elastic_net_lambda.1se$selection_performance,
+    Elastic_lambda.min = profile_summary$elastic_net_lambda.min$selection_performance
+  )
+  
+  # Create a data frame
+  sim_selection_performance[[p]] <- do.call(
+    # Combine into rows
+    rbind,
+    # Create data frame with the cols of interst
+    lapply(names(varsel_perf_list), function(m) {
+      data.frame(
+        n = profile_info$N,
+        rho = profile_info$rho,
+        method = m,
+        varsel_perf_list[[m]]
+      )
+    })
+  )
+}
+
+selection_performance <- do.call(rbind, sim_selection_performance)
+row.names(selection_performance) <- NULL
+
+# Adjust the order of the variables
+# Make variable a factor
+selection_performance$variable <- factor(selection_performance$variable,
+                                         levels = paste0("X", 1:20))
+# Sort
+selection_performance <- selection_performance[order(selection_performance$variable,
+                                                     selection_performance$method), ]
+
+# False postiives == TYPE I ERROR 
+fps <- selection_performance %>% 
+  filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_fps = mean(false_positives) * 100)
+
+# Df for now to look at
+fps_df <- pivot_wider(fps,
+                      names_from = variable,
+                      values_from = prob_fps)
+fps_df
+```
+
+
+```{r, echo = F}
+# Type II error
+errorII <- selection_performance %>% 
+  filter(variable %in% c("X1", "X2", "X3", "X4", "X5")) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_errorII = mean(typeII_error) * 100)
+
+errorII_df <- pivot_wider(
+  errorII, 
+  names_from = variable,
+  values_from = prob_errorII
+)
+
+errorII_df
+```
+
+```{r, echo = F}
+# Type I error
+errorI <- all_selection_performance %>% 
+  filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
+  group_by(n, rho, method, variable) %>% 
+  summarise(prob_errorI = mean(typeI_error) * 100)
+
+errorI_df <- pivot_wider(
+  errorI, 
+  names_from = variable,
+  values_from = prob_errorI
+)
+```
+
+
+In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
+We will use a significance level of $\alpha = 0.5$ for all analyses.  
+All analyses will be conducted with R veresion 4.4.1.
+
+\vspace{-6mm}
+## Future Work 
+\vspace{-6mm}
+<!-- 1/2 PAGE -->
+<!-- List things you learned and ideas you might want to invesitgate further that  -->
+<!-- were beyond the scope of this project. -->
+In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
+We will use a significance level of $\alpha = 0.5$ for all analyses.  
+All analyses will be conducted with R veresion 4.4.1.
+
+<!-- TABLES OF SIMULATION PARAMETERS ARE COMMON IN METHODS PAPERS -->
+
+
+## References
 
 
 
