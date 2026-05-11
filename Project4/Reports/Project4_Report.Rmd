@@ -1,5 +1,5 @@
 ---
-title: Project 4 Data Analysis Plan
+title: "\\large Assessing the Performance of Different Variable Selection Methods"
 author: Diana Felipe
 output: 
   bookdown::pdf_document2:
@@ -19,8 +19,9 @@ header-includes:
   - \usepackage{enumitem}
   - \setlength{\droptitle}{-4cm}
   - \preauthor{\vspace{-0.6cm}}
-  - \postauthor{\vspace{-2.5cm}}
+  - \postauthor{\vspace{-2.3cm}}
   - \setlist{nosep}
+bibliography: Felipe_Proj4.bib
 ---
 
 
@@ -33,7 +34,6 @@ library(knitr)
 library(ggplot2)
 library(kableExtra)
 library(stats)
-library(dplyr)
 library(tibble)
 library(labelled)
 library(see)
@@ -46,6 +46,8 @@ library(glmnet) # LASSO
 library(tidyverse)
 library(kableExtra)
 library(here)
+library(dplyr)
+library(tidyr)
 
 opts_chunk$set(tidy = F)
 ```
@@ -159,13 +161,13 @@ selection_performance <- selection_performance[order(selection_performance$varia
 ```
 
 
-
 ## Introduction
+\vspace{-6mm}
 <!-- 1/2 PAGE -->
 <!-- Review the problem and perhaps cite some papers posted or others -->
-Variable selection is important whether we are interested in prediction, explanation, or description for a given research question when building a statistical model.
+When building a statistical model, variable selection is important whether we are interested in prediction, explanation, or description for a given research question.
 Selecting the most appropriate predictors is one of the most important and difficult parts of model building.
-Variable selection is necessary when there are a large number of variables being considered/available and it can be a challenge to identify the most relevant predictors for the outcome of interest.
+Variable selection is necessary when there are a large number of variables being considered and it can be a challenge to identify the most relevant predictors for the outcome of interest.
 Variable selection can be done through automated selection techniques, often alongside background knowledge of the research question.
 However, these automated approaches can lead to the incorrect inclusion or exclusion of predictors, which may affect the accuracy, variability, and overall robustness of the final model (Heinze et al., 2017).
 The primary aim of this simulation study is to investigate five variable selection methods and compare their performance. Ultimately, we aimed to provide the recommended variable selection methods and under which specific circumstances. This report covers the findings of our simulation study. It fills in the results from the simulation plan agreed upon in the prior interim simulation plan report. 
@@ -229,7 +231,7 @@ the shrinkage methods showed more noticeable negative bias, indicating that thes
 For both LASSO and elastic net, the 1SE lambda generally resulted in more bias than the minimum lambda, likely due to stronger penalization. These patterns were similar across correlation settings, although bias was slightly reduced with the larger sample size. 
 Thus, if one is mainly interested in reducing bias, the AIC, BIC, or backwards variable selection methods are preferable.  
 
-```{r, echo = F, warning=F,message=F, fig.cap="Average bias for each variable selection method. Variables X1–X5 are shown in the column panels, and the different predictor correlation settings are shown in the row panels. Circles represent n=250, and triangles represent n=500. AIC, BIC, and backward selection generally had smaller mean bias compared to the penalized regression methods. For both LASSO and elastic net, the 1SE lambda showed more negative bias than the minimum lambda.", position='H'}
+```{r, echo = F, warning=F,message=F, fig.cap="Average bias for each variable selection method. Variables X1–X5 are shown in the column panels, and the different predictor correlation settings are shown in the row panels. Circles represent n=250, and triangles represent n=500. AIC, BIC, and backward selection generally had smaller mean bias compared to the penalized regression methods. For both LASSO and elastic net, the 1SE lambda showed more negative bias than the minimum lambda.", position='H', include=F}
 #### Visualization of bias for the different sel methods
 
 # Look at each variable
@@ -304,7 +306,7 @@ ggplot(bias_plot_df, aes(y = fct_rev(method),
 For coverage, we calculated the average percentage of times the 95% interval covered the true coefficient for each variable and simulation setting, visualized in Figure ?? in the \textit{Supplemental Material} section. We observed the widest range in coverage for X1, the variable with the weakest relationship with the outcome, compared to variables X2-X20. The BIC method with $\rho = 0.7$ and sample size of 250 resulted in the lowest coverage for X1, with 20% coverage. Overall, BIC performed the least favorably for X1 across the different simulation settings. However, coverage was $\approx$ 100\% for variables X2-X5 across all simulation scenarios. 
 Based on these results, if coverage is of primary concern, special caution may be needed when using more conservative selection methods such as BIC, particularly for predictors with weak relationships with the outcome and when predictors are highly correlated.
 
-```{r, echo = F, results='hide', warning=F, message=F, fig.cap="Coverage percentage for each variable selection method. Column panels show the five variables with increasing strengths of association with the outcome, and row panels show the different correlation settings among predictors. Circles represent n=250, and triangles represent n=500. BIC had the lowest coverage for X1, the weakest predictor, particularly when predictor correlation was high" }
+```{r, echo = F, results='hide', warning=F, message=F, fig.cap="Coverage percentage for each variable selection method. Column panels show the five variables with increasing strengths of association with the outcome, and row panels show the different correlation settings among predictors. Circles represent n=250, and triangles represent n=500. BIC had the lowest coverage for X1, the weakest predictor, particularly when predictor correlation was high", include = F}
 
 ### Display table like Dr.Sevick has to look at coverage
 # Coverage for all vars for all sel methods
@@ -367,16 +369,16 @@ ggplot(coverage_plot_df, aes(y = fct_rev(method),
     ),
     .default = label_parsed)) +
   labs(
-    x = "Coverage (%)",
+    x = "Mean Coverage (%)",
     y = "Method",
     shape = "N")
 ```
 
 
 As FPRs across variables X6-X20 were generally consistent for each variable selection method, we calculated ahd visualized the average FP percentage across the null variables. 
-From Figure 3, elastic net with $\lambda=$Min had the highest FP percentages, while AIC and BIC had the lowest percentages across the different correlation settings. Correlation among predictors appeared to have the largest effect on elastic net and LASSO using $\lambda$=1SE, where higher correlation among predictors resulted in higher FP percentages. We also note that sample sizes did not seem to influence results. These results suggest that AIC and BIC were more robust to changes in predictor correlation and produced some of the lowest FP percentages in this simulation setting.
+From Figure 3, elastic net with $\lambda_{\text{min}}$ had the highest FP percentages, while AIC and BIC had the lowest percentages across the different correlation settings. Correlation among predictors appeared to have the largest effect on elastic net and LASSO using $\lambda_{\text{1SE}}$, where higher correlation among predictors resulted in higher FP percentages. We also note that sample sizes did not seem to influence results. These results suggest that AIC and BIC were more robust to changes in predictor correlation and produced some of the lowest FP percentages in this simulation setting.
 
-```{r, echo = F, message = F, warning = F, fig.cap="Average false positive rate percentage by variable selection method. Column panels correspond to sample size. Circles represent rho=0, triangles represent rho=0.35, and squares represent rho=0.70. Elastic net, particularly using lambda min, produced the highest FP percentages, while BIC produced the lowest FP percentages across correlation settings. The shrinkage methods were more influenced by predictor correlation, with higher correlation generally resulting in higher FP percentages."}
+```{r, echo = F, message = F, warning = F, fig.cap="Average false positive rate percentage by variable selection method. Column panels correspond to sample size. Circles represent rho=0, triangles represent rho=0.35, and squares represent rho=0.70. Elastic net, particularly using lambda min, produced the highest FP percentages, while BIC produced the lowest FP percentages across correlation settings. The shrinkage methods were more influenced by predictor correlation, with higher correlation generally resulting in higher FP percentages.", include = F}
 # False positives == TYPE I ERROR since we are looking at individual vars for each method
 fps_summary <- selection_performance %>% 
   filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
@@ -426,7 +428,7 @@ ggplot(fps_summary, aes(y = fct_rev(method),
                  "X4" = "X4 (rho=0.67)",
                  "X5" = "X5 (rho=0.83)"))) +
   labs(
-    x = "False Positive Rate (%)",
+    x = "Mean False Positive Rate (%)",
     y = "Method",
     shape = expression(rho),
     title = "FPR by Variable Selection Method - Averaged by Method"
@@ -440,72 +442,78 @@ ggplot(fps_summary, aes(y = fct_rev(method),
 # Samp size does not seem to have an effect
 ```
 
-```{r, echo = F, message = F, warning = F}
-# False postiives == TYPE I ERROR since we are looking at individual vars for each method
-tps_summary <- selection_performance %>% 
-  filter((variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
-  group_by(n, rho, method, variable) %>% 
-  summarise(tps_rate = mean(true_positives, na.rm = TRUE),
-            tps_percent = 100 * tps_rate,
-            .groups = "drop")
+The average TPR was calculated across the different simulation settings.
+Assessing TPRs for X1-X5, it was evident that X1 was the only variable were TPRs noticeably differed across the selection methods. 
+In Table 1, we summarize the TPR percentages for X1. 
+Overall, BIC had the lowest TPRs and within BIC, higher correlations among predictors decreased the TPR. 
+We observed similar patterns at smaller scales for AIC and Backwards selection. 
+The two shrinkage methods with $\lambda_{\text{min}}$ consistenly had the highest TPRs across all settings. We also note that TPRs were consistently higher for sample size of 500 compared to 250. 
+There were no apparent differences in TPRs across selection methods, sample sizes, or correlation settings for variables X2-X5 as these were selected nearly all of the time. 
 
-# Look at each variable
+```{r, echo = F, message = F, warning = F, include = F}
+# False postiives == TYPE I ERROR since we are looking at individual vars for each method
+# Look at each variable -- Seems that X1 is most clearly different here
 # selection_performance %>%
 #   filter((variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>%
 #   group_by(n, rho, method, variable) %>%
 #   summarise(tps_percent = mean(true_positives) * 100) %>%
 #   pivot_wider(names_from = variable,
-#               values_from = tps_percent)
+#               values_from = tps_percent) 
 
+# Looking at just X1
+# selection_performance %>%
+#   filter(variable == "X1") %>%
+#   group_by(n, rho, method, variable) %>%
+#   summarise(tps_percent = mean(true_positives) * 100) %>%
+#   pivot_wider(names_from = variable,
+#               values_from = tps_percent) 
 
-# Rename the method labels
-tps_summary$method <- factor(tps_summary$method,
-                                  levels = c("AIC", "Backward",
-                                             "BIC",
-                                    "Elastic_lambda.1se", "Elastic_lambda.min",
-                                    "LASSO_lambda.1se", "LASSO_lambda.min" ),
-                                  labels = c("AIC", "Backward",
-                                             "BIC",
-                                             "Elastic 1se", "Elastic Min",
-                                             "LASSO 1SE", "LASSO Min"))
+# Table for report
+x1_tpr_long <- selection_performance %>%
+  dplyr::filter(variable == "X1") %>%
+  dplyr::group_by(n, rho, method) %>%
+  dplyr::summarise(
+    tpr_percent = mean(true_positives, na.rm = TRUE) * 100,
+    .groups = "drop") 
 
-# Plot
-ggplot(tps_summary, aes(y = fct_rev(method), 
-                         x = tps_percent,
-                         color = method,
-                         shape = factor(n))) +
-  theme_lucid(legend.position = "bottom") +
-  guides(color = "none") +
-  geom_vline(xintercept = 100, linetype = "dashed", color = "red") +
-  geom_point(size = 2) +
-  facet_grid(variable ~ rho,
-             labeller = labeller(
-               variable = c(
-                 "X1" = "X1 (β=0.17)",
-                 "X2" = "X2 (β=0.33)",
-                 "X3" = "X3 (β=0.5)",
-                 "X4" = "X4 (β=0.67)",
-                 "X5" = "X5 (β=0.83)"))) +
-  labs(
-    x = "True Positive Rate (%)",
-    y = "Method",
-    shape = expression(n),
-    title = "TPR by Variable Selection Method"
-  )
+# Create a row for each method
+x1_tpr_table <- x1_tpr_long %>%
+  tidyr::pivot_wider(
+    id_cols = c(n, rho),
+    names_from = method,
+    values_from = tpr_percent) %>%
+  dplyr::arrange(n, rho) %>% 
+  # Change the colnames
+  rename(N = n,
+         Correlation = rho,
+         "Elastic 1SE" = Elastic_lambda.1se,
+         "Elastic Min" = Elastic_lambda.min,
+         "LASSO 1SE" = LASSO_lambda.1se,
+         "LASSO Min" = LASSO_lambda.min)
 
-# There does not appear to be a difference for different rhos
-# There is no difference for different rhos for AIC,BIC,Backwards but there
-# is a difference with shrinkage methods for different rhos, specifically
-# most apparent with lamdab = 1se where rho = 0 results in lowest FPR and
-# rho = 0.7 results in highest FPR aka so higher correlation with outcome tends # to result in more false positives which makes sense
-# Samp size does not seem to have an effect
+# Display with kable
+kable(x1_tpr_table,
+      # format = "latex",
+      booktabs = TRUE,
+      digits = 2,
+      caption = "Mean True Positive Rate (\\%) for X1") %>% 
+  kable_styling(latex_options = c("striped","hold_position",
+                                  "scale_down"))
+  
 ```
 
+In regard to testing-related performance measures, we summarized Type I and Type II error percentages.
+Because FPR was calculated separately for each null variable X6–X20, the FPR is equivalent to the variable-specific Type I error rate. In this context, a false positive means that a variable with a true coefficient of 0 was incorrectly selected into the final model. Therefore, the Type I error results followed the same pattern as the FPR results.
 
-```{r, echo = F, warning = F, message=F}
+Type II error was evaluated for variables X1–X5. Mean Type II error percentages for X2–X5 were generally close to \0% across the different variable selection methods, correlation settings, and sample sizes, as shown in Figure 4 for X2 and X3. This suggests that moderate to strong relationships with the outcome were consistently detected by all methods.
+However, the X1 variable had consistently lower Type II error percentages across most selection methods. We do note that increasing the sample size does appear to modestly decrease the Type II error rates. 
+BIC tended to have the highest Type II error for X1. 
+These results suggest that variables with weaker relationships with the outcome are more likely to be missed during variable selection methods, particularly with more conservative methods such as BIC. 
+
+```{r, echo = F, warning = F, message=F, fig.cap="Averaged Type II error percentages for X1-X3. Type II error percentages for X2–X5 were approximately 0 across most simulation settings, indicating that moderate to strong predictors were consistently selected. X1 had the highest Type II error rates across all variable selection methods and correlation settings. Sample size slightly improved rates with a noticeable improvement for BIC when sample size was increased and under high predictor correlation.", include = F}
 # Type II error summary - get the percentage
 errorII_summary <- selection_performance %>% 
-  filter(variable %in% paste0("X", 1:5)) %>% 
+  filter(variable %in% c("X1", "X2", "X3")) %>% 
   group_by(n, rho, method, variable) %>% 
   summarise(
     errorII_rate = mean(typeII_error, na.rm = TRUE),
@@ -513,38 +521,24 @@ errorII_summary <- selection_performance %>%
     .groups = "drop"
   )
 
-# A df or table to look at
-# errorII_df <- errorII_summary %>% 
-#   select(n, rho, method, variable, errorII_percent) %>% 
-#   pivot_wider(
-#     names_from = variable,
-#     values_from = errorII_percent
-#   )
-
 # Plot
 ggplot(errorII_summary, aes(y = fct_rev(method),
                             x = errorII_percent,
-                            shape = factor(rho),
+                            shape = factor(n),
                             color = method)) +
   theme_lucid(legend.position = "bottom") +
   geom_point(size = 2) +
-  facet_grid(variable ~ n) +
+  facet_grid(rho ~ variable) +
   guides(color = "none") +
   labs(
     x = "Type II Error (%)",
     y = "Method",
-    shape = expression(rho),
-    title = "Type II Error by Variable Selection Method"
+    shape = expression(n)
   )
 
 ```
 
 
-
-
-In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
-We will use a significance level of $\alpha = 0.5$ for all analyses.  
-All analyses will be conducted with R veresion 4.4.1.
 
 \vspace{-6mm}
 ## Future Work 
