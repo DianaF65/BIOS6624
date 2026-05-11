@@ -22,6 +22,7 @@ header-includes:
   - \postauthor{\vspace{-2.3cm}}
   - \setlist{nosep}
 bibliography: Felipe_Proj4.bib
+csl: diana_vancouver_final.csl
 ---
 
 
@@ -169,13 +170,32 @@ When building a statistical model, variable selection is important whether we ar
 Selecting the most appropriate predictors is one of the most important and difficult parts of model building.
 Variable selection is necessary when there are a large number of variables being considered and it can be a challenge to identify the most relevant predictors for the outcome of interest.
 Variable selection can be done through automated selection techniques, often alongside background knowledge of the research question.
-However, these automated approaches can lead to the incorrect inclusion or exclusion of predictors, which may affect the accuracy, variability, and overall robustness of the final model (Heinze et al., 2017).
-The primary aim of this simulation study is to investigate five variable selection methods and compare their performance. Ultimately, we aimed to provide the recommended variable selection methods and under which specific circumstances. This report covers the findings of our simulation study. It fills in the results from the simulation plan agreed upon in the prior interim simulation plan report. 
+However, these automated approaches can lead to the incorrect inclusion or exclusion of predictors, which may affect the accuracy, variability, and overall robustness of the final model [@Heinzeetal2018].
+The primary aim of this simulation study is to investigate five variable selection methods and compare their performance in regard to bias, coverage, False Positive Rates (FPRs),
+True Positive Rates (TPRs), as well as Type I & II error rates. 
+Ultimately, we aimed to provide recommendations on variable selection methods for specific circumstances.
+This report describes the simulation study in which we evaluated the five variable selection methods. 
 
+\vspace{-6mm}
 ## Model Notation
+\vspace{-6mm}
 <!-- 1/2 PAGE -->
 <!-- here give the notation for the model -->
+For each simulation setting, data were generated from a linear regression model with one continuous outcome and 20 predictors. 
+Let $Y_i$ be the outcome for subject $i$, where $i = 1, 2, \dots, n$. 
+We specified the model as: 
+\vspace{-3mm}
+$$Y_i = \beta_{0} + \sum^{20}_{j = 1} \beta_{j} X_{ij} + \epsilon_{i}$$
+where $X_{ij}$ represents predictor $j$ for subject $i$, $\beta_{j}$ is the true coefficient for predictor $j$, and $\epsilon_{i}$ is the random error term. 
+We defined the true coefficient vector as  $\beta = (0.17, 0.33, 0.5, 0.67, 0.83, 0, \dots, 0)$. 
+Variables X1-X5 were defined to be the true predictors while X6-X20 were null variables. 
+The coefficients for X1-X5 were chosen to represent increasing strengths of association with the outcome. 
 
+The predictors were generated using an exchangeable correlation structure, where every pair of predictors had the same correlation $\rho$. We evaluated three values of $\rho: 0, 0.35, \text{ and } 0.7.$
+We looked at two sample sizes: n = 250 and n = 500. These settings resulted in 6 simulation scenarios. 
+Variable selection methods were assessed based on their ability to identify true predictors, avoid selecting null predictors, and produce estimates with low bias and appopriate confidence interval coverage. 
+
+\vspace{-6mm}
 ## Methods
 <!-- 1 PAGE -->
 \vspace{-6mm}
@@ -557,11 +577,4 @@ All analyses will be conducted with R veresion 4.4.1.
 
 \newpage
 ## References
-
-\newpage 
-
-### Supplemental Material
-
-
-
 
