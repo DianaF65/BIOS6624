@@ -190,8 +190,8 @@ where $X_{ij}$ represents predictor $j$ for subject $i$, $\beta_{j}$ is the true
 We defined the true coefficient vector as  $\beta = (0.17, 0.33, 0.5, 0.67, 0.83, 0, \dots, 0)$. 
 Variables X1-X5 were defined to be the true predictors while X6-X20 were null variables. 
 The coefficients for X1-X5 were chosen to represent increasing strengths of association with the outcome. 
-
-The predictors were generated using an exchangeable correlation structure, where every pair of predictors had the same correlation $\rho$. We evaluated three values of $\rho: 0, 0.35, \text{ and } 0.7.$
+The predictors were generated using an exchangeable correlation structure, where every pair of predictors had the same correlation $\rho$. We evaluated three values of $\rho$: 0, 0.35, and 0.7.
+This range of correlation values allowed us to assess how increasing correlation among predictors affected the performance of the variable selection methods.
 We looked at two sample sizes: n = 250 and n = 500. These settings resulted in 6 simulation scenarios. 
 Variable selection methods were assessed based on their ability to identify true predictors, avoid selecting null predictors, and produce estimates with low bias and appopriate confidence interval coverage. 
 
@@ -200,43 +200,38 @@ Variable selection methods were assessed based on their ability to identify true
 <!-- 1 PAGE -->
 \vspace{-6mm}
 <!-- Describe model selection approaches and provide references if necessary -->
-Simulation studies involve repeatedly generated from a specified data-generating mechanism and analyzing it to assess the performance of statistical methods under controlled conditions (Morris et al., 2017).
-In this study, simulation will be used to investigate the performance of different variable selection techniques.
-Specifically, we will look at five model selection techniques in linear regression: Backwards Variable Selection, Akaike Information Criteria (AIC), Bayesia Alkaline Criteria (BIC), Least Absolute Shrinkage and Selection Operator (LASSO), and Elastic Net.
-We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. These 5 variables will have coefficients of approximately 0.17, 0.33, 0.5, 0.67, and 0.83, while the remaining 15 variables will have coefficients of 0.
-The variables with non-zero coefficients represent the true predictors of the outcome. This setup allows us to evaluate how well each variable selection method identifies important predictors and avoids selecting variables that do not contribute to the model.
-Performance will be evaluated using bias, coverage of 95% confidence intervals, and measures of variable selection performance including true and false positive rates and type I and II error.
+Simulation studies involve repeatedly generating data from a specified data-generating mechanism and analyzing the data to assess the performance of statistical methods under controlled conditions [@Morrisetal2019]. For this simulation study, we investigate five model selection techniques in linear regression: backward variable selection, Akaike Information Criterion (AIC), Bayesian Information Criterion (BIC), Least Absolute Shrinkage and Selection Operator (LASSO), and Elastic Net. We briefly describe the variable selection methods below.
 
-We will simulate data with one outcome and 20 variables, 5 of which will have varying strengths of relationships with the outcome. We will specify the 5 covariates to have coefficients of $\approx$ 0.17, 0.33, 0.5, 0.67, and 0.83 and the remaining 15 variables to have coefficients of 0. 
-The 5 non-zero covariates are essentially what we are setting to be as the most important predictors of the outcome and simulation will allow us to assess how the different variable selection techniques do in regard to selecting predictors that actually matter.
+\vspace{-3mm}
+1. **Backward Selection:** This method begins with all variables being considered in the full model. Variables are then deleted one at a time until the remaining variables are considered to have a meaningful contribution to the outcome [@Heinzeetal2018]. In this study, we used the \texttt{ols\_step\_backward\_p()} function from the \texttt{olsrr} package in R. This function removes predictors based on p-values in a stepwise manner until no additional variables meet the removal criterion.
 
-Because FPR was calculated separately for each null variable X6–X20, the FPR is equivalent to the variable-specific Type I error rate. In this context, a false positive means that a variable with a true coefficient of 0 was incorrectly selected into the final model. Therefore, the Type I error results followed the same pattern as the FPR results.
+2. **AIC**: AIC is a model selection criterion that allows for the comparison of different models. AIC attempts to balance selecting too few variables, which may lead to underfitting, and selecting too many variables, which may lead to overfitting. It provides a way to balance model fit and model complexity [@ChowdhuryTurin2020]. Smaller AIC values suggest a more favorable model. In this study, we used the \texttt{step()} function from the \texttt{stats} package in R with the AIC penalty.
 
-<!-- - MAKE SURE U MENTION THAT FOR VARIABLE PERFORMANCE YOU ARE DONG PER VAR PER METHOD!! -->
-<!-- NOT FOR ANY OF X1-X5 OR X6-X20 but for ALL -->
+3. **BIC**: BIC is similar to AIC in that it compares models based on fit and complexity. However, BIC uses a stronger penalty for the number of variables included in the model, so it tends to choose more parsimonious models compared to AIC [@ChowdhuryTurin2020]. In this study, we used the \texttt{step()} function from the \texttt{stats} package in R with the BIC penalty.
+
+4. **LASSO**: LASSO is a penalized regression method that performs variable selection by shrinking coefficient estimates toward zero. The LASSO penalty can shrink some coefficients exactly to zero, meaning those variables are excluded from the final model [@Tibshirani1996]. This makes LASSO useful when many predictors are being considered. In this study, LASSO was fit using the \texttt{cv.glmnet()} function from the \texttt{glmnet} package in R, with both \(\lambda_{\min}\) and \(\lambda_{1se}\) considered.
+
+5. **Elastic Net:** Elastic Net is also a penalized regression method and can be viewed as a combination of LASSO and ridge regression penalties. Like LASSO, it can shrink some coefficients to zero and perform variable selection. However, Elastic Net can be useful when predictors are correlated because it encourages groups of correlated predictors to be selected together [@ZouHastie2005]. In this study, Elastic Net was fit using the \texttt{cv.glmnet()} function from the \texttt{glmnet} package in R, with both \(\lambda_{\min}\) and \(\lambda_{1se}\) considered.
+\vspace{-3mm}
+
+These methods allowed us to compare traditional stepwise selection approaches with penalized regression approaches. The stepwise methods select variables by removing predictors from a full model, while LASSO and Elastic Net use penalties that shrink coefficients toward zero. We compared the performance of these methods using simulation-based measures including bias, coverage, true positive rates, false positive rates, and Type I and Type II error rates.
 
 \vspace{-6mm}
 ## Simulation
 <!-- 1-1.5 PAGES -->
 \vspace{-6mm}
 <!-- Write on how you will simulate the data and how we are fitting those data. How will you summarize and present results? -->
-We will run 10,000 iterations or simulations to obtain - come back here after reading that one paper.
-We will be using the gen_data() function from the High-Dimensional Regression Modeling (hdrm) package in R to simulate the data for model fitting. We will specify n = 10,000 data frames, 5 non-zero predictors, 15 predictors that have a null value of 0, an exchangeable correlation structure (forces the correlation between each pair of variables to be the same), and correlation coefficients of 0, 0.35, and 0.70. The different correlation coefficients will allow us to assess how varying amounts of linear relationships or correlations between variables may affect results from model selection techniques. 
-We will repeat this for a sample size of 250 and a sample size of 500 to assess the effect of sample size as well.
-For each iteration of the simulation, 
-we will fit a linear regression model using the lm() function from the stats R package. 
-Following this, the model will be put into each of the 5 model selection approaches. We will extract the selected variables from each technique and summarize results. Specifically, we will calculate the percentage of times X1-X5 are in the final model after applying the variable selection technique (True Positives) and 
-the percentage of times X15-X20 are included in the final model after variable selection (False Positives). 
-For the variables that are retained in the model, 
-we will calculate the deviation of the model estimates from the "true" or expected estimate defined (Bias), the long run probability a given 95% Confidence Interval (CI) will contain the true parameter (Coverage), as well as the Type I and Type II error of the variables.
-In addition, for each of the five variable selection techniques, 
-we will re-fit a final linear regression model with all the variables that 
-a given technique identified as important predictors.
-Alternatively, we may consider another appropriate approach as re-fitting models as if no variable selection was performed does introduce bias.
+Because our key performance measure for this study was coverage, we used the Monte Carlo standard error approach described by Morris et al. [-@Morrisetal2019] to determine the number of simulation repetitions. Coverage is a proportion, so the Monte Carlo standard error can be approximated as $MCSE(\hat{p}) = \sqrt{\frac{p(1-p)}{n_{sim}}}$
+Following the approach used in lecture, we used \(p = 0.50\), which gives the most conservative estimate because \(p(1-p)\) is maximized when \(p = 0.50\). We specified the desired Monte Carlo standard error to be 0.01. Therefore, $n_{sim} = \frac{0.50(1-0.50)}{0.01^2} = 2500$. Thus, we used 2500 simulation repetitions for each simulation scenario.
+We used the `gen_data()` function from the High-Dimensional Regression Modeling (`hdrm`) package in R to simulate the data for model fitting. For each simulated dataset, we generated one continuous outcome and 20 predictor variables, described previously in the Model Notation section. We had a total of six simulation scenarios for the two sample sizes and three correlation values.
+For each simulated dataset, we first fit a full linear regression model using the `lm()` function from the `stats` package in R. We then applied the five variable selection approaches. For LASSO and Elastic Net, both \(\lambda_{\min}\) and \(\lambda_{1se}\) were considered. For the penalzed regression methods, we refit a linear regression model using the selected variables in order to obtain confidence intervals.
 
-In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
-We will use a significance level of $\alpha = 0.5$ for all analyses.  
-All analyses will be conducted with R veresion 4.4.1.
+True positiive rates were calculated as the percentage of simulations in which X1–X5 were selected in the final model. False positive rates were calculated as the percentage of simulations in which each null variable, X6–X20, was incorrectly selected. Since false positive rates were calculated separately for each null variable, these values are equivalent to variable-specific Type I error rates. Type II error was calculated for X1–X5 as the percentage of simulations in which each true predictor was not selected.
+Bias was calculated as the difference between the estimated coefficient and the true coefficient. We used unconditional bias, meaning that if a variable was not selected, its coefficient estimate was set to 0 before calculating bias. Coverage was also calculated using an unconditional approach. For selected variables, coverage was defined as whether the 95% confidence interval contained the true coefficient.
+
+The simulation was organized using several custom functions. The `model_var_performance()` function calculated bias, coverage, true positives, false positives, and Type I/II error for one selected model. The `model_var_summary()` function handled the different output types from each variable selection method and passed the selected variables and coefficients to `model_var_performance()`. The `all_var_sel_methods()` function simulated one dataset for a given sample size and correlation value, fit the full linear regression model, applied all five variable selection methods, and evaluated each method. The `sim_one_profile()` function repeated this process for one simulation profile, where a profile was defined as one combination of sample size and predictor correlation. Finally, `sim_results()` ran the full simulation across all six profiles, and `summarize_profiles()` aggregated results across simulation repetitions.
+
+All analyses were conducted in R version 4.4.1 using a significance level of \(\alpha = 0.05\).
 
 \vspace{-6mm}
 ## Results and Discussion
@@ -246,12 +241,12 @@ All analyses will be conducted with R veresion 4.4.1.
 <!-- What method do I recommend and under what cases. Cover the big picture  -->
 <!-- recommendations after giving the results. -->
 
-Bias was generally consistent across the different correlation settings, so we calculated and visualized the average bias for X1–X5 by selection method, sample size, and correlation setting (Figure 1). Across most settings, AIC, BIC, anc backwards selection had the smallest average bias. In contrast, 
-the shrinkage methods showed more noticeable negative bias, indicating that these methods tended to underestimate the coefficients for X1-X5. This is expected since shrinkage methods penalize coefficient size and pull estimates toward 0. 
-For both LASSO and elastic net, the 1SE lambda generally resulted in more bias than the minimum lambda, likely due to stronger penalization. These patterns were similar across correlation settings, although bias was slightly reduced with the larger sample size. 
-Thus, if one is mainly interested in reducing bias, the AIC, BIC, or backwards variable selection methods are preferable.  
+Bias was generally consistent across the different correlation settings, so we summarized the average bias for X1–X5 by selection method, sample size, and correlation setting (Figure 1). Across most settings, AIC, BIC, and backward selection had the smallest average bias. In contrast, the shrinkage methods showed more noticeable negative bias, indicating that LASSO and elastic net tended to underestimate the coefficients for X1–X5. This is expected since shrinkage methods penalize coefficient size and pull estimates toward 0. For both LASSO and elastic net, $\lambda_{1SE}$ generally resulted in more bias than $\lambda_{min}$, likely due to stronger penalization. Bias was slightly reduced with the larger sample size. 
 
-```{r, echo = F, warning=F,message=F, fig.cap="Average bias for each variable selection method. Variables X1–X5 are shown in the column panels, and the different predictor correlation settings are shown in the row panels. Circles represent n=250, and triangles represent n=500. AIC, BIC, and backward selection generally had smaller mean bias compared to the penalized regression methods. For both LASSO and elastic net, the 1SE lambda showed more negative bias than the minimum lambda.", position='H', include=F}
+Coverage was calculated as the average percentage of times the 95% confidence interval contained the true coefficient. The widest range in coverage was observed for X1, the weakest predictor.
+
+```{r, echo = F, warning=F,message=F, fig.cap="Average bias for each variable selection method. Variables X1–X5 are shown in the column panels, and the different predictor correlation settings are shown in the row panels. Circles represent n=250, and triangles represent n=500. AIC, BIC, and backward selection generally had smaller mean bias compared to the penalized regression methods. For both LASSO and elastic net, the 1SE lambda showed more negative bias than the minimum lambda."}
+
 #### Visualization of bias for the different sel methods
 
 # Look at each variable
@@ -319,14 +314,16 @@ ggplot(bias_plot_df, aes(y = fct_rev(method),
     shape = "sample Size"
   ) +
   scale_x_continuous(breaks = seq(-0.2, 0, by = 0.1))
-   
-
 ```
 
-For coverage, we calculated the average percentage of times the 95% interval covered the true coefficient for each variable and simulation setting, visualized in Figure ?? in the \textit{Supplemental Material} section. We observed the widest range in coverage for X1, the variable with the weakest relationship with the outcome, compared to variables X2-X20. The BIC method with $\rho = 0.7$ and sample size of 250 resulted in the lowest coverage for X1, with 20% coverage. Overall, BIC performed the least favorably for X1 across the different simulation settings. However, coverage was $\approx$ 100\% for variables X2-X5 across all simulation scenarios. 
-Based on these results, if coverage is of primary concern, special caution may be needed when using more conservative selection methods such as BIC, particularly for predictors with weak relationships with the outcome and when predictors are highly correlated.
+BIC with ρ=0.7 and n=250 had the lowest coverage for X1, with 20% coverage. In contrast, coverage was approximately 100% for X2–X5 across most simulation scenarios. These results suggest that conservative methods such as BIC may have poor coverage for weak predictors, especially when predictors are highly correlated.
 
-```{r, echo = F, results='hide', warning=F, message=F, fig.cap="Coverage percentage for each variable selection method. Column panels show the five variables with increasing strengths of association with the outcome, and row panels show the different correlation settings among predictors. Circles represent n=250, and triangles represent n=500. BIC had the lowest coverage for X1, the weakest predictor, particularly when predictor correlation was high", include = F}
+False positive rates were generaly consistent across the null variables X6–X20, so we summarized the average FP percentage across these variables. Elastic net with $\lambda_{min}$ had the highest FP percentages, while AIC and BIC had the lowest percentages across the correlation settings (Figure 3). Correlation among predictors appeared to have the largest effect on elastic net and LASSO using $\lambda_{1SE}$, where higher corelation resulted in higher FP percentages. Sample size did not appear to strongly influence FP percentages.
+
+True positive ates were high for X2–X5 across nearly all methods and simulation settings. 
+The main differences were obsered for X1, the weakest true predictor (Table 1). BIC had the lowest TPRs for X1, and higher correlation among predictors further decreased the TPR.
+
+```{r, echo = F, warning=F, message=F, fig.cap="Coverage percentage for each variable selection method. Column panels show the five variables with increasing strengths of association with the outcome, and row panels show the different correlation settings among predictors. Circles represent n=250, and triangles represent n=500. BIC had the lowest coverage for X1, the weakest predictor, particularly when predictor correlation was high"}
 
 ### Display table like Dr.Sevick has to look at coverage
 # Coverage for all vars for all sel methods
@@ -394,11 +391,9 @@ ggplot(coverage_plot_df, aes(y = fct_rev(method),
     shape = "N")
 ```
 
+Similar but smaller patterns were observed for AIC and backward selection. The shrinkage methods using $\lambda_{min}$ consistently had the highest TPRs for X1, although this came with higher false positive rates. TPRs were generally higher for n=500 compared to n=250.
 
-As FPRs across variables X6-X20 were generally consistent for each variable selection method, we calculated ahd visualized the average FP percentage across the null variables. 
-From Figure 3, elastic net with $\lambda_{\text{min}}$ had the highest FP percentages, while AIC and BIC had the lowest percentages across the different correlation settings. Correlation among predictors appeared to have the largest effect on elastic net and LASSO using $\lambda_{\text{1SE}}$, where higher correlation among predictors resulted in higher FP percentages. We also note that sample sizes did not seem to influence results. These results suggest that AIC and BIC were more robust to changes in predictor correlation and produced some of the lowest FP percentages in this simulation setting.
-
-```{r, echo = F, message = F, warning = F, fig.cap="Average false positive rate percentage by variable selection method. Column panels correspond to sample size. Circles represent rho=0, triangles represent rho=0.35, and squares represent rho=0.70. Elastic net, particularly using lambda min, produced the highest FP percentages, while BIC produced the lowest FP percentages across correlation settings. The shrinkage methods were more influenced by predictor correlation, with higher correlation generally resulting in higher FP percentages.", include = F}
+```{r, echo = F, message = F, warning = F, fig.cap="Average false positive rate percentage by variable selection method. Column panels correspond to sample size. Circles represent rho=0, triangles represent rho=0.35, and squares represent rho=0.70. Elastic net, particularly using lambda min, produced the highest FP percentages, while BIC produced the lowest FP percentages across correlation settings. The shrinkage methods were more influenced by predictor correlation, with higher correlation generally resulting in higher FP percentages."}
 # False positives == TYPE I ERROR since we are looking at individual vars for each method
 fps_summary <- selection_performance %>% 
   filter(!(variable %in% c("X1", "X2", "X3", "X4", "X5"))) %>% 
@@ -453,24 +448,10 @@ ggplot(fps_summary, aes(y = fct_rev(method),
     shape = expression(rho),
     title = "FPR by Variable Selection Method - Averaged by Method"
   )
-
-# There does not appear to be a difference for different rhos
-# There is no difference for different rhos for AIC,BIC,Backwards but there
-# is a difference with shrinkage methods for different rhos, specifically
-# most apparent with lamdab = 1se where rho = 0 results in lowest FPR and
-# rho = 0.7 results in highest FPR aka so higher correlation with outcome tends # to result in more false positives which makes sense
-# Samp size does not seem to have an effect
 ```
 
-The average TPR was calculated across the different simulation settings.
-Assessing TPRs for X1-X5, it was evident that X1 was the only variable were TPRs noticeably differed across the selection methods. 
-In Table 1, we summarize the TPR percentages for X1. 
-Overall, BIC had the lowest TPRs and within BIC, higher correlations among predictors decreased the TPR. 
-We observed similar patterns at smaller scales for AIC and Backwards selection. 
-The two shrinkage methods with $\lambda_{\text{min}}$ consistenly had the highest TPRs across all settings. We also note that TPRs were consistently higher for sample size of 500 compared to 250. 
-There were no apparent differences in TPRs across selection methods, sample sizes, or correlation settings for variables X2-X5 as these were selected nearly all of the time. 
 
-```{r, echo = F, message = F, warning = F, include = F}
+```{r, echo = F, message = F, warning = F}
 # False postiives == TYPE I ERROR since we are looking at individual vars for each method
 # Look at each variable -- Seems that X1 is most clearly different here
 # selection_performance %>%
@@ -517,20 +498,15 @@ kable(x1_tpr_table,
       booktabs = TRUE,
       digits = 2,
       caption = "Mean True Positive Rate (\\%) for X1") %>% 
-  kable_styling(latex_options = c("striped","hold_position",
+  kable_styling(latex_options = c("striped",
                                   "scale_down"))
   
 ```
 
-In regard to testing-related performance measures, we summarized Type I and Type II error percentages.
-Because FPR was calculated separately for each null variable X6–X20, the FPR is equivalent to the variable-specific Type I error rate. In this context, a false positive means that a variable with a true coefficient of 0 was incorrectly selected into the final model. Therefore, the Type I error results followed the same pattern as the FPR results.
+For testing-related performance measures, the variable-specific Type I error results followed the same pattern as the false positive rates, since FPR was calculated separately for each null variable X6–X20. Type II error was evaluated for X1–X5. Mean Type II error percentages for X2–X5 were generally close to 0\% across methods, correlation settings, and sample sizes, suggesting tht moderate to strong predictors were consistently detected. X1 had the highest Type II error, especially for BIC, indicating that weaker predictors were more likly to be missed by conservative selection methods. Increasing sample size modestly reduced Type II error.
 
-Type II error was evaluated for variables X1–X5. Mean Type II error percentages for X2–X5 were generally close to \0% across the different variable selection methods, correlation settings, and sample sizes, as shown in Figure 4 for X2 and X3. This suggests that moderate to strong relationships with the outcome were consistently detected by all methods.
-However, the X1 variable had consistently lower Type II error percentages across most selection methods. We do note that increasing the sample size does appear to modestly decrease the Type II error rates. 
-BIC tended to have the highest Type II error for X1. 
-These results suggest that variables with weaker relationships with the outcome are more likely to be missed during variable selection methods, particularly with more conservative methods such as BIC. 
+```{r, echo = F, warning = F, message=F, fig.cap="Averaged Type II error percentages for X1-X3. Type II error percentages for X2–X5 were approximately 0 across most simulation settings, indicating that moderate to strong predictors were consistently selected. X1 had the highest Type II error rates across all variable selection methods and correlation settings. Sample size slightly improved rates with a noticeable improvement for BIC when sample size was increased and under high predictor correlation."}
 
-```{r, echo = F, warning = F, message=F, fig.cap="Averaged Type II error percentages for X1-X3. Type II error percentages for X2–X5 were approximately 0 across most simulation settings, indicating that moderate to strong predictors were consistently selected. X1 had the highest Type II error rates across all variable selection methods and correlation settings. Sample size slightly improved rates with a noticeable improvement for BIC when sample size was increased and under high predictor correlation.", include = F}
 # Type II error summary - get the percentage
 errorII_summary <- selection_performance %>% 
   filter(variable %in% c("X1", "X2", "X3")) %>% 
@@ -555,10 +531,9 @@ ggplot(errorII_summary, aes(y = fct_rev(method),
     y = "Method",
     shape = expression(n)
   )
-
 ```
 
-
+Overalll, the results show a tradeoff between conservative selection and sensitivity to weaker predictors. BIC had low false positive rates but were more likely to miss X1 and had lower coverage for this weak predictor. LASSO and elastic net with $\lambda_{min}$ had higher TPRs but also higher FP percentages. AIC and backward selection generally had low bias and reasonable TPRs, but backward selection tended to include more null predictors. Therefore, the preferred method depends on the study goal! BIC may be preferable when avoiding false positives is most important, while AIC, backward selection, or penalized methods with $\lambda_{min}$ may be preferable when retaining weaker true predictors is a priority.
 
 \vspace{-6mm}
 ## Future Work 
@@ -566,14 +541,33 @@ ggplot(errorII_summary, aes(y = fct_rev(method),
 <!-- 1/2 PAGE -->
 <!-- List things you learned and ideas you might want to invesitgate further that  -->
 <!-- were beyond the scope of this project. -->
-In the final report, we will include a table summarizing the performance of the variable selection techniques and a table summarizing the statistical/inference errors for each of the variables. We will additionally accompany these tables with visualizations.
-We will use a significance level of $\alpha = 0.5$ for all analyses.  
-All analyses will be conducted with R veresion 4.4.1.
 
-<!-- TABLES OF SIMULATION PARAMETERS ARE COMMON IN METHODS PAPERS -->
+This study focused on a limited set of conditions, including two sample sizes, three correlation settings, and five true predictors with fixed effect sizes. Future work could expand the simulation design by considering additional sample sizes, different numbers of predictors, and weaker or more variable effect sizes. This may be especially useful because the weakest predictor, X1, showed the most noticeable differences across selection methods.
+Additional work could also examine other correlation structures beyond the exchangeable setting used here. For example, autoregressive correlation structures may better represent situations where only certain groups of predictors are highly correlated. It may also be useful to compare additional variable selection methods or evaluate how results change when using different tuning parameter choices for LASSO and elastic net.
+Finally, this study focused on linear regression with a continuous outcome. Future studies could extend this framework to logistic regression, survival models, or other types of outcomes. These extensions would help determine whether the patterns observed here, such as the tradeoff between false positives and missing weak predictors, remain consistent in other modeling settings.
 
 \newpage
 ## Code and Reproducibility
+The data and statistical code used to generate the results and figures in this report are
+available in the following GitHub repository:
+
+- GitHub repository: https://github.com/DianaF65/BIOS6624
+
+Directory structure:
+
+- Background/ - A description of the background of the project.
+- Code/
+  – The “Project4.R” file contains initial data exploration as well as code for con-
+struction of the final data set used for all analyses.
+  - The "Project4_Functions.R" file contains all functions used for simulation and is sourced in this final report. 
+
+- RawData/ – No data was used in this analysis. 
+
+- Reports/ The “Project4_FinalReport.Rmd” R Markdown file was used to generate
+this final report of analyses.
+All analyses and figures were generated using the R statistical programming language v.
+4.4.1, and the repository contains the R scripts and R Markdown files used to produce this
+report
 
 \newpage
 ## References
